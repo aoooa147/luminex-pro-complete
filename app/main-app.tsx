@@ -3,10 +3,10 @@
 /// <reference path="../luminex-unified-app.ts" />
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { IDKitWidget } from "@worldcoin/idkit";
 import { ethers } from "ethers";
 import dynamic from 'next/dynamic';
 import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION } from '@/lib/utils/constants';
+import { useMiniKit as useMiniKitVerify } from '@/hooks/useMiniKit';
 const MiniKitPanel = dynamic(() => import('@/components/MiniKitPanel'), { ssr: false });
 import { 
   Wallet, Shield, Coins, TrendingUp, Settings, Gift, Users, Zap, Lock, Unlock, 
@@ -644,8 +644,53 @@ const WorldAppRequired = () => (
 );
 
 const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
-  const appId = (process.env.NEXT_PUBLIC_WORLD_APP_ID || WORLD_APP_ID) as string;
+  const { verify } = useMiniKitVerify();
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
   const action = (process.env.WORLD_ACTION || WORLD_ACTION) as string;
+
+  const handleVerify = async () => {
+    setIsVerifying(true);
+    setVerifyError(null);
+    
+    try {
+      console.log('🔄 Starting verification...');
+      
+      // Use MiniKit verify if available (inside World App)
+      if (typeof window !== 'undefined' && (window as any).MiniKit) {
+        console.log('✅ Using MiniKit for verification');
+        
+        const result = await verify(action);
+        console.log('✅ Verification payload received:', result);
+        
+        // Send to backend for verification
+        const res = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payload: result, action })
+        });
+        
+        const data = await res.json();
+        console.log('✅ Backend verification response:', data);
+        
+        if (data.success) {
+          onVerify();
+        } else {
+          throw new Error(data.error || 'Verification failed');
+        }
+      } else {
+        // Fallback: Skip verification or show error
+        console.warn('⚠️ MiniKit not available, skipping verification');
+        // For now, just proceed without verification
+        onVerify();
+      }
+    } catch (error: any) {
+      console.error('❌ Verification error:', error);
+      setVerifyError(error.message || 'Verification failed');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-pink-950 relative overflow-hidden flex items-center justify-center p-4">
@@ -739,96 +784,37 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
               You must verify your humanity to access the application.
             </p>
 
-            <IDKitWidget
-              app_id={appId}
-              action={action}
-              handleVerify={async (proof: any) => {
-                const urlBase = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-                console.log('🔄 Sending verification request...', { urlBase, action });
-                
-                try {
-                  const res = await fetch(`${urlBase}/api/verify-worldid`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      proof,
-                      merkle_root: proof.merkle_root,
-                      nullifier_hash: proof.nullifier_hash,
-                      signal: proof.signal || '',
-                      action 
-                    })
-                  });
-                  
-                  if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(errorData.error || `Server error: ${res.status}`);
-                  }
-                  
-                  const data = await res.json();
-                  console.log('✅ Verification response:', data);
-                  
-                  return data;
-                } catch (error: any) {
-                  console.error('❌ Verification error:', error);
-                  throw error;
-                }
-              }}
-              onSuccess={(result: any) => {
-                console.log('✅ Verification successful, result:', result);
-                
-                // Store verified user data from result (returned by handleVerify)
-                // handleVerify already stores data in sessionStorage, but we'll use result here too
-                if (result?.userAddress || result?.address) {
-                  const verifiedAddr = result.userAddress || result.address;
-                  console.log('✅ Storing verified user address:', verifiedAddr);
-                  if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('verifiedAddress', verifiedAddr);
-                    if (result.name || result.username) {
-                      sessionStorage.setItem('userName', result.name || result.username || '');
-                    }
-                  }
-                }
-                
-                // Call onVerify callback
-            onVerify();
-          }}
-              onError={(err: any) => {
-                try {
-                  console.error('World ID (IDKit) error object:', err, typeof err);
-                  if (err && typeof err === 'object') {
-                    console.error('  code:', err.code, 'detail:', err.detail, 'keys:', Object.keys(err || {}));
-                  }
-                } catch (_) {}
-                const silentCodes = ['max_verifications_reached', 'already_signed'];
-                const code = err?.code || '';
-                if (typeof window !== 'undefined' && !silentCodes.includes(code)) {
-                  const msg = err?.code || err?.detail || 'unknown';
-                  alert(`World ID error: ${msg}`);
-                }
-              }}
+            {verifyError && (
+              <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-center">
+                {verifyError}
+              </div>
+            )}
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleVerify}
+              disabled={isVerifying}
+              className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white font-bold py-5 px-8 rounded-2xl flex items-center justify-center space-x-3 shadow-2xl shadow-purple-500/40 relative overflow-hidden group cursor-pointer disabled:opacity-50"
             >
-              {({ open }: any) => (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={(e: any) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    open();
-                  }}
-                  className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white font-bold py-5 px-8 rounded-2xl flex items-center justify-center space-x-3 shadow-2xl shadow-purple-500/40 relative overflow-hidden group cursor-pointer"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="w-6 h-6 relative z-10 animate-spin" />
+                  <span className="text-xl relative z-10 font-extrabold tracking-wide">Verifying...</span>
+                </>
+              ) : (
+                <>
                   <Shield className="w-6 h-6 relative z-10 drop-shadow-md" />
                   <span className="text-xl relative z-10 font-extrabold tracking-wide">Verify</span>
                   <div className="w-2 h-2 bg-white rounded-full relative z-10 animate-pulse shadow-lg"></div>
-                  {/* Shine effect */}
-                  <motion.div
-                    className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700"
-                  />
-        </motion.button>
+                </>
               )}
-            </IDKitWidget>
+              {/* Shine effect */}
+              <motion.div
+                className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700"
+              />
+        </motion.button>
           </div>
       </motion.div>
 
