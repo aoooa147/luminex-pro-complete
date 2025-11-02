@@ -987,10 +987,15 @@ const LuminexApp = () => {
       try {
         const wldContract = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, provider);
         const wldBalanceBN = await wldContract.balanceOf(addressToUse);
-        const wldDecimals = await wldContract.decimals();
+        let wldDecimals = 18; // Default to 18 decimals for WLD
+        try {
+          wldDecimals = await wldContract.decimals();
+        } catch (e) {
+          console.warn('⚠️ Could not fetch WLD decimals, using default 18');
+        }
         const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, wldDecimals));
         setWldBalance(wldBalanceFormatted);
-        console.log('✅ WLD Balance fetched:', wldBalanceFormatted);
+        console.log('✅ WLD Balance fetched:', wldBalanceFormatted, 'with decimals:', wldDecimals);
       } catch (error) {
         console.error('❌ Error fetching WLD balance:', error);
         setWldBalance(0);
