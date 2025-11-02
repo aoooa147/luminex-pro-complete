@@ -5,10 +5,10 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IDKitWidget } from "@worldcoin/idkit";
 import { ethers } from "ethers";
-import { 
 import dynamic from 'next/dynamic';
 import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION } from '@/lib/utils/constants';
 const MiniKitPanel = dynamic(() => import('@/components/MiniKitPanel'), { ssr: false });
+import { 
   Wallet, Shield, Coins, TrendingUp, Settings, Gift, Users, Zap, Lock, Unlock, 
   AlertTriangle, ExternalLink, Copy, Check, Loader2, Clock, Star, Droplet,
   DollarSign, Eye, BarChart3, Flame, Trophy, Award, TrendingDown, Globe, 
@@ -425,9 +425,9 @@ const useMiniKit = () => {
   const connectWallet = async () => {
     try {
       // Check if running in World App with MiniKit
-      if (typeof window !== 'undefined' && window.MiniKit?.walletAuth) {
+      if (typeof window !== 'undefined' && (window as any).MiniKit?.walletAuth) {
         console.log('🔗 Connecting to World App MiniKit wallet...');
-        const walletData = await window.MiniKit.walletAuth();
+        const walletData = await (window as any).MiniKit.walletAuth();
         if (walletData?.address) {
     setWallet({
             address: walletData.address,
@@ -451,11 +451,11 @@ const useMiniKit = () => {
         } else {
           console.warn('⚠️ MiniKit walletAuth returned no address');
         }
-      } else if (typeof window !== 'undefined' && window.ethereum) {
+      } else if (typeof window !== 'undefined' && (window as any).ethereum) {
         // Fallback to MetaMask or other Web3 wallets
         // Check if it's actually MetaMask (not other providers like TronLink/Bybit)
         try {
-          const ethereum = window.ethereum as any;
+          const ethereum = (window as any).ethereum;
           // Only proceed if it's MetaMask or has isMetaMask property
           if (ethereum.isMetaMask || (ethereum.providers && ethereum.providers.find((p: any) => p.isMetaMask))) {
             console.log('🔗 Connecting to MetaMask...');
@@ -536,7 +536,7 @@ const useMiniKit = () => {
       console.log(`🔄 Transferring ${amount} WLD to ${TREASURY_ADDRESS}...`);
       
       // For MiniKit, use sendTransaction directly
-      if (typeof window !== 'undefined' && window.MiniKit?.commandsAsync?.sendTransaction && !('provider' in signer)) {
+      if (typeof window !== 'undefined' && (window as any).MiniKit?.commandsAsync?.sendTransaction && !('provider' in signer)) {
         // MiniKit custom signer - use sendTransaction directly
         const tx = await (signer as any).sendTransaction({
           to: WLD_TOKEN_ADDRESS,
@@ -573,18 +573,18 @@ const useMiniKit = () => {
 
   // Get signer for writing transactions
   const getSigner = async () => {
-    if (typeof window !== 'undefined' && window.MiniKit?.commandsAsync?.sendTransaction) {
+    if (typeof window !== 'undefined' && (window as any).MiniKit?.commandsAsync?.sendTransaction) {
       // Return a custom signer for MiniKit
   return {
         sendTransaction: async (tx: any) => {
-          return await window.MiniKit!.commandsAsync!.sendTransaction({
+          return await (window as any).MiniKit!.commandsAsync!.sendTransaction({
             to: tx.to,
             data: tx.data || '0x',
             value: tx.value?.toString() || '0'
           });
         }
       };
-    } else if (typeof window !== 'undefined' && window.ethereum && provider) {
+    } else if (typeof window !== 'undefined' && (window as any).ethereum && provider) {
       return await (provider as ethers.BrowserProvider).getSigner();
     }
     return null;
@@ -742,7 +742,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
             <IDKitWidget
               app_id={appId}
               action={action}
-              handleVerify={async (proof) => {
+              handleVerify={async (proof: any) => {
                 const urlBase = process.env.NEXT_PUBLIC_BACKEND_URL || '';
                 console.log('🔄 Sending verification request...', { urlBase, action });
                 
@@ -773,7 +773,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
                   throw error;
                 }
               }}
-              onSuccess={(result) => {
+              onSuccess={(result: any) => {
                 console.log('✅ Verification successful, result:', result);
                 
                 // Store verified user data from result (returned by handleVerify)
@@ -807,11 +807,11 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
                 }
               }}
             >
-              {({ open }) => (
+              {({ open }: any) => (
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={(e) => {
+                  onClick={(e: any) => {
                     e.preventDefault();
                     e.stopPropagation();
                     open();
