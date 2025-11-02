@@ -648,6 +648,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
   const handleVerify = async () => {
+    console.log('🔴 handleVerify called!');
     setIsVerifying(true);
     setVerifyError(null);
     
