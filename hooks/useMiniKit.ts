@@ -29,7 +29,9 @@ export const useMiniKit = () => {
 
   const walletAuth = useCallback(async () => {
     if (!MiniKit.isInstalled()) throw new Error('MiniKit is not installed. Open inside World App.');
-    const { finalPayload } = await MiniKit.commandsAsync.walletAuth();
+    // Generate nonce for wallet auth
+    const nonce = crypto.randomUUID().replace(/-/g, '');
+    const { finalPayload } = await MiniKit.commandsAsync.walletAuth({ nonce });
     return finalPayload as MiniAppWalletAuthSuccessPayload;
   }, []);
 
@@ -38,8 +40,9 @@ export const useMiniKit = () => {
     const { finalPayload } = await MiniKit.commandsAsync.pay({
       reference: referenceId,
       to: toAddress,
-      tokens: [{ symbol: token, amount }],
-    });
+      tokens: token,
+      amount,
+    } as any);
     return finalPayload; // contains transaction_id, reference
   }, []);
 
