@@ -678,13 +678,22 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
           const data = await res.json();
           console.log('✅ SIWE verification response:', data);
           
-          if (data.status === 'ok' && data.isValid) {
-            console.log('✅ Wallet authenticated successfully');
-            onVerify();
-          } else {
-            const errorMsg = data.message || 'Wallet authentication failed';
-            throw new Error(errorMsg);
+        if (data.status === 'ok' && data.isValid) {
+          console.log('✅ Wallet authenticated successfully');
+          
+          // Store verification status in sessionStorage
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('verified', 'true');
+            if (walletData.address) {
+              sessionStorage.setItem('verifiedAddress', walletData.address);
+            }
           }
+          
+          onVerify();
+        } else {
+          const errorMsg = data.message || 'Wallet authentication failed';
+          throw new Error(errorMsg);
+        }
         } else {
           console.warn('⚠️ MiniKit.commandsAsync.walletAuth not available');
           throw new Error('Wallet auth not available');
@@ -1121,13 +1130,20 @@ const LuminexApp = () => {
   useEffect(() => {
     if (!isWorldApp()) return;
     
-    // Get verified address from sessionStorage (set by World ID verification)
+    // Get verified status and address from sessionStorage
     if (typeof window !== 'undefined') {
+      const verifiedFromStorage = sessionStorage.getItem('verified');
+      if (verifiedFromStorage === 'true') {
+        setVerified(true);
+        console.log('✅ Loaded verified status from session');
+      }
+      
       const verifiedAddr = sessionStorage.getItem('verifiedAddress');
       if (verifiedAddr) {
         setVerifiedAddress(verifiedAddr);
         console.log('✅ Loaded verified address from session:', verifiedAddr);
       }
+      
       const userName = sessionStorage.getItem('userName');
       if (userName) {
         console.log('✅ Loaded user name from session:', userName);
@@ -1141,13 +1157,13 @@ const LuminexApp = () => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-connect wallet after verification
+  // Auto-connect wallet after verification (call walletAuth every time)
   useEffect(() => {
-    if (verified && !isConnected) {
-      console.log('✅ User verified, auto-connecting wallet...');
+    if (verified) {
+      console.log('✅ User verified, auto-connecting wallet (calling walletAuth)...');
       connectWallet();
     }
-  }, [verified, isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [verified]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set referral code from wallet address
   useEffect(() => {
