@@ -644,7 +644,7 @@ const WorldAppRequired = () => (
 );
 
 const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
-  const { verify } = useMiniKitVerify();
+  const { verify: verifyFunc, ready: miniKitReady } = useMiniKitVerify();
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const action = (process.env.WORLD_ACTION || WORLD_ACTION) as string;
@@ -654,13 +654,13 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
     setVerifyError(null);
     
     try {
-      console.log('🔄 Starting verification...');
+      console.log('🔄 Starting verification...', { miniKitReady, hasWindowMiniKit: !!(typeof window !== 'undefined' && (window as any).MiniKit) });
       
       // Use MiniKit verify if available (inside World App)
-      if (typeof window !== 'undefined' && (window as any).MiniKit) {
+      if (miniKitReady) {
         console.log('✅ Using MiniKit for verification');
         
-        const result = await verify(action);
+        const result = await verifyFunc(action);
         console.log('✅ Verification payload received:', result);
         
         // Send to backend for verification
@@ -680,7 +680,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
         }
       } else {
         // Fallback: Skip verification or show error
-        console.warn('⚠️ MiniKit not available, skipping verification');
+        console.warn('⚠️ MiniKit not ready, skipping verification');
         // For now, just proceed without verification
         onVerify();
       }
