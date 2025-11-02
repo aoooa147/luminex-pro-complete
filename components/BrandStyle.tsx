@@ -12,14 +12,14 @@ export default function BrandStyle() {
   const radius = get('NEXT_PUBLIC_BRAND_RADIUS', '1.25rem');  // 20px ~ rounded-3xl
 
   // logo is used in UI via constants; keep here if you want via CSS var too
-  const css = \`:root{
-    --brand-primary: \${primary};
-    --brand-accent: \${accent};
-    --brand-bg: \${bg};
-    --brand-card: \${card};
-    --brand-radius: \${radius};
-    --brand-font: \${font}, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, Noto Sans, 'Apple Color Emoji', 'Segoe UI Emoji';
-  }\`;
+  const css = `:root{
+    --brand-primary: ${primary};
+    --brand-accent: ${accent};
+    --brand-bg: ${bg};
+    --brand-card: ${card};
+    --brand-radius: ${radius};
+    --brand-font: ${font}, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, Noto Sans, 'Apple Color Emoji', 'Segoe UI Emoji';
+  }`;
 
   return <style dangerouslySetInnerHTML={{ __html: css }} />;
 }

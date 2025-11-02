@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useMiniKit } from '../hooks/useMiniKit';
-import { WORLD_APP_ID, WORLD_ACTION, TREASURY_ADDRESS, TOKEN_NAME, LOGO_URL, BRAND_NAME } from '../utils/constants';
+import { WORLD_APP_ID, WORLD_ACTION, TREASURY_ADDRESS, TOKEN_NAME, LOGO_URL, BRAND_NAME } from '@/lib/utils/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { t } from '../utils/i18n';
+import { t } from '@/lib/utils/i18n';
 
 /**
  * MiniKitPanel
@@ -16,10 +16,16 @@ export default function MiniKitPanel() {
   const [amount, setAmount] = useState('0.1');
   const [reference, setReference] = useState('');
   const [busy, setBusy] = useState(false);
-  const [logs, set{t('logs')}] = useState<string[]>([]);
-  const [result, set{t('result')}] = useState<any>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [result, setResult] = useState<any>(null);
+  const [step, setStep] = useState<'idle' | 'initiated' | 'pending' | 'confirmed' | 'failed'>('idle');
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollDone, setPollDone] = useState(false);
+  const [pollSuccess, setPollSuccess] = useState(false);
+  const [pollStep, setPollStep] = useState(0);
+  const pollMax = 20;
 
-  const log = (m: string) => set{t('logs')}((old) => [m, ...old].slice(0, 120));
+  const log = (m: string) => setLogs((old) => [m, ...old].slice(0, 120));
 
   const genReference = async () => {
     const r = await fetch('/api/initiate-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, symbol: 'WLD' }) });
@@ -34,7 +40,7 @@ export default function MiniKitPanel() {
       const payload = await verify(action);
       const r = await fetch('/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payload, action }) });
       const j = await r.json();
-      set{t('result')}(j);
+      setResult(j);
       log('Verify response: ' + JSON.stringify(j));
     } catch (e: any) { log('Verify error: ' + e?.message); }
     finally { setBusy(false); }
@@ -46,7 +52,7 @@ export default function MiniKitPanel() {
       const payload = await walletAuth();
       const r = await fetch('/api/complete-siwe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payload }) });
       const j = await r.json();
-      set{t('result')}(j);
+      setResult(j);
       log('WalletAuth response: ' + JSON.stringify(j));
     } catch (e: any) { log('WalletAuth error: ' + e?.message); }
     finally { setBusy(false); }
@@ -58,10 +64,6 @@ export default function MiniKitPanel() {
     setPollDone(false);
     setPollSuccess(false);
     setPollStep(0);
-    setIsPolling(true);
-    setPollDone(false);
-    setPollSuccess(false);
-    setPollStep(0);
     for (let i=0;i<max;i++) {
       setPollStep(i+1);
       try {
@@ -69,7 +71,11 @@ export default function MiniKitPanel() {
         const j = await r.json();
         if (j?.success && (j?.transaction?.transaction_status === 'confirmed' || j?.transaction?.status === 'confirmed')) {
           log('Polling confirmed: ' + JSON.stringify(j));
-          set{t('result')}(j);
+          setResult(j);
+          setPollSuccess(true);
+          setIsPolling(false);
+          setPollDone(true);
+          setStep('confirmed');
           return true;
         }
       } catch(e:any) {
@@ -91,8 +97,11 @@ export default function MiniKitPanel() {
       const payload = await pay(reference, (TREASURY_ADDRESS as `0x${string}`) || '0x0000000000000000000000000000000000000000', amount, 'WLD');
       const r = await fetch('/api/confirm-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payload }) });
       const j = await r.json();
-      set{t('result')}(j);
+      setResult(j);
       log('Confirm-payment response: ' + JSON.stringify(j));
+      if (j?.transaction?.transaction_id) {
+        await pollConfirm(j.transaction.transaction_id, reference);
+      }
     } catch (e: any) { log('Pay error: ' + e?.message); }
     finally { setBusy(false); }
   };
@@ -105,7 +114,7 @@ export default function MiniKitPanel() {
         className="fixed bottom-4 right-4 z-40 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 shadow-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/60"
         style={{ minHeight: 44 }}
       >
-        {open ? '{t('close_panel')}' : '{t('open_panel')}'}
+        {open ? t('close_panel') : t('open_panel')}
       </button>
 
       {/* Collapsible sheet */}
