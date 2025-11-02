@@ -1026,22 +1026,35 @@ const LuminexApp = () => {
           WLD_ADDRESS: WLD_TOKEN_ADDRESS,
           USER_ADDRESS: addressToUse 
         });
-        // Create separate provider for Worldchain to fetch WLD balance
-        const worldchainProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
-        const wldContract = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, worldchainProvider);
-        console.log('🔍 Calling balanceOf on WLD contract...');
-        const wldBalanceBN = await wldContract.balanceOf(addressToUse);
-        console.log('🔍 Raw WLD balance (wei):', wldBalanceBN.toString());
-        let wldDecimals = 18; // Default to 18 decimals for WLD
-        try {
-          wldDecimals = await wldContract.decimals();
-          console.log('🔍 WLD decimals:', wldDecimals);
-        } catch (e) {
-          console.warn('⚠️ Could not fetch WLD decimals, using default 18');
+        
+        // Check if running in browser (web) or World App
+        const isWebBrowser = typeof window !== 'undefined' && !(window as any).MiniKit;
+        
+        if (isWebBrowser) {
+          // For web browsers: show mock balance for testing
+          console.log('🌐 Running in web browser, using mock WLD balance for testing');
+          const mockWldBalance = 10.5; // Mock balance for testing
+          setWldBalance(mockWldBalance);
+          console.log('✅ Mock WLD Balance (web):', mockWldBalance);
+        } else {
+          // For World App: fetch real balance from Worldchain
+          console.log('📱 Running in World App, fetching real WLD balance from Worldchain');
+          const worldchainProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
+          const wldContract = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, worldchainProvider);
+          console.log('🔍 Calling balanceOf on WLD contract...');
+          const wldBalanceBN = await wldContract.balanceOf(addressToUse);
+          console.log('🔍 Raw WLD balance (wei):', wldBalanceBN.toString());
+          let wldDecimals = 18; // Default to 18 decimals for WLD
+          try {
+            wldDecimals = await wldContract.decimals();
+            console.log('🔍 WLD decimals:', wldDecimals);
+          } catch (e) {
+            console.warn('⚠️ Could not fetch WLD decimals, using default 18');
+          }
+          const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, wldDecimals));
+          setWldBalance(wldBalanceFormatted);
+          console.log('✅ WLD Balance fetched from Worldchain:', wldBalanceFormatted, 'with decimals:', wldDecimals);
         }
-        const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, wldDecimals));
-        setWldBalance(wldBalanceFormatted);
-        console.log('✅ WLD Balance fetched from Worldchain:', wldBalanceFormatted, 'with decimals:', wldDecimals);
       } catch (error: any) {
         console.error('❌ Error fetching WLD balance from Worldchain:', error);
         console.error('❌ Error details:', { 
@@ -1490,8 +1503,14 @@ const LuminexApp = () => {
     }
   };
 
-  if (!isWorldApp()) return <WorldAppRequired />;
-  if (!verified) return <WorldIDVerification onVerify={() => setVerified(true)} />;
+  // Allow web browser access for testing (World App check removed temporarily)
+  // if (!isWorldApp()) return <WorldAppRequired />;
+  if (!verified && isWorldApp()) return <WorldIDVerification onVerify={() => setVerified(true)} />;
+  
+  // For web browsers, skip verification and allow mock balance
+  if (!verified && !isWorldApp()) {
+    console.log('🌐 Running in web browser without verification, using mock balance');
+  }
 
   const currentPool = POOLS[selectedPool];
   const baseApy = currentPool.apy;
