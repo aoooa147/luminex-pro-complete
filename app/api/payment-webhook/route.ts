@@ -1,0 +1,3 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest, ){ if(req.method!=='POST')return res.status(405).json({ok:false,error:'Method not allowed'}); const ip=(req.headers['x-forwarded-for'] as string||req.socket.remoteAddress||'anon').split(',')[0].trim(); if(!takeToken(ip,20,2)) return res.status(429).json({ok:false,error:'Too many requests'}); console.log('[payment-webhook] body=', req.body); return res.status(200).json({ok:true}); }

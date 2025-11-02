@@ -1,0 +1,1 @@
+export function requestId(){const g=(globalThis.crypto||require('crypto').webcrypto);return g.randomUUID?g.randomUUID():Math.random().toString(36).slice(2);}

@@ -1,0 +1,51 @@
+import './globals.css';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import dynamic from 'next/dynamic';
+
+const BrandStyle = dynamic(() => import('@/components/BrandStyle'), { ssr: false });
+
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'Luminex Staking - Premium DeFi Platform',
+  description: 'Premium DeFi staking platform for World App with up to 500% APY',
+  manifest: '/manifest.json',
+  themeColor: '#9333ea',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/icon-512.png',
+  },
+  openGraph: {
+    title: 'Luminex Staking',
+    description: 'Premium DeFi staking platform',
+    type: 'website',
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <head>
+        <meta name="miniapp-verify-action" content="luminexstaking" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body className={inter.className} suppressHydrationWarning>
+        <ErrorBoundary>
+          <MiniKitProvider>
+            <BrandStyle />
+            {children}
+          </MiniKitProvider>
+        </ErrorBoundary>
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,4 @@
+type Dict = Record<string, string>;
+const th: Dict = { open_panel:"เปิด MiniKit", close_panel:"ปิด MiniKit", status_minikit:"MiniKit ติดตั้งแล้วหรือยัง?", world_app:"แอพ World", scan_qr:"หน้า Testing → สแกน QR", logs:"บันทึก", result:"ผลลัพธ์", verify:"ยืนยันตัวตน", wallet_auth:"Wallet Auth", gen_ref:"สร้าง Reference", pay_confirm:"ชำระเงิน → ยืนยัน", polling:"กำลังตรวจสถานะธุรกรรม...", confirmed:"ธุรกรรมยืนยันแล้ว", not_confirmed:"ธุรกรรมยังไม่ยืนยัน" };
+const en: Dict = { open_panel:"Open MiniKit", close_panel:"Close MiniKit", status_minikit:"MiniKit installed?", world_app:"World App", scan_qr:"Testing page → Scan QR", logs:"Logs", result:"Result", verify:"Verify", wallet_auth:"Wallet Auth", gen_ref:"Gen Reference", pay_confirm:"Pay → Confirm", polling:"Checking transaction status...", confirmed:"Transaction confirmed", not_confirmed:"Not confirmed yet" };
+export function t(key: string, lang: 'th'|'en'='th'){ const d=(lang==='th')?th:en; return d[key]||key; }
