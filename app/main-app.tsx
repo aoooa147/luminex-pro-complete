@@ -425,31 +425,31 @@ const useMiniKit = () => {
   const connectWallet = async () => {
     try {
       // Check if running in World App with MiniKit
-      if (typeof window !== 'undefined' && (window as any).MiniKit?.walletAuth) {
+      if (typeof window !== 'undefined' && (window as any).MiniKit) {
         console.log('🔗 Connecting to World App MiniKit wallet...');
-        const walletData = await (window as any).MiniKit.walletAuth();
-        if (walletData?.address) {
-    setWallet({
-            address: walletData.address,
-            name: walletData.name,
-            username: walletData.username 
-    });
-    setIsConnected(true);
-          setUserInfo({
-            name: walletData.name,
-            username: walletData.username
-          });
+        const MiniKit = (window as any).MiniKit;
+        
+        // Use MiniKit.commandsAsync.walletAuth (new API)
+        if (MiniKit.commandsAsync?.walletAuth) {
+          const nonce = crypto.randomUUID().replace(/-/g, '');
+          const result = await MiniKit.commandsAsync.walletAuth({ nonce });
+          const walletData = result.finalPayload;
           
-          // Create provider for reading blockchain data
-          const rpcProvider = new ethers.JsonRpcProvider(RPC_URL);
-          setProvider(rpcProvider);
-          
-          console.log('✅ Connected to wallet:', walletData.address);
-          if (walletData.name || walletData.username) {
-            console.log('✅ User info:', { name: walletData.name, username: walletData.username });
+          if (walletData?.address) {
+            setWallet({ address: walletData.address });
+            setIsConnected(true);
+            setUserInfo(null); // MiniKit API doesn't provide name/username
+            
+            // Create provider for reading blockchain data
+            const rpcProvider = new ethers.JsonRpcProvider(RPC_URL);
+            setProvider(rpcProvider);
+            
+            console.log('✅ Connected to wallet:', walletData.address);
+          } else {
+            console.warn('⚠️ MiniKit walletAuth returned no address');
           }
         } else {
-          console.warn('⚠️ MiniKit walletAuth returned no address');
+          console.warn('⚠️ MiniKit.commandsAsync.walletAuth not available');
         }
       } else if (typeof window !== 'undefined' && (window as any).ethereum) {
         // Fallback to MetaMask or other Web3 wallets
@@ -1131,14 +1131,20 @@ const LuminexApp = () => {
       }
     }
     
-    connectWallet();
-    
     // Detect user's preferred language from browser
     const browserLang = navigator.language.slice(0, 2);
     if (translations[browserLang]) {
       setLanguage(browserLang);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-connect wallet after verification
+  useEffect(() => {
+    if (verified && !isConnected) {
+      console.log('✅ User verified, auto-connecting wallet...');
+      connectWallet();
+    }
+  }, [verified, isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set referral code from wallet address
   useEffect(() => {
