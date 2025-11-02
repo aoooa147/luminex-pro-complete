@@ -1021,21 +1021,34 @@ const LuminexApp = () => {
       // Fetch WLD balance from Worldchain (WLD is on Worldchain, not Optimism)
       try {
         console.log('🔄 Fetching WLD balance from Worldchain...');
+        console.log('🔍 Config:', { 
+          RPC_URL: WALLET_RPC_URL, 
+          WLD_ADDRESS: WLD_TOKEN_ADDRESS,
+          USER_ADDRESS: addressToUse 
+        });
         // Create separate provider for Worldchain to fetch WLD balance
         const worldchainProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
         const wldContract = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, worldchainProvider);
+        console.log('🔍 Calling balanceOf on WLD contract...');
         const wldBalanceBN = await wldContract.balanceOf(addressToUse);
+        console.log('🔍 Raw WLD balance (wei):', wldBalanceBN.toString());
         let wldDecimals = 18; // Default to 18 decimals for WLD
         try {
           wldDecimals = await wldContract.decimals();
+          console.log('🔍 WLD decimals:', wldDecimals);
         } catch (e) {
           console.warn('⚠️ Could not fetch WLD decimals, using default 18');
         }
         const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, wldDecimals));
         setWldBalance(wldBalanceFormatted);
         console.log('✅ WLD Balance fetched from Worldchain:', wldBalanceFormatted, 'with decimals:', wldDecimals);
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Error fetching WLD balance from Worldchain:', error);
+        console.error('❌ Error details:', { 
+          message: error?.message, 
+          code: error?.code,
+          data: error?.data 
+        });
         setWldBalance(0);
       }
       
