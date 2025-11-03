@@ -1536,7 +1536,7 @@ const LuminexApp = () => {
                   })()}
                   </span>
                 </div>
-              <div className="relative language-menu z-50">
+              <div className="relative language-menu z-[9999]">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -1545,7 +1545,7 @@ const LuminexApp = () => {
                     console.log('Language button clicked!');
                     setShowLanguageMenu(!showLanguageMenu);
                   }}
-                  className="flex items-center space-x-1 bg-black/40 rounded-lg px-2 py-1 border border-white/10 hover:border-purple-400/50 transition-colors cursor-pointer z-50 relative"
+                  className="flex items-center space-x-1 bg-black/40 rounded-lg px-2 py-1 border border-white/10 hover:border-purple-400/50 transition-colors cursor-pointer z-[9999] relative"
                   style={{ userSelect: 'none', pointerEvents: 'auto' }}
                 >
                   <span className="text-white text-xs font-semibold whitespace-nowrap">
@@ -1563,7 +1563,7 @@ const LuminexApp = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute right-0 mt-2 w-40 bg-black/95 backdrop-blur-xl rounded-xl border border-purple-500/30 shadow-2xl py-2 z-[60]"
+                      className="absolute right-0 mt-2 w-40 bg-black/95 backdrop-blur-xl rounded-xl border border-purple-500/30 shadow-2xl py-2 z-[9999]"
                     >
                       {LANGUAGES.map((lang) => (
                   <button
