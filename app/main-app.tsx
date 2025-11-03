@@ -9,12 +9,13 @@ import dynamic from 'next/dynamic';
 import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION, WALLET_RPC_URL, WALLET_CHAIN_ID, CONTRACT_RPC_URL, CONTRACT_CHAIN_ID, LUX_TOKEN_ADDRESS as LUX_TOKEN_ADDRESS_FROM_CONSTANTS, STAKING_CONTRACT_ADDRESS as STAKING_CONTRACT_ADDRESS_FROM_CONSTANTS, WLD_TOKEN_ADDRESS as WLD_TOKEN_ADDRESS_FROM_CONSTANTS } from '@/lib/utils/constants';
 import { useMiniKit as useMiniKitVerify } from '@/hooks/useMiniKit';
 const MiniKitPanel = dynamic(() => import('@/components/MiniKitPanel'), { ssr: false });
+const GameLauncherCard = dynamic(() => import('@/components/game/GameLauncherCard'), { ssr: false });
 import { 
   Wallet, Shield, Coins, TrendingUp, Settings, Gift, Users, Zap, Lock, Unlock, 
   AlertTriangle, ExternalLink, Copy, Check, Loader2, Clock, Star, Droplet,
   DollarSign, Eye, BarChart3, Flame, Trophy, Award, TrendingDown, Globe,
   PiggyBank, CreditCard, Gem, Sparkles, Crown, Rocket, DollarSign as DollarIcon,
-  Calendar, Timer, TrendingUp as TrendingIcon, Share2, UserPlus, QrCode
+  Calendar, Timer, TrendingUp as TrendingIcon, Share2, UserPlus, QrCode, Gamepad2
 } from "lucide-react";
 
 const LOGO_URL = "https://i.postimg.cc/wvJqhSYW/Gemini-Generated-Image-ggu8gdggu8gdggu8-1.png";
@@ -888,7 +889,7 @@ const LuminexApp = () => {
   const [verifiedAddress, setVerifiedAddress] = useState<string | null>(null);
   const { userAddress } = useWorldID();
   const { wallet, isConnected, connectWallet, requestPayment, provider, userInfo, setUserInfo, getSigner } = useMiniKit();
-  const [activeTab, setActiveTab] = useState<'staking' | 'membership' | 'referral'>('staking');
+  const [activeTab, setActiveTab] = useState<'staking' | 'membership' | 'referral' | 'game'>('staking');
   const [selectedPool, setSelectedPool] = useState(0);
   const [stakeAmount, setStakeAmount] = useState('');
   const [showStakeModal, setShowStakeModal] = useState(false);
@@ -2121,6 +2122,37 @@ const LuminexApp = () => {
                 </div>
               </motion.div>
           )}
+
+          {activeTab === 'game' && (
+            <motion.div
+              key="game"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              {/* Game Tab */}
+              <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-8 text-center overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/20 via-transparent to-transparent animate-pulse"></div>
+                <div className="relative z-10">
+                  <motion.div
+                    animate={{ rotate: [0, 15, -15, 0] }}
+                    transition={{ duration: 5, repeat: Infinity }}
+                    className="text-7xl mb-4"
+                  >
+                    🎮
+                  </motion.div>
+                  <h1 className="text-4xl font-extrabold text-white mb-3">
+                    Play & Earn!
+                  </h1>
+                  <p className="text-white/90 mb-2 text-lg">Play games and earn rewards</p>
+                </div>
+              </div>
+
+              {/* Game Launcher */}
+              <GameLauncherCard />
+            </motion.div>
+          )}
         </AnimatePresence>
             </div>
 
@@ -2238,11 +2270,26 @@ const LuminexApp = () => {
                 className="absolute -inset-2 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-2xl blur"
               />
             )}
-            <UserPlus className="w-6 h-6 relative z-10" />
-            <span className="text-xs font-bold relative z-10">Referral</span>
-          </motion.button>
+                          <UserPlus className="w-6 h-6 relative z-10" />
+              <span className="text-xs font-bold relative z-10">Referral</span>
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveTab('game')}
+              className={`flex flex-col items-center space-y-1 relative ${activeTab === 'game' ? 'text-white' : 'text-gray-500'}`}
+            >
+              {activeTab === 'game' && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute -inset-2 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-2xl blur"
+                />
+              )}
+              <Gamepad2 className="w-6 h-6 relative z-10" />
+              <span className="text-xs font-bold relative z-10">Game</span>
+            </motion.button>
+                </div>
               </div>
-            </div>
 
       {/* Toast Notification */}
       <AnimatePresence>
