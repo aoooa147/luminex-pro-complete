@@ -1234,6 +1234,7 @@ const LuminexApp = () => {
       const userName = sessionStorage.getItem('userName');
       if (userName) {
         console.log('✅ Loaded user name from session:', userName);
+        setUserInfo({ name: userName, username: userName });
       }
       
       // Load saved language preference from localStorage
@@ -1267,6 +1268,35 @@ const LuminexApp = () => {
       console.log('✅ Generated referral code from address:', actualAddress);
     }
   }, [actualAddress, referralCode]);
+
+  // Fetch user profile if we have an address but no user info
+  useEffect(() => {
+    if (actualAddress && !userInfo?.name && !userInfo?.username) {
+      console.log('🔄 Fetching user profile for address:', actualAddress);
+      const fetchProfile = async () => {
+        try {
+          const profileRes = await fetch('/api/user-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ address: actualAddress })
+          });
+          const profileData = await profileRes.json();
+          console.log('✅ Profile API response:', profileData);
+          
+          if (profileData.success && profileData.profile) {
+            setUserInfo({
+              name: profileData.profile.username,
+              username: profileData.profile.username
+            });
+            console.log('✅ User profile loaded:', profileData.profile.username);
+          }
+        } catch (profileError) {
+          console.error('❌ Error fetching profile:', profileError);
+        }
+      };
+      fetchProfile();
+    }
+  }, [actualAddress, userInfo]);
 
   // Fetch balance when address is available
   useEffect(() => {
