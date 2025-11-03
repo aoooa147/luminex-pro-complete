@@ -2,7 +2,6 @@
 
 /// <reference path="../luminex-unified-app.ts" />
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ethers } from "ethers";
 import dynamic from 'next/dynamic';
@@ -852,8 +851,6 @@ const LuminexApp = () => {
   const [language, setLanguage] = useState('en');
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
-  const [languageButtonRect, setLanguageButtonRect] = useState<DOMRect | null>(null);
-  const languageButtonRef = React.useRef<HTMLDivElement>(null);
 
   // Memoize translation function to avoid recreating on every render
   const t = useMemo(() => {
@@ -1229,16 +1226,6 @@ const LuminexApp = () => {
     return () => clearInterval(interval);
   }, [actualAddress, fetchBalance, debouncedFetchBalance]);
 
-  // Calculate language button position when menu opens
-  useEffect(() => {
-    if (showLanguageMenu && languageButtonRef.current) {
-      const rect = languageButtonRef.current.getBoundingClientRect();
-      setLanguageButtonRect(rect);
-    } else {
-      setLanguageButtonRect(null);
-    }
-  }, [showLanguageMenu]);
-
   // Close language menu when clicking outside
   useEffect(() => {
     if (!showLanguageMenu) return;
@@ -1508,7 +1495,7 @@ const LuminexApp = () => {
       </div>
 
       {/* Header */}
-      <div className="relative bg-black/60 backdrop-blur-2xl border-b border-purple-500/20">
+      <div className="relative bg-black/60 backdrop-blur-2xl border-b border-purple-500/20 z-10">
         <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-2">
@@ -1549,7 +1536,7 @@ const LuminexApp = () => {
                   })()}
                   </span>
                 </div>
-              <div ref={languageButtonRef} className="relative language-menu z-[9999]">
+              <div className="relative language-menu z-[9999]">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -1571,16 +1558,12 @@ const LuminexApp = () => {
                 
                 {/* Language Dropdown */}
                 <AnimatePresence>
-                  {showLanguageMenu && typeof window !== 'undefined' && languageButtonRect && createPortal(
+                  {showLanguageMenu && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="fixed w-40 bg-black/95 backdrop-blur-xl rounded-xl border border-purple-500/30 shadow-2xl py-2 z-[9999]"
-                      style={{ 
-                        top: `${languageButtonRect.bottom + 4}px`,
-                        right: `${window.innerWidth - languageButtonRect.right}px`
-                      }}
+                      className="absolute right-0 mt-2 w-40 bg-black/95 backdrop-blur-xl rounded-xl border border-purple-500/30 shadow-2xl py-2 z-[9999]"
                     >
                       {LANGUAGES.map((lang) => (
                 <button
@@ -1601,9 +1584,8 @@ const LuminexApp = () => {
                         <span className="text-sm font-medium">{lang.name}</span>
                 </button>
                     ))}
-                    </motion.div>,
-                    document.body
-                  )}
+                    </motion.div>
+                )}
                 </AnimatePresence>
               </div>
             </div>
