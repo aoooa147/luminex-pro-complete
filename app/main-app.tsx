@@ -640,6 +640,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
           const result = await MiniKit.commandsAsync.walletAuth({ nonce });
           const walletData = result.finalPayload;
           console.log('✅ Wallet auth payload received:', walletData);
+          console.log('✅ Full walletData keys:', Object.keys(walletData));
           
           // Send to backend for SIWE verification
           const res = await fetch('/api/complete-siwe', {
@@ -650,10 +651,12 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
           
           const data = await res.json();
           console.log('✅ SIWE verification response:', data);
+          console.log('✅ Full SIWE data keys:', Object.keys(data));
           
         if (data.status === 'ok' && data.isValid) {
           console.log('✅ Wallet authenticated successfully');
           console.log('✅ SIWE message data:', data.siweMessageData);
+          console.log('✅ Full SIWE message data keys:', data.siweMessageData ? Object.keys(data.siweMessageData) : 'none');
           
           // Store verification status in sessionStorage
           if (typeof window !== 'undefined') {
@@ -664,6 +667,12 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
             // Store chain ID if available
             if (data.siweMessageData?.chain_id) {
               sessionStorage.setItem('chainId', String(data.siweMessageData.chain_id));
+            }
+            
+            // Try to extract and store user info if available
+            if (walletData.name || walletData.username) {
+              sessionStorage.setItem('userName', walletData.name || walletData.username || '');
+              console.log('✅ Stored user name:', walletData.name || walletData.username);
             }
           }
           
