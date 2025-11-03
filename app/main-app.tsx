@@ -893,7 +893,7 @@ const LuminexApp = () => {
   
   const formattedWldBalance = useMemo(() => {
     const val = typeof wldBalance === 'number' && !isNaN(wldBalance) ? wldBalance : 0;
-    return formatNumber(val, 6); // Use 6 decimal places for WLD to show full precision
+    return formatNumber(val, 4); // Use 4 decimal places for WLD
   }, [wldBalance]);
   
   const formattedStakedAmount = useMemo(() => {
