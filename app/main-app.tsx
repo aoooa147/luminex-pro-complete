@@ -467,16 +467,43 @@ const useMiniKit = () => {
             setWallet({ address: walletData.address });
             setIsConnected(true);
             
+            // Try to get username from MiniKit.user.username first
+            let foundUsername: string | null = null;
+            try {
+              if (MiniKit.user?.username) {
+                foundUsername = MiniKit.user.username;
+                console.log('✅ Found username from MiniKit.user.username:', foundUsername);
+              }
+            } catch (e) {
+              console.log('⚠️ MiniKit.user.username not available');
+            }
+            
+            // If not found, try getUserByAddress
+            if (!foundUsername) {
+              try {
+                const worldIdUser = await MiniKit.getUserByAddress(walletData.address);
+                if (worldIdUser?.username) {
+                  foundUsername = worldIdUser.username;
+                  console.log('✅ Found username from MiniKit.getUserByAddress:', foundUsername);
+                }
+              } catch (e) {
+                console.log('⚠️ MiniKit.getUserByAddress not available');
+              }
+            }
+            
             // Try to extract user info from walletData if available
             if (walletData?.name || walletData?.username) {
               setUserInfo({ 
-                name: walletData.name, 
-                username: walletData.username 
+                name: walletData.name || foundUsername, 
+                username: walletData.username || foundUsername
               });
-              console.log('✅ Found user info:', { name: walletData.name, username: walletData.username });
+              console.log('✅ Found user info from walletData:', { name: walletData.name, username: walletData.username });
+            } else if (foundUsername) {
+              setUserInfo({ name: foundUsername, username: foundUsername });
+              console.log('✅ Using username from MiniKit:', foundUsername);
             } else {
               // If no user info from MiniKit, fetch from our profile API
-              console.log('⚠️ No user info found in walletData, fetching from profile API...');
+              console.log('⚠️ No user info found in MiniKit, fetching from profile API...');
               try {
                 const profileRes = await fetch('/api/user-profile', {
                   method: 'POST',
