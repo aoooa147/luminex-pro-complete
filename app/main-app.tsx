@@ -1508,7 +1508,7 @@ const LuminexApp = () => {
       </div>
 
       {/* Header */}
-      <div className="relative bg-black/60 backdrop-blur-2xl border-b border-purple-500/20 z-10">
+      <div className="relative bg-black/60 backdrop-blur-2xl border-b border-purple-500/20 z-10 overflow-visible">
         <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-2">
@@ -1532,8 +1532,8 @@ const LuminexApp = () => {
             </div>
             
           {/* User ID & Balance */}
-          <div className="mt-3 space-y-2">
-            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl px-3 py-2 flex items-center justify-between backdrop-blur-lg border border-purple-400/30 relative isolate">
+          <div className="mt-3 space-y-2 overflow-visible">
+            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl px-3 py-2 flex items-center justify-between backdrop-blur-lg border border-purple-400/30 relative isolate overflow-visible">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">U</span>
