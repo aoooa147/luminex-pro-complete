@@ -475,9 +475,30 @@ const useMiniKit = () => {
               });
               console.log('✅ Found user info:', { name: walletData.name, username: walletData.username });
             } else {
-              setUserInfo(null); // MiniKit API doesn't provide name/username
-              console.log('⚠️ No user info found in walletData');
-              console.log('⚠️ walletData contents:', JSON.stringify(walletData, null, 2));
+              // If no user info from MiniKit, fetch from our profile API
+              console.log('⚠️ No user info found in walletData, fetching from profile API...');
+              try {
+                const profileRes = await fetch('/api/user-profile', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ address: walletData.address })
+                });
+                const profileData = await profileRes.json();
+                console.log('✅ Profile API response:', profileData);
+                
+                if (profileData.success && profileData.profile) {
+                  setUserInfo({
+                    name: profileData.profile.username,
+                    username: profileData.profile.username
+                  });
+                  console.log('✅ User profile loaded:', profileData.profile.username);
+                } else {
+                  setUserInfo(null);
+                }
+              } catch (profileError) {
+                console.error('❌ Error fetching profile:', profileError);
+                setUserInfo(null);
+              }
             }
             
             // Always use Worldchain for World App MiniKit
