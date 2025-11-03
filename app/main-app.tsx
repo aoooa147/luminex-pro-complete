@@ -469,25 +469,37 @@ const useMiniKit = () => {
             
             // Try to get username from MiniKit.user.username first
             let foundUsername: string | null = null;
+            console.log('🔍 Checking MiniKit.user:', MiniKit.user);
+            console.log('🔍 Checking MiniKit methods:', Object.keys(MiniKit));
             try {
               if (MiniKit.user?.username) {
                 foundUsername = MiniKit.user.username;
                 console.log('✅ Found username from MiniKit.user.username:', foundUsername);
+              } else {
+                console.log('⚠️ MiniKit.user.username is empty or undefined');
               }
-            } catch (e) {
-              console.log('⚠️ MiniKit.user.username not available');
+            } catch (e: any) {
+              console.log('⚠️ MiniKit.user.username not available:', e?.message);
             }
             
             // If not found, try getUserByAddress
             if (!foundUsername) {
+              console.log('🔍 Trying MiniKit.getUserByAddress for:', walletData.address);
               try {
-                const worldIdUser = await MiniKit.getUserByAddress(walletData.address);
-                if (worldIdUser?.username) {
-                  foundUsername = worldIdUser.username;
-                  console.log('✅ Found username from MiniKit.getUserByAddress:', foundUsername);
+                if (MiniKit.getUserByAddress) {
+                  const worldIdUser = await MiniKit.getUserByAddress(walletData.address);
+                  console.log('🔍 getUserByAddress result:', worldIdUser);
+                  if (worldIdUser?.username) {
+                    foundUsername = worldIdUser.username;
+                    console.log('✅ Found username from MiniKit.getUserByAddress:', foundUsername);
+                  } else {
+                    console.log('⚠️ getUserByAddress returned no username');
+                  }
+                } else {
+                  console.log('⚠️ MiniKit.getUserByAddress method not available');
                 }
-              } catch (e) {
-                console.log('⚠️ MiniKit.getUserByAddress not available');
+              } catch (e: any) {
+                console.log('⚠️ Error calling MiniKit.getUserByAddress:', e?.message);
               }
             }
             
