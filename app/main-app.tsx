@@ -1520,7 +1520,7 @@ const LuminexApp = () => {
             
           {/* User ID & Balance */}
           <div className="mt-3 space-y-2">
-            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl px-3 py-2 flex items-center justify-between backdrop-blur-lg border border-purple-400/30">
+            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl px-3 py-2 flex items-center justify-between backdrop-blur-lg border border-purple-400/30 relative isolate">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">U</span>
