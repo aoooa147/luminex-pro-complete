@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
     // Fetch decimals
     let decimals = 18;
     try {
-      decimals = await wldContract.decimals();
+      const decimalsBN = await wldContract.decimals();
+      decimals = Number(decimalsBN); // Convert BigInt to number
     } catch (e) {
       console.warn('[wld-balance] Could not fetch decimals, using default 18');
     }
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
       success: true,
       balance,
       rawBalance: wldBalanceBN.toString(),
-      decimals,
+      decimals: Number(decimals), // Ensure it's a number
       tokenAddress: WLD_TOKEN_ADDRESS
     });
     
