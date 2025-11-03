@@ -1513,11 +1513,6 @@ const LuminexApp = () => {
         <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-2">
-              <button className="text-white hover:text-purple-300 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
               <img src={LOGO_URL} alt="LUX" className="w-8 h-8 rounded-full ring-2 ring-purple-400/50" />
               <div>
                 <h1 className="text-lg font-bold text-white">
@@ -1525,11 +1520,6 @@ const LuminexApp = () => {
                 </h1>
               </div>
             </div>
-            <button className="text-white/70 hover:text-white transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
             </div>
             
           {/* User ID & Balance */}
