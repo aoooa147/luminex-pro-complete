@@ -616,22 +616,23 @@ const useMiniKit = () => {
             return { success: false, error: 'Invalid amount format' };
           }
 
-          console.log(`💳 Calling MiniKit pay:`, {
-            reference: referenceId,
-            to: TREASURY_ADDRESS,
-            tokens: [tokenType],
-            amount: amountStr
-          });
-
-          // Call MiniKit pay API - tokens MUST be array based on error "e.tokens.some is not a function"
-          let payResult;
-          try {
-            payResult = await MiniKit.commandsAsync.pay({
+                      // MiniKit v1.9.8+ requires tokens as TokensPayload array with symbol and token_amount
+            const payPayload = {
               reference: referenceId,
               to: treasuryAddr, // Use validated address
-              tokens: [tokenType], // Array format required: ['WLD'] or ['USDC']
-              amount: amountStr
-            });
+              tokens: [{
+                symbol: tokenType, // 'WLD' or 'USDC'
+                token_amount: amountStr // Amount as string
+              }],
+              description: params.description || `Payment of ${amountStr} ${tokenType}`, // Required in v1.9.8+
+            };
+
+            console.log(`💳 Calling MiniKit pay:`, JSON.stringify(payPayload, null, 2));
+
+            // Call MiniKit pay API - v1.9.8+ requires TokensPayload format
+            let payResult;
+            try {
+              payResult = await MiniKit.commandsAsync.pay(payPayload);
           } catch (payApiError: any) {
             console.error('❌ MiniKit.commandsAsync.pay() threw error:', payApiError);
             return {

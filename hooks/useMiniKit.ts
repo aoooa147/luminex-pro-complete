@@ -69,11 +69,15 @@ export const useMiniKit = () => {
         throw new Error(`Invalid amount: must be a positive number, got: ${safeAmount}`);
       }
 
+      // MiniKit v1.9.8+ requires tokens as TokensPayload array with symbol and token_amount
       const payload = {
         reference: referenceId,
         to: toAddress,
-        tokens: [safeToken], // ✅ Array format required for v1.x: ['WLD'] or ['USDC']
-        amount: safeAmount, // ✅ Ensure it's a string
+        tokens: [{
+          symbol: safeToken, // 'WLD' or 'USDC'
+          token_amount: safeAmount // Amount as string
+        }],
+        description: `Payment of ${safeAmount} ${safeToken}`, // Required in v1.9.8+
       };
 
       // Log the exact payload being sent to MiniKit SDK
