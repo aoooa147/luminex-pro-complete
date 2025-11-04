@@ -588,71 +588,89 @@ const useMiniKit = () => {
             amount: amount.toString()
           });
           
-          console.log('✅ MiniKit pay result:', payResult);
-          
+                    console.log('✅ MiniKit pay result:', payResult);
+
           // Get transaction hash from confirm-payment API
-          if (payResult?.finalPayload) {
-            const confirmResponse = await fetch('/api/confirm-payment', {
+          // payResult.finalPayload should contain transaction_id and reference
+          if (!payResult?.finalPayload) {
+            console.error('❌ MiniKit pay did not return finalPayload:', payResult);
+            return { success: false, error: 'Payment failed: No transaction data received' };
+          }
+
+          const finalPayload = payResult.finalPayload;
+          console.log('📦 Final payload:', finalPayload);
+
+          // First confirm call - send the finalPayload directly
+          const confirmResponse = await fetch('/api/confirm-payment', {       
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payload: finalPayload })
+          });
+
+          const confirmData = await confirmResponse.json();
+          console.log('📦 Confirm response:', confirmData);
+
+          // Extract transaction_id from response or finalPayload
+          const transactionId = confirmData?.transaction?.transaction_id || finalPayload?.transaction_id;
+          
+          if (!transactionId) {
+            console.error('❌ No transaction_id found:', { confirmData, finalPayload });
+            return { success: false, error: 'Payment failed: No transaction ID received' };
+          }
+
+          console.log('🔄 Starting polling for transaction:', transactionId);
+
+          // Poll for transaction confirmation
+          let attempts = 0;
+          const maxAttempts = 20;
+
+          while (attempts < maxAttempts) {
+            const statusResponse = await fetch('/api/confirm-payment', {    
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ payload: payResult.finalPayload })
-            });
-            
-            const confirmData = await confirmResponse.json();
-            
-            if (confirmData.success && confirmData.transaction) {
-              // Wait for transaction to be confirmed
-              let attempts = 0;
-              const maxAttempts = 20;
-              
-              while (attempts < maxAttempts) {
-                const statusResponse = await fetch('/api/confirm-payment', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    payload: { 
-                      transaction_id: confirmData.transaction.transaction_id || payResult.finalPayload.transaction_id,
-                      reference: referenceId 
-                    } 
-                  })
-                });
-                
-                const statusData = await statusResponse.json();
-                
-                if (statusData.success && statusData.transaction) {
-                  const status = statusData.transaction.transaction_status || statusData.transaction.status;
-                  
-                  if (status === 'confirmed' || status === 'mined') {
-                    const txHash = statusData.transaction.transaction_hash || confirmData.transaction.transaction_hash;
-                    console.log('✅ Payment confirmed:', txHash);
-                    return {
-                      success: true,
-                      transactionHash: txHash,
-                      transaction: statusData.transaction
-                    };
-                  }
-                  
-                  if (status === 'failed') {
-                    return { success: false, error: 'Transaction failed' };
-                  }
+              body: JSON.stringify({
+                payload: {
+                  transaction_id: transactionId,
+                  reference: referenceId
                 }
-                
-                // Wait before next attempt
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                attempts++;
+              })
+            });
+
+            const statusData = await statusResponse.json();
+            console.log(`🔄 Poll attempt ${attempts + 1}/${maxAttempts}:`, statusData);
+
+            if (statusData.success && statusData.transaction) {
+              const status = statusData.transaction.transaction_status || statusData.transaction.status;
+              console.log('📊 Transaction status:', status);
+
+              if (status === 'confirmed' || status === 'mined') {
+                const txHash = statusData.transaction.transaction_hash || confirmData.transaction?.transaction_hash;
+                console.log('✅ Payment confirmed:', txHash);
+                return {
+                  success: true,
+                  transactionHash: txHash,
+                  transaction: statusData.transaction
+                };
               }
-              
-              // Return success with pending status if not confirmed yet
-              const txHash = confirmData.transaction.transaction_hash || payResult.finalPayload.transaction_id;
-              return {
-                success: true,
-                transactionHash: txHash,
-                transaction: confirmData.transaction
-              };
+
+              if (status === 'failed') {
+                return { success: false, error: 'Transaction failed on blockchain' };
+              }
             }
+
+            // Wait before next attempt
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            attempts++;
           }
-          
-          return { success: false, error: 'Payment initiated but confirmation failed' };
+
+          // If polling timed out, return the transaction_id anyway (transaction might be pending)
+          console.log('⏱️ Polling timeout, returning pending transaction');
+          const txHash = confirmData.transaction?.transaction_hash || transactionId;
+          return {
+            success: true,
+            transactionHash: txHash,
+            transaction: confirmData.transaction || { transaction_id: transactionId, status: 'pending' }
+          };
         } catch (payError: any) {
           console.error('❌ MiniKit pay error:', payError);
           return { success: false, error: payError.message || 'Payment failed' };
