@@ -573,8 +573,18 @@ const useMiniKit = () => {
             return { success: false, error: 'Failed to generate payment reference' };
           }
           
-                    const referenceId = referenceData.id;
+                              const referenceId = referenceData.id;
           console.log('✅ Generated payment reference:', referenceId);
+
+          // Validate referenceId
+          if (!referenceId || typeof referenceId !== 'string' || referenceId.length < 8) {
+            return { success: false, error: 'Invalid payment reference ID' };
+          }
+
+          // Validate TREASURY_ADDRESS
+          if (!TREASURY_ADDRESS || !TREASURY_ADDRESS.startsWith('0x') || TREASURY_ADDRESS.length !== 42) {
+            return { success: false, error: 'Invalid treasury address configuration' };
+          }
 
           // Call MiniKit pay API directly (cannot use hooks inside functions)
           const MiniKit = (window as any).MiniKit;
@@ -582,15 +592,42 @@ const useMiniKit = () => {
             return { success: false, error: 'MiniKit pay API not available' };
           }
 
-                    const tokenType = (params.currency || 'WLD').toUpperCase();
+          const tokenType = (params.currency || 'WLD').toUpperCase();
 
-          // Call MiniKit pay API - tokens MUST be array based on error "e.tokens.some is not a function"                                                                         
-          const payResult = await MiniKit.commandsAsync.pay({
+          // Validate tokenType
+          if (tokenType !== 'WLD' && tokenType !== 'USDC') {
+            return { success: false, error: `Unsupported token: ${tokenType}. Only WLD and USDC are supported.` };
+          }
+
+          // Validate amount string
+          const amountStr = amount.toString();
+          if (!amountStr || isNaN(parseFloat(amountStr)) || parseFloat(amountStr) <= 0) {
+            return { success: false, error: 'Invalid amount format' };
+          }
+
+          console.log(`💳 Calling MiniKit pay:`, {
             reference: referenceId,
             to: TREASURY_ADDRESS,
-            tokens: [tokenType], // Array format required: ['WLD'] or ['USDC']
-            amount: amount.toString()
+            tokens: [tokenType],
+            amount: amountStr
           });
+
+          // Call MiniKit pay API - tokens MUST be array based on error "e.tokens.some is not a function"
+          let payResult;
+          try {
+            payResult = await MiniKit.commandsAsync.pay({
+              reference: referenceId,
+              to: TREASURY_ADDRESS,
+              tokens: [tokenType], // Array format required: ['WLD'] or ['USDC']
+              amount: amountStr
+            });
+          } catch (payApiError: any) {
+            console.error('❌ MiniKit.commandsAsync.pay() threw error:', payApiError);
+            return {
+              success: false,
+              error: payApiError?.message || payApiError?.description || 'Payment failed: MiniKit API error'
+            };
+          }
 
           const finalPayload = payResult?.finalPayload;
           console.log('✅ MiniKit pay result (finalPayload):', finalPayload);
