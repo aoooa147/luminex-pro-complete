@@ -60,27 +60,37 @@ const GAMES = [
 
 export default function GameLauncherCard() {
   return (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">🎮 เลือกเกม</h2>
-        <p className="text-white/70 text-sm">เลือกเกมที่คุณชอบและเริ่มเล่นเลย! รางวัลพิเศษ: 0-5 LUX (ยากมากที่จะได้ 5!)</p>
+    <div className="space-y-3">
+      <div className="text-center mb-4">
+        <h2 className="text-xl font-bold text-white mb-1.5">🎮 เลือกเกม</h2>
+        <p className="text-white/70 text-xs">เลือกเกมที่คุณชอบและเริ่มเล่นเลย! รางวัลพิเศษ: 0-5 LUX (ยากมากที่จะได้ 5!)</p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {GAMES.map((game) => (
           <div
             key={game.id}
-            className={`rounded-2xl p-4 bg-gradient-to-br ${game.color} border ${game.border} flex flex-col shadow-lg`}
+            className={`rounded-2xl p-3 bg-gradient-to-br ${game.color} border ${game.border} flex flex-col shadow-lg relative overflow-hidden group`}
+            style={{
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            }}
           >
-            <div className="flex-1 mb-3">
-              <div className="text-lg font-semibold text-white mb-1">{game.name}</div>
-              <div className="text-sm opacity-70 text-white/80">{game.description}</div>
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="flex-1 mb-2">
+              <div className="text-base font-semibold text-white mb-1">{game.name}</div>
+              <div className="text-xs opacity-70 text-white/80">{game.description}</div>
             </div>
             <Link
               href={game.href}
-              className={`px-4 py-2 rounded-xl bg-gradient-to-r ${game.button} hover:opacity-90 font-medium text-white text-center shadow-lg transition-all`}
+              className={`px-3 py-2 rounded-xl bg-gradient-to-r ${game.button} font-medium text-white text-center shadow-lg transition-all text-sm relative overflow-hidden group-hover:shadow-xl`}
+              style={{
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              }}
             >
-              เล่นเลย
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <span className="relative z-10">เล่นเลย</span>
             </Link>
           </div>
         ))}

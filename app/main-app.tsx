@@ -754,32 +754,75 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12"
+          className="text-center mb-6"
         >
-          <div className="relative inline-block w-48 h-48">
-            <div className="absolute inset-0 blur-2xl bg-purple-500/30 rounded-full"></div>
+          <div className="relative inline-block w-32 h-32">
+            {/* Enhanced glow effects */}
+            <motion.div 
+              className="absolute inset-0 blur-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full opacity-50"
+              animate={{ 
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 0.7, 0.5]
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <div className="absolute inset-0 blur-2xl bg-purple-500/40 rounded-full"></div>
+            <div className="absolute inset-0 blur-xl bg-pink-500/30 rounded-full"></div>
+            
             <motion.div
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
               className="relative w-full h-full flex items-center justify-center"
             >
-              <div className="w-40 h-40 rounded-full flex items-center justify-center shadow-2xl border-4 border-purple-400/30 overflow-hidden bg-gradient-to-br from-purple-600 to-pink-500">
-                <img src={LOGO_URL} alt="Luminex Logo" className="w-full h-full object-cover" />
+              <div className="relative w-28 h-28 rounded-full flex items-center justify-center shadow-2xl overflow-hidden">
+                {/* Animated gradient border */}
+                <motion.div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: 'linear-gradient(45deg, #9333ea, #ec4899, #9333ea)',
+                    backgroundSize: '200% 200%',
+                    padding: '3px'
+                  }}
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                />
+                <div className="absolute inset-[3px] rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
+                  <img src={LOGO_URL} alt="Luminex Logo" className="w-full h-full object-cover rounded-full" />
+                </div>
+                {/* Inner glow */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent pointer-events-none"></div>
               </div>
             </motion.div>
-            {/* Circuit ring */}
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 192 192">
-              <circle cx="96" cy="96" r="90" fill="none" stroke="rgba(168, 85, 247, 0.4)" strokeWidth="1.5" strokeDasharray="4 4" />
+            {/* Enhanced circuit ring */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 192 192" style={{ transformOrigin: 'center' }}>
               <motion.circle
                 cx="96"
                 cy="96"
                 r="90"
                 fill="none"
-                stroke="rgba(244, 114, 182, 0.6)"
+                stroke="rgba(168, 85, 247, 0.5)"
+                strokeWidth="2"
+                strokeDasharray="4 4"
+                style={{ transformOrigin: '96px 96px' }}
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              />
+              <motion.circle
+                cx="96"
+                cy="96"
+                r="90"
+                fill="none"
+                stroke="rgba(244, 114, 182, 0.7)"
                 strokeWidth="2.5"
                 strokeDasharray="8 4"
                 strokeDashoffset="0"
-                animate={{ strokeDashoffset: [0, 12] }}
+                style={{ transformOrigin: '96px 96px' }}
+                animate={{ 
+                  strokeDashoffset: [0, 12],
+                  rotate: [0, -360]
+                }}
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
               />
             </svg>
@@ -788,77 +831,168 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="text-6xl font-black mt-8 bg-gradient-to-r from-white via-purple-300 to-pink-300 bg-clip-text text-transparent tracking-tight"
+            className="text-4xl font-black mt-4 relative"
           >
-            LUMINEX
+            <span className="bg-gradient-to-r from-white via-purple-200 via-pink-200 to-white bg-clip-text text-transparent tracking-tight relative inline-block">
+              <motion.span
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                className="bg-gradient-to-r from-white via-purple-300 to-pink-300 bg-[length:200%_100%] bg-clip-text text-transparent"
+              >
+                LUMINEX
+              </motion.span>
+            </span>
+            {/* Text glow effect */}
+            <span className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-xl opacity-50 -z-10"></span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-purple-300 font-bold text-lg tracking-widest uppercase mt-3"
+            className="text-transparent bg-gradient-to-r from-purple-300 via-pink-300 to-purple-300 bg-clip-text font-bold text-sm tracking-widest uppercase mt-2"
           >
             STAKING PLATFORM
           </motion.p>
         </motion.div>
 
-        {/* Verification Card */}
-        <motion.div
+                        {/* Verification Card */}
+                 <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 50 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.6 }}
-          className="bg-black/60 backdrop-blur-2xl rounded-3xl p-10 border border-purple-500/20 shadow-2xl relative overflow-hidden"
+          className="relative rounded-3xl p-6 border border-purple-500/30 shadow-2xl overflow-hidden backdrop-blur-xl"
+          style={{
+            background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(236, 72, 153, 0.15) 100%)'
+          }}
         >
-          {/* Glowing background effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-transparent"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-purple-500/5 to-transparent"></div>
+          {/* Enhanced glowing background effects */}
+          <motion.div 
+            className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-transparent"
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-purple-500/10 to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(147,51,234,0.1),transparent_70%)]"></div>
+          
+          {/* Animated border glow */}
+          <motion.div
+            className="absolute inset-0 rounded-3xl"
+            style={{
+              background: 'linear-gradient(45deg, #9333ea, #ec4899, #9333ea)',
+              backgroundSize: '200% 200%',
+              opacity: 0.5,
+              filter: 'blur(8px)',
+              zIndex: -1
+            }}
+            animate={{
+              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+            }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          />
+          
           <div className="relative z-10">
-            <div className="flex items-center justify-center mb-8">
-              <motion.div 
-                animate={{ rotate: [0, 12, -12, 0] }}
-                transition={{ duration: 4, repeat: Infinity }}
-                className="w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl border-2 border-white/20"
+            <div className="flex items-center justify-center mb-4">
+              <motion.div
+                animate={{ 
+                  rotate: [0, 12, -12, 0],
+                  scale: [1, 1.05, 1]
+                }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl border-2 border-white/30 overflow-hidden"
               >
-                <Shield className="w-10 h-10 text-white drop-shadow-lg" />
+                {/* Animated gradient background */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-purple-600"
+                  animate={{
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  style={{ backgroundSize: '200% 200%' }}
+                />
+                {/* Inner glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent"></div>
+                <Shield className="w-7 h-7 text-white drop-shadow-lg relative z-10" />
+                {/* Pulsing glow effect */}
+                <motion.div
+                  className="absolute inset-0 bg-purple-400 rounded-2xl blur-xl opacity-50"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
               </motion.div>
             </div>
-            
-            <h2 className="text-3xl font-extrabold text-white mb-4 text-center tracking-tight">
-              Verify Humanity
+
+            <h2 className="text-2xl font-extrabold text-white mb-3 text-center tracking-tight relative">
+              <span className="relative z-10 bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
+                Verify Humanity
+              </span>
+              <span className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-lg opacity-30 -z-10"></span>
             </h2>
-            <p className="text-white/80 mb-10 text-center leading-relaxed font-medium">
+            <p className="text-white/80 mb-5 text-center leading-relaxed text-sm font-medium">
               You must verify your humanity to access the application.
             </p>
 
             {verifyError && (
-              <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-center">
+              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-center text-sm">
                 {verifyError}
               </div>
             )}
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.02, boxShadow: "0 20px 40px rgba(147, 51, 234, 0.5)" }}
               whileTap={{ scale: 0.98 }}
               onClick={handleVerify}
               disabled={isVerifying}
-              className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white font-bold py-5 px-8 rounded-2xl flex items-center justify-center space-x-3 shadow-2xl shadow-purple-500/40 relative overflow-hidden group cursor-pointer disabled:opacity-50"
+              className="w-full text-white font-bold py-3 px-5 rounded-2xl flex items-center justify-center space-x-2 relative overflow-hidden group cursor-pointer disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
+                backgroundSize: '200% 100%',
+                boxShadow: '0 10px 30px rgba(147, 51, 234, 0.4), 0 0 20px rgba(236, 72, 153, 0.3)'
+              }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {/* Animated gradient */}
+              <motion.div
+                className="absolute inset-0 rounded-2xl"
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                style={{
+                  background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
+                  backgroundSize: '200% 100%'
+                }}
+              />
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+              {/* Inner glow */}
+              <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-2xl"></div>
+              {/* Pulsing glow effect */}
+              <motion.div
+                className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-lg opacity-50"
+                animate={{ opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              />
               {isVerifying ? (
                 <>
-                  <Loader2 className="w-6 h-6 relative z-10 animate-spin" />
-                  <span className="text-xl relative z-10 font-extrabold tracking-wide">Verifying...</span>
+                  <Loader2 className="w-5 h-5 relative z-10 animate-spin drop-shadow-lg" />
+                  <span className="text-base relative z-10 font-extrabold tracking-wide drop-shadow-lg">Verifying...</span>
                 </>
               ) : (
                 <>
-                  <Shield className="w-6 h-6 relative z-10 drop-shadow-md" />
-                  <span className="text-xl relative z-10 font-extrabold tracking-wide">Verify</span>
-                  <div className="w-2 h-2 bg-white rounded-full relative z-10 animate-pulse shadow-lg"></div>
+                  <Shield className="w-5 h-5 relative z-10 drop-shadow-md" />
+                  <span className="text-base relative z-10 font-extrabold tracking-wide drop-shadow-md">Verify</span>
+                  <motion.div 
+                    className="w-2 h-2 bg-white rounded-full relative z-10 shadow-lg"
+                    animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  />
                 </>
               )}
               {/* Shine effect */}
               <motion.div
-                className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700"
+                className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-2xl"
+                transition={{ duration: 0.7 }}
               />
         </motion.button>
           </div>
@@ -869,7 +1003,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="text-center mt-10"
+          className="text-center mt-6"
         >
           <div className="flex items-center justify-center space-x-2">
             <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
@@ -1571,7 +1705,12 @@ const LuminexApp = () => {
       </div>
 
       {/* Header */}
-      <div className="relative bg-black/60 backdrop-blur-2xl border-b border-purple-500/20 z-10 overflow-visible">
+      <div className="relative z-10 overflow-visible" style={{
+        background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(139, 92, 246, 0.15) 100%)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(147, 51, 234, 0.3)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+      }}>
         <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-2">
@@ -1686,7 +1825,7 @@ const LuminexApp = () => {
                   </div>
 
       {/* Main Content */}
-      <div className="relative max-w-md mx-auto px-4 py-6">
+      <div className="relative max-w-md mx-auto px-4 py-4">
         <AnimatePresence mode="wait">
           {activeTab === 'staking' && (
               <motion.div
@@ -1768,16 +1907,22 @@ const LuminexApp = () => {
                 </div>
 
                   {/* Staking Balance */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <p className="text-sm text-white/80 mb-2">{t('myStakingBalance')}</p>
-                    <div className="bg-white/20 backdrop-blur-lg rounded-2xl px-5 py-4 border border-white/30 shadow-lg">
+                    <div className="backdrop-blur-lg rounded-2xl px-4 py-3 border border-white/30 shadow-lg relative overflow-hidden" style={{
+                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(147, 51, 234, 0.1) 100%)',
+                      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                    }}>
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent"></div>
+                      <div className="relative z-10">
                       {!actualAddress || !STAKING_CONTRACT_ADDRESS ? (
-                        <div className="flex items-center justify-center py-4">
-                          <span className="text-yellow-400 text-sm text-center">
+                        <div className="flex items-center justify-center py-3">
+                          <span className="text-yellow-400 text-sm text-center relative z-10">
                             {!actualAddress ? 'Connect wallet to view staking data' : 'Staking contract not configured'}
                           </span>
                         </div>
                       ) : (
+                      <div className="relative z-10">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-yellow-400/20 rounded-xl flex items-center justify-center">
@@ -1787,7 +1932,9 @@ const LuminexApp = () => {
                           </div>
                           <TrendingUp className="w-6 h-6 text-green-300" />
                         </div>
+                      </div>
                       )}
+                      </div>
                     </div>
                   </div>
 
@@ -1819,9 +1966,16 @@ const LuminexApp = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowStakeModal(true)}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold py-4 px-3 rounded-2xl flex flex-col items-center space-y-2 shadow-lg shadow-green-500/20 relative overflow-hidden group"
+                    className="w-full text-white font-bold py-3 px-3 rounded-2xl flex flex-col items-center space-y-1.5 relative overflow-hidden group text-sm"
+                    style={{
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3), 0 0 12px rgba(5, 150, 105, 0.2)'
+                    }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-2xl"></div>
                     <div className="relative z-10 flex items-center space-x-1">
                       <BarChart3 className="w-6 h-6" />
                       <Rocket className="w-4 h-4" />
@@ -1835,9 +1989,14 @@ const LuminexApp = () => {
                         whileTap={{ scale: 0.98 }}
                     onClick={handleClaimInterest}
                     disabled={isClaimingInterest || pendingRewards === 0}
-                    className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-4 px-3 rounded-2xl flex flex-col items-center space-y-2 disabled:opacity-50 shadow-lg shadow-blue-500/20 relative overflow-hidden group"
+                    className="text-white font-bold py-3 px-3 rounded-2xl flex flex-col items-center space-y-1.5 disabled:opacity-50 relative overflow-hidden group text-sm"
+                    style={{
+                      background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+                      boxShadow: '0 8px 20px rgba(59, 130, 246, 0.3), 0 0 12px rgba(6, 182, 212, 0.2)'
+                    }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 rounded-2xl"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-2xl"></div>
                     {isClaimingInterest ? (
                       <Loader2 className="w-6 h-6 animate-spin relative z-10" />
                     ) : (
@@ -1855,7 +2014,7 @@ const LuminexApp = () => {
                         whileTap={{ scale: 0.98 }}
                   onClick={handleWithdrawBalance}
                   disabled={isWithdrawing || stakedAmount === 0}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold py-4 px-3 rounded-2xl flex flex-col items-center space-y-2 disabled:opacity-50 shadow-lg shadow-green-500/20 relative overflow-hidden group"
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold py-3 px-3 rounded-2xl flex flex-col items-center space-y-1.5 disabled:opacity-50 shadow-lg shadow-green-500/20 relative overflow-hidden group text-sm"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"></div>
                   {isWithdrawing ? (
@@ -1870,11 +2029,28 @@ const LuminexApp = () => {
 
                 {/* Free Token Button */}
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 15px 35px rgba(147, 51, 234, 0.4)" }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white font-bold py-5 px-6 rounded-2xl flex items-center justify-center space-x-3 shadow-lg shadow-purple-500/30 relative overflow-hidden group"
+                  className="w-full text-white font-bold py-3 px-4 rounded-2xl flex items-center justify-center space-x-2 relative overflow-hidden group"
+                  style={{
+                    background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
+                    backgroundSize: '200% 100%',
+                    boxShadow: '0 8px 25px rgba(147, 51, 234, 0.3), 0 0 15px rgba(236, 72, 153, 0.2)'
+                  }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <motion.div
+                    className="absolute inset-0 rounded-2xl"
+                    animate={{
+                      backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                    }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    style={{
+                      background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
+                      backgroundSize: '200% 100%'
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-2xl"></div>
                   <Gift className="w-6 h-6 relative z-10" />
                   <span className="text-base relative z-10 font-extrabold">{t('freeToken')}</span>
                   <Sparkles className="w-5 h-5 relative z-10" />
@@ -1903,15 +2079,15 @@ const LuminexApp = () => {
                   >
                     🍙💪
                   </motion.div>
-                  <h1 className="text-4xl font-extrabold text-white mb-3">
+                  <h1 className="text-2xl font-extrabold text-white mb-2">
                     🚀 Boost your earnings! 🚀
                   </h1>
-                  <p className="text-white/90 mb-6 text-lg">Upgrading your Membership gives you a much higher APY for your Staking ✨</p>
+                  <p className="text-white/90 mb-4 text-sm">Upgrading your Membership gives you a much higher APY for your Staking ✨</p>
                   
                   {/* Current Membership */}
                   <motion.div
                     whileHover={{ scale: 1.05 }}
-                    className="bg-white/20 backdrop-blur-lg rounded-2xl px-6 py-4 border border-white/30 shadow-xl inline-block"
+                    className="bg-white/20 backdrop-blur-lg rounded-2xl px-4 py-3 border border-white/30 shadow-xl inline-block"
                   >
                     <div className="flex items-center justify-center space-x-3">
                       {currentMembership && (
@@ -1929,8 +2105,8 @@ const LuminexApp = () => {
                 </div>
 
               {/* Membership Tiers */}
-              <div className="bg-black/40 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 shadow-2xl">
-                <div className="flex items-center mb-6">
+              <div className="bg-black/40 backdrop-blur-2xl rounded-3xl p-4 border border-white/10 shadow-2xl">
+                <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center mr-3">
                     <Crown className="w-7 h-7 text-white" />
                   </div>
@@ -2075,21 +2251,21 @@ const LuminexApp = () => {
                 </div>
 
                 {/* Share Buttons */}
-                <div className="mt-6 space-y-3">
+                <div className="mt-4 space-y-2">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center space-x-3 shadow-lg shadow-blue-500/30"
+                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/30 text-sm"
                   >
-                    <Share2 className="w-6 h-6" />
+                    <Share2 className="w-5 h-5" />
                     <span>Share Link</span>
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center space-x-3 shadow-lg shadow-purple-500/30"
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-purple-500/30 text-sm"
                   >
-                    <QrCode className="w-6 h-6" />
+                    <QrCode className="w-5 h-5" />
                     <span>Show QR Code</span>
                   </motion.button>
                 </div>
@@ -2194,12 +2370,12 @@ const LuminexApp = () => {
                 </div>
                 </div>
               )}
-              <div className="flex space-x-3">
+              <div className="flex space-x-2">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => { setShowStakeModal(false); setIsShowInput(false); }}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-2xl"
+                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2.5 px-4 rounded-2xl text-sm"
                 >
                   Cancel
                 </motion.button>
@@ -2208,7 +2384,7 @@ const LuminexApp = () => {
                   whileTap={{ scale: 0.95 }}
                   onClick={handleStake}
                   disabled={isStaking}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold py-3 px-6 rounded-2xl disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold py-2.5 px-4 rounded-2xl disabled:opacity-50 text-sm"
                 >
                   {isStaking ? (
                     <>
@@ -2319,7 +2495,7 @@ const LuminexApp = () => {
       </AnimatePresence>
 
       {/* Spacer for bottom nav */}
-      <div className="h-24"></div>
+      <div className="h-16"></div>
 
       {/* Worldcoin Footer */}
       <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between text-xs text-gray-400">
