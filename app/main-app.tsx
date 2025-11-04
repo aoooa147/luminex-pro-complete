@@ -739,187 +739,121 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-pink-950 relative overflow-hidden flex items-center justify-center p-4">
-      {/* Animated background particles */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-pink-950 relative overflow-hidden flex items-center justify-center p-4" style={{ willChange: 'auto' }}>
+      {/* Optimized animated background particles */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ transform: 'translateZ(0)', willChange: 'auto' }}>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/15 rounded-full blur-2xl animate-pulse" style={{ willChange: 'opacity', transform: 'translateZ(0)' }}></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/15 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s', willChange: 'opacity', transform: 'translateZ(0)' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-blue-500/8 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '0.5s', willChange: 'opacity', transform: 'translateZ(0)' }}></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10 max-w-md w-full">
-        {/* Logo */}
+        {/* Logo - Optimized */}
       <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
           className="text-center mb-6"
+          style={{ willChange: 'transform, opacity' }}
         >
-          <div className="relative inline-block w-32 h-32">
-            {/* Enhanced glow effects */}
-            <motion.div 
-              className="absolute inset-0 blur-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full opacity-50"
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 0.7, 0.5]
-              }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <div className="absolute inset-0 blur-2xl bg-purple-500/40 rounded-full"></div>
-            <div className="absolute inset-0 blur-xl bg-pink-500/30 rounded-full"></div>
+          <div className="relative inline-block w-32 h-32" style={{ transform: 'translateZ(0)' }}>
+            {/* Simplified glow effects - using CSS instead of multiple motion.div */}
+            <div className="absolute inset-0 blur-2xl bg-purple-500/30 rounded-full animate-pulse" style={{ willChange: 'opacity', transform: 'translateZ(0)' }}></div>
             
             <motion.div
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
               className="relative w-full h-full flex items-center justify-center"
+              style={{ willChange: 'transform' }}
             >
-              <div className="relative w-28 h-28 rounded-full flex items-center justify-center shadow-2xl overflow-hidden">
-                {/* Animated gradient border */}
-                <motion.div
+              <div className="relative w-28 h-28 rounded-full flex items-center justify-center shadow-2xl overflow-hidden" style={{ transform: 'translateZ(0)' }}>
+                {/* Static gradient border - no animation to reduce load */}
+                <div
                   className="absolute inset-0 rounded-full"
                   style={{
-                    background: 'linear-gradient(45deg, #9333ea, #ec4899, #9333ea)',
-                    backgroundSize: '200% 200%',
+                    background: 'linear-gradient(135deg, #9333ea, #ec4899)',
                     padding: '3px'
                   }}
-                  animate={{
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                  }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                 />
                 <div className="absolute inset-[3px] rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
-                  <img src={LOGO_URL} alt="Luminex Logo" className="w-full h-full object-cover rounded-full" />
+                  <img src={LOGO_URL} alt="Luminex Logo" className="w-full h-full object-cover rounded-full" loading="eager" />
                 </div>
                 {/* Inner glow */}
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent pointer-events-none"></div>
               </div>
             </motion.div>
-            {/* Enhanced circuit ring */}
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 192 192" style={{ transformOrigin: 'center' }}>
+            {/* Simplified circuit ring - single animation */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 192 192" style={{ transformOrigin: 'center', transform: 'translateZ(0)' }}>
               <motion.circle
                 cx="96"
                 cy="96"
                 r="90"
                 fill="none"
-                stroke="rgba(168, 85, 247, 0.5)"
+                stroke="rgba(168, 85, 247, 0.4)"
                 strokeWidth="2"
-                strokeDasharray="4 4"
-                style={{ transformOrigin: '96px 96px' }}
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              />
-              <motion.circle
-                cx="96"
-                cy="96"
-                r="90"
-                fill="none"
-                stroke="rgba(244, 114, 182, 0.7)"
-                strokeWidth="2.5"
                 strokeDasharray="8 4"
-                strokeDashoffset="0"
-                style={{ transformOrigin: '96px 96px' }}
-                animate={{ 
-                  strokeDashoffset: [0, 12],
-                  rotate: [0, -360]
-                }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                style={{ transformOrigin: '96px 96px', willChange: 'transform' }}
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
               />
             </svg>
           </div>
           <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
             className="text-4xl font-black mt-4 relative"
+            style={{ willChange: 'opacity' }}
           >
-            <span className="bg-gradient-to-r from-white via-purple-200 via-pink-200 to-white bg-clip-text text-transparent tracking-tight relative inline-block">
-              <motion.span
-                animate={{
-                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="bg-gradient-to-r from-white via-purple-300 to-pink-300 bg-[length:200%_100%] bg-clip-text text-transparent"
-              >
-                LUMINEX
-              </motion.span>
+            <span className="bg-gradient-to-r from-white via-purple-300 to-pink-300 bg-clip-text text-transparent tracking-tight relative inline-block">
+              LUMINEX
             </span>
-            {/* Text glow effect */}
-            <span className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-xl opacity-50 -z-10"></span>
+            {/* Simplified text glow effect */}
+            <span className="absolute inset-0 bg-gradient-to-r from-purple-400/30 to-pink-400/30 blur-lg opacity-50 -z-10" style={{ transform: 'translateZ(0)' }}></span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
             className="text-transparent bg-gradient-to-r from-purple-300 via-pink-300 to-purple-300 bg-clip-text font-bold text-sm tracking-widest uppercase mt-2"
+            style={{ willChange: 'opacity' }}
           >
             STAKING PLATFORM
           </motion.p>
         </motion.div>
 
-                        {/* Verification Card */}
+                        {/* Verification Card - Optimized */}
                  <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 50 }}
+          initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
+          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
           className="relative rounded-3xl p-6 border border-purple-500/30 shadow-2xl overflow-hidden backdrop-blur-xl"
           style={{
-            background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(236, 72, 153, 0.15) 100%)'
+            background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(236, 72, 153, 0.15) 100%)',
+            willChange: 'transform, opacity',
+            transform: 'translateZ(0)'
           }}
         >
-          {/* Enhanced glowing background effects */}
-          <motion.div 
-            className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-transparent"
-            animate={{ opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-purple-500/10 to-transparent"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(147,51,234,0.1),transparent_70%)]"></div>
-          
-          {/* Animated border glow */}
-          <motion.div
-            className="absolute inset-0 rounded-3xl"
-            style={{
-              background: 'linear-gradient(45deg, #9333ea, #ec4899, #9333ea)',
-              backgroundSize: '200% 200%',
-              opacity: 0.5,
-              filter: 'blur(8px)',
-              zIndex: -1
-            }}
-            animate={{
-              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-            }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-          />
+          {/* Simplified background effects - static gradients */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/25 via-pink-500/15 to-transparent"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-purple-500/8 to-transparent"></div>
           
           <div className="relative z-10">
             <div className="flex items-center justify-center mb-4">
               <motion.div
                 animate={{ 
-                  rotate: [0, 12, -12, 0],
-                  scale: [1, 1.05, 1]
+                  rotate: [0, 8, -8, 0]
                 }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 className="relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl border-2 border-white/30 overflow-hidden"
+                style={{ willChange: 'transform', transform: 'translateZ(0)' }}
               >
-                {/* Animated gradient background */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-br from-purple-600 via-pink-500 to-purple-600"
-                  animate={{
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                  }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                  style={{ backgroundSize: '200% 200%' }}
-                />
+                {/* Static gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-500"></div>
                 {/* Inner glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/25 to-transparent"></div>
                 <Shield className="w-7 h-7 text-white drop-shadow-lg relative z-10" />
-                {/* Pulsing glow effect */}
-                <motion.div
-                  className="absolute inset-0 bg-purple-400 rounded-2xl blur-xl opacity-50"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                />
               </motion.div>
             </div>
 
@@ -940,39 +874,22 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
             )}
 
             <motion.button
-              whileHover={{ scale: 1.02, boxShadow: "0 20px 40px rgba(147, 51, 234, 0.5)" }}
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleVerify}
               disabled={isVerifying}
-              className="w-full text-white font-bold py-3 px-5 rounded-2xl flex items-center justify-center space-x-2 relative overflow-hidden group cursor-pointer disabled:opacity-50"
+              className="w-full text-white font-bold py-3 px-5 rounded-2xl flex items-center justify-center space-x-2 relative overflow-hidden group cursor-pointer disabled:opacity-50 transition-all"
               style={{
-                background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
-                backgroundSize: '200% 100%',
-                boxShadow: '0 10px 30px rgba(147, 51, 234, 0.4), 0 0 20px rgba(236, 72, 153, 0.3)'
+                background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 100%)',
+                boxShadow: '0 10px 30px rgba(147, 51, 234, 0.4), 0 0 20px rgba(236, 72, 153, 0.3)',
+                willChange: 'transform',
+                transform: 'translateZ(0)'
               }}
             >
-              {/* Animated gradient */}
-              <motion.div
-                className="absolute inset-0 rounded-2xl"
-                animate={{
-                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                style={{
-                  background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
-                  backgroundSize: '200% 100%'
-                }}
-              />
               {/* Hover overlay */}
               <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
               {/* Inner glow */}
               <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-2xl"></div>
-              {/* Pulsing glow effect */}
-              <motion.div
-                className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-lg opacity-50"
-                animate={{ opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              />
               {isVerifying ? (
                 <>
                   <Loader2 className="w-5 h-5 relative z-10 animate-spin drop-shadow-lg" />
@@ -989,11 +906,8 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
                   />
                 </>
               )}
-              {/* Shine effect */}
-              <motion.div
-                className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-2xl"
-                transition={{ duration: 0.7 }}
-              />
+              {/* Simplified shine effect on hover only */}
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-2xl transition-transform duration-700 ease-out"></div>
         </motion.button>
           </div>
       </motion.div>

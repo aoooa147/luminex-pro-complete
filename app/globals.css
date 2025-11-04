@@ -119,3 +119,45 @@ a {
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
+
+/* Performance optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU acceleration for animations */
+.motion-div,
+[class*="motion"],
+[class*="animate"] {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce repaints on animated elements */
+.backdrop-blur-xl,
+.backdrop-blur-2xl {
+  will-change: auto;
+}
+
+/* Optimize blur performance */
+.blur-xl,
+.blur-2xl,
+.blur-3xl {
+  will-change: auto;
+  transform: translateZ(0);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent layout shifts */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
