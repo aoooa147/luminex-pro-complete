@@ -51,11 +51,22 @@ export default function InvitePage() {
   }, [ref, code, router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-pink-950 flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-12 h-12 animate-spin text-purple-400 mx-auto mb-4" />
-        <p className="text-white text-lg">Redirecting to Luminex Staking...</p>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden flex items-center justify-center">
+      {/* Elegant gold background particles */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-96 h-96 bg-yellow-500/8 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-amber-500/6 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+      
+      <div className="text-center relative z-10">
+        <Loader2 className="w-12 h-12 animate-spin text-yellow-500 mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 10px rgba(234, 179, 8, 0.5))' }} />
+        <p className="text-yellow-400/90 text-lg font-medium tracking-wide">Redirecting to Luminex Staking...</p>
         <p className="text-gray-400 text-sm mt-2">Processing referral code...</p>
+        <div className="flex items-center justify-center gap-1 mt-3">
+          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
+          <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+        </div>
       </div>
     </div>
   );
