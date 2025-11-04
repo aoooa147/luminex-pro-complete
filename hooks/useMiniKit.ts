@@ -35,16 +35,33 @@ export const useMiniKit = () => {
     return finalPayload as MiniAppWalletAuthSuccessPayload;
   }, []);
 
-  const pay = useCallback(async (referenceId: string, toAddress: `0x${string}`, amount: string, token: 'WLD' | 'USDC' = 'WLD') => {
-    if (!MiniKit.isInstalled()) throw new Error('MiniKit is not installed. Open inside World App.');
-    const { finalPayload } = await MiniKit.commandsAsync.pay({
-      reference: referenceId,
-      to: toAddress,
-      tokens: token,
-      amount,
-    } as any);
-    return finalPayload; // contains transaction_id, reference
-  }, []);
+  type PayToken = 'WLD' | 'USDC';
+
+  const pay = useCallback(
+    async (
+      referenceId: string,
+      toAddress: `0x${string}`,
+      amount: string,
+      token: PayToken = 'WLD'
+    ) => {
+      if (!MiniKit.isInstalled()) {
+        throw new Error('MiniKit is not installed. Open inside World App.');
+      }
+      try {
+        const { finalPayload } = await MiniKit.commandsAsync.pay({
+          reference: referenceId,
+          to: toAddress,
+          tokens: [token], // ✅ Array format required for v1.x: ['WLD'] or ['USDC']
+          amount: String(amount), // ✅ Ensure it's a string
+        });
+        return finalPayload; // { transaction_id, reference, ... }
+      } catch (err: any) {
+        console.error('MiniKit pay failed:', err);
+        throw new Error('Payment failed: ' + (err?.message || 'unknown'));
+      }
+    },
+    []
+  );
 
   return { ready, error, verify, walletAuth, pay };
 };
