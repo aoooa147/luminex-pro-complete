@@ -1496,13 +1496,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
                 animate={{ opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
-            </motion.div>
-            <p className="text-yellow-400/90 text-sm font-medium tracking-wide">
-              Powered by <span className="text-yellow-300 font-bold relative">
-                World ID
-                <span className="absolute inset-0 bg-gradient-to-r from-yellow-300/50 to-amber-400/50 blur-lg -z-10"></span>
-              </span> 
-            </p>
+                        </motion.div>
             <motion.div 
               className="relative"
               animate={{ 
@@ -3424,17 +3418,8 @@ const LuminexApp = () => {
         )}
       </AnimatePresence>
 
-      {/* Spacer for bottom nav */}
+            {/* Spacer for bottom nav */}
       <div className="h-16"></div>
-
-      {/* Worldcoin Footer */}
-      <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between text-xs text-gray-400">
-        <div className="flex items-center space-x-2">
-          <Globe className="w-4 h-4" />
-          <span>Powered by Worldcoin</span>
-        </div>
-        <span>Terms & Privacy</span>
-      </div>
     </div>
   );
 };
