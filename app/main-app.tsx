@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ethers } from "ethers";
 import dynamic from 'next/dynamic';
+import { MiniKit, tokenToDecimals, Tokens } from '@worldcoin/minikit-js';
 import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION, WALLET_RPC_URL, WALLET_CHAIN_ID, CONTRACT_RPC_URL, CONTRACT_CHAIN_ID, LUX_TOKEN_ADDRESS as LUX_TOKEN_ADDRESS_FROM_CONSTANTS, STAKING_CONTRACT_ADDRESS as STAKING_CONTRACT_ADDRESS_FROM_CONSTANTS, WLD_TOKEN_ADDRESS as WLD_TOKEN_ADDRESS_FROM_CONSTANTS, TREASURY_ADDRESS as TREASURY_ADDRESS_FROM_CONSTANTS } from '@/lib/utils/constants';
 import { useMiniKit as useMiniKitVerify } from '@/hooks/useMiniKit';
 const MiniKitPanel = dynamic(() => import('@/components/MiniKitPanel'), { ssr: false });
@@ -610,9 +611,9 @@ const useMiniKit = () => {
 
           console.log('✅ TREASURY_ADDRESS validated:', treasuryAddr);
 
-          // Call MiniKit pay API directly (cannot use hooks inside functions)
-          const MiniKit = (window as any).MiniKit;
-          if (!MiniKit?.commandsAsync?.pay) {
+                    // Call MiniKit pay API directly (cannot use hooks inside functions)
+          // Note: MiniKit is already imported at the top of the file
+          if (!MiniKit?.isInstalled() || !MiniKit?.commandsAsync?.pay) {
             return { success: false, error: 'MiniKit pay API not available' };
           }
 
@@ -623,8 +624,7 @@ const useMiniKit = () => {
             return { success: false, error: `Unsupported token: ${tokenType}. Only WLD and USDC are supported.` };
       }
 
-          // Use validatedAmountStr (original string format) instead of amount.toString()
-          // This preserves the exact format like "1", "5", "10" without scientific notation
+          // Use validatedAmountStr (original string format) to preserve exact format
           const finalAmountStr = validatedAmountStr;
           console.log("🔍 DEBUG → finalAmountStr for MiniKit pay:", finalAmountStr, "original amount:", amount, "validatedAmountStr:", validatedAmountStr);                                             
 
@@ -633,13 +633,28 @@ const useMiniKit = () => {
             return { success: false, error: 'Invalid amount format' };
           }
 
+          // Convert amount to decimals using tokenToDecimals() as per MiniKit documentation
+          // WLD has 18 decimals, USDC has 6 decimals
+          // Example: tokenToDecimals(1, Tokens.WLD) = 1000000000000000000 (1 * 10^18)
+          const tokenSymbol = tokenType === 'WLD' ? Tokens.WLD : Tokens.USDC;
+          const amountInDecimals = tokenToDecimals(parseFloat(finalAmountStr), tokenSymbol);
+          const tokenAmountStr = amountInDecimals.toString();
+          
+          console.log("🔍 DEBUG → Amount conversion:", {
+            humanReadable: finalAmountStr,
+            tokenSymbol: tokenSymbol,
+            amountInDecimals: amountInDecimals.toString(),
+            tokenAmountStr: tokenAmountStr
+          });
+
           // MiniKit v1.9.8+ requires tokens as TokensPayload array with symbol and token_amount
+          // token_amount MUST be in smallest unit (decimals) as per documentation
           const payPayload = {
             reference: referenceId,
             to: treasuryAddr, // Use validated address
             tokens: [{
-              symbol: tokenType, // 'WLD' or 'USDC'
-              token_amount: finalAmountStr // Amount as string - MUST be correct format for World App to display properly
+              symbol: tokenSymbol, // Tokens.WLD or Tokens.USDC (enum, not string)
+              token_amount: tokenAmountStr // Amount in decimals (e.g., "1000000000000000000" for 1 WLD)
             }],
             description: params.description || `Payment of ${finalAmountStr} ${tokenType}`, // Required in v1.9.8+
           };
