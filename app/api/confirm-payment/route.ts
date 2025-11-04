@@ -21,11 +21,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { payload } = BodySchema.parse(body);
+    const parsed = BodySchema.parse(body);
     
     // Extract transaction_id from payload (could be direct or nested)
     // Use type assertion to handle union type
-    const payloadAny = payload as any;
+    const payloadAny = parsed.payload as any;
     const transactionId = payloadAny.transaction_id || payloadAny.transactionId;
     
     if (!transactionId) {
