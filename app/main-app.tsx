@@ -550,17 +550,21 @@ const useMiniKit = () => {
     console.log("🔍 DEBUG → params.amount:", params.amount, "type:", typeof params.amount);
     
     try {
-      // Ensure amount is a valid string first
+            // Ensure amount is a valid string first
       const amountStr = String(params.amount || '0').trim();
       console.log("🔍 DEBUG → amountStr after String():", amountStr);
       
       const amount = parseFloat(amountStr);
       console.log("🔍 DEBUG → amount after parseFloat():", amount);
-      
+
       if (!amount || amount <= 0 || isNaN(amount)) {
         console.error("❌ Invalid amount:", { amount, amountStr, original: params.amount });
         return { success: false, error: 'Invalid amount' };
       }
+
+      // Preserve the original amount string format (don't use toString() which may lose precision)
+      // This ensures "1" stays as "1", "5" stays as "5", etc.
+      const validatedAmountStr = amountStr; // Use original string, already validated above
 
       // Check if running in World App with MiniKit
       const hasMiniKit = typeof window !== 'undefined' && (window as any).MiniKit?.commandsAsync?.pay;
@@ -614,16 +618,17 @@ const useMiniKit = () => {
 
           const tokenType = (params.currency || 'WLD').toUpperCase();
 
-          // Validate tokenType
+                    // Validate tokenType
           if (tokenType !== 'WLD' && tokenType !== 'USDC') {
             return { success: false, error: `Unsupported token: ${tokenType}. Only WLD and USDC are supported.` };
       }
 
-                    // Use amountStr that was validated earlier, but ensure it's a string
-          const finalAmountStr = amount.toString();
-          console.log("🔍 DEBUG → finalAmountStr for MiniKit pay:", finalAmountStr, "original amount:", amount);
-          
-          if (!finalAmountStr || isNaN(parseFloat(finalAmountStr)) || parseFloat(finalAmountStr) <= 0) {
+          // Use validatedAmountStr (original string format) instead of amount.toString()
+          // This preserves the exact format like "1", "5", "10" without scientific notation
+          const finalAmountStr = validatedAmountStr;
+          console.log("🔍 DEBUG → finalAmountStr for MiniKit pay:", finalAmountStr, "original amount:", amount, "validatedAmountStr:", validatedAmountStr);                                             
+
+          if (!finalAmountStr || isNaN(parseFloat(finalAmountStr)) || parseFloat(finalAmountStr) <= 0) {                                                        
             console.error("❌ Invalid finalAmountStr:", finalAmountStr);
             return { success: false, error: 'Invalid amount format' };
           }
