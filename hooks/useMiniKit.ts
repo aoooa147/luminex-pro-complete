@@ -79,8 +79,8 @@ export const useMiniKit = () => {
       // MiniKit v1.9.8+ requires tokens as TokensPayload array with symbol and token_amount
       // token_amount MUST be in smallest unit (decimals) as per documentation
       const payload = {
-        reference: referenceId,
-        to: toAddress,
+      reference: referenceId,
+      to: toAddress,
         tokens: [{
           symbol: tokenSymbol, // Tokens.WLD or Tokens.USDC (enum, not string)
           token_amount: tokenAmountStr // Amount in decimals (e.g., "1000000000000000000" for 1 WLD)

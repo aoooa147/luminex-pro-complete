@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get draft
-    const draft = getPowerDraft(payload.reference);
+        // Get draft
+    const draft = await getPowerDraft(payload.reference);
     if (!draft) {
       return NextResponse.json({
         success: false,
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify transaction with Worldcoin API
-    const verified = await verifyTransactionWithWorldcoin(payload.transaction_id, payload.reference);
+    const verified = await verifyTransactionWithWorldcoin(payload.transaction_id, payload.reference);                                                           
     if (!verified) {
       return NextResponse.json({
         success: false,
@@ -93,10 +93,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Get current power to check if upgrade is valid
-    const current = getUserPower(draft.userId);
-    
+    const current = await getUserPower(draft.userId);
+
     // Update or create user power
-    const userPower = setUserPower(
+    const userPower = await setUserPower(
       draft.userId,
       draft.targetCode,
       payload.transaction_id,
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Mark draft as used
-    markDraftAsUsed(payload.reference);
+    await markDraftAsUsed(payload.reference);
 
     const power = getPowerByCode(draft.targetCode);
     if (!power) {

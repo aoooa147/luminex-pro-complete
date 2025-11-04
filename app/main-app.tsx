@@ -1813,9 +1813,9 @@ const LuminexApp = () => {
                          // Note: Referral stats are now fetched from API instead of blockchain
        // The blockchain referralCount may differ from API stats
        // We keep the API fetch in a separate useEffect for better separation of concerns
-
-      console.log('✅ Staking data fetched:', {
-        staked: stakedFormatted,
+      
+      console.log('✅ Staking data fetched:', { 
+        staked: stakedFormatted, 
         rewards: rewardsFormatted,
       });
       
@@ -2376,12 +2376,12 @@ const LuminexApp = () => {
           });
 
           // Refresh balance and power status
-          await fetchBalance();
+        await fetchBalance();
           await fetchPowerStatus();
-
+        
           showToast(`Activated ${confirmData.power.name.toUpperCase()} Power!`, 'success');
           console.log('✅ Power purchase confirmed:', confirmData);
-        } else {
+      } else {
           // Map error codes
           const errorMessages: Record<string, string> = {
             'user_cancelled': 'ยกเลิกการชำระเงิน',
@@ -2815,35 +2815,35 @@ const LuminexApp = () => {
                       <span className="text-white/80 text-[10px]">Power License:</span>
                       <span className="text-white font-bold text-xs">
                         {currentPower ? currentPower.name : 'None'}
-                      </span>
-                    </div>
+                            </span>
+                  </div>
                     <div className="text-right">
                       <div className="text-yellow-300 font-bold text-xs">{totalApy}% Total APY</div>
                       <div className="text-white/60 text-[9px]">
                         Base {baseApy}% {powerBoost > 0 ? `+ ${powerBoost}%` : ''}
                       </div>
                     </div>
-                  </div>
+                </div>
 
                   {/* Staking Balance */}
                   <div className="p-2 bg-black/40 rounded-lg border border-white/10">
                     <p className="text-white/80 text-[10px] mb-1">{t('myStakingBalance')}</p>
-                    {!actualAddress || !STAKING_CONTRACT_ADDRESS ? (
+                      {!actualAddress || !STAKING_CONTRACT_ADDRESS ? (
                       <div className="flex items-center justify-center py-1">
                         <span className="text-yellow-400 text-[10px] text-center">
                           {!actualAddress ? 'Connect wallet' : 'Contract not configured'}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-1.5">
                           <Coins className="w-4 h-4 text-yellow-300" />
                           <span className="text-lg font-extrabold text-white">{formattedStakedAmount}</span>
                           <span className="text-white/60 text-xs">LUX</span>
-                        </div>
+                            </div>
                         <TrendingUp className="w-4 h-4 text-green-300" />
-                      </div>
-                    )}
+                        </div>
+                      )}
                   </div>
 
                   {/* Earned Interest */}
@@ -2862,7 +2862,7 @@ const LuminexApp = () => {
                       <span className="font-mono">
                         {timeElapsed.days}D {timeElapsed.hours}H {timeElapsed.minutes}m
                       </span>
-                    </div>
+                  </div>
                   ) : null}
                 </div>
               </motion.div>
@@ -2882,9 +2882,9 @@ const LuminexApp = () => {
                   </motion.button>
 
                   {/* Withdraw Interest */}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                     onClick={handleClaimInterest}
                     disabled={isClaimingInterest || pendingRewards === 0}
                     className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
@@ -2897,13 +2897,13 @@ const LuminexApp = () => {
                         <span>{t('withdrawInterest')}</span>
                       </>
                     )}
-                  </motion.button>
+                      </motion.button>
                 </div>
 
                 {/* Withdraw Balance */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                   onClick={handleWithdrawBalance}
                   disabled={isWithdrawing || stakedAmount === 0}
                   className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
@@ -2916,7 +2916,7 @@ const LuminexApp = () => {
                       <span>{t('withdrawBalance')}</span>
                     </>
                   )}
-                                </motion.button>
+                      </motion.button>
 
                 {/* Free Token Button */}
                 <motion.button
@@ -2966,15 +2966,15 @@ const LuminexApp = () => {
                 <div className="flex items-center space-x-1.5">
                   <Zap className="w-4 h-4 text-yellow-400" />
                   <span className="text-yellow-400 font-bold text-xs">POWER LICENSES</span>
-                </div>
+                    </div>
                 {currentPower && (
                   <div className="flex items-center space-x-1 px-1.5 py-0.5 bg-yellow-500/20 rounded border border-yellow-400/30">
                     <span className="text-xs">⚡</span>
                     <span className="text-white font-bold text-[10px]">{currentPower.name}</span>
                     <span className="text-yellow-300 font-bold text-[10px]">{totalApy}%</span>
-                  </div>
+                </div>
                 )}
-              </div>
+                </div>
 
               {/* Compact Power Tiers */}
               <div className="space-y-1">
@@ -3033,7 +3033,7 @@ const LuminexApp = () => {
                     </motion.div>
                   );
                 })}
-              </div>
+                  </div>
             </motion.div>
           )}
           
@@ -3148,7 +3148,7 @@ const LuminexApp = () => {
 
                 {/* Share Buttons */}
                 <div className="mt-4 space-y-2">
-                                    <motion.button
+                  <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={async () => {

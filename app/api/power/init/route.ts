@@ -49,9 +49,9 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get current power (if any)
-    const current = getUserPower(userId);
-    
+        // Get current power (if any)
+    const current = await getUserPower(userId);
+
     // Calculate amount to pay
     let amountWLD: string;
     if (!current) {
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         const currentPrice = parseFloat(currentPower.priceWLD);
         const targetPrice = parseFloat(target.priceWLD);
         const difference = Math.max(targetPrice - currentPrice, 0);
-        
+
         // Prevent downgrade (difference < 0)
         if (difference === 0) {
           return NextResponse.json({
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
             error: 'Cannot downgrade or purchase same level',
           }, { status: 400 });
         }
-        
+
         amountWLD = difference.toString();
       }
     }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const reference = crypto.randomUUID();
 
     // Create draft
-    createPowerDraft(reference, userId, targetCode, amountWLD);
+    await createPowerDraft(reference, userId, targetCode, amountWLD);
 
     console.log('✅ Power purchase initialized:', {
       userId,

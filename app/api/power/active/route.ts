@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const userPower = getUserPower(userId);
-    
+        const userPower = await getUserPower(userId);
+
     if (!userPower) {
       return NextResponse.json({
         success: true,

@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PowerLicense {
+  code     String @id
+  name     String
+  priceWLD Float
+  totalAPY Int
+
+  @@map("power_licenses")
+}
+
+model UserPower {
+  userId     String   @id @db.VarChar(42)
+  code       String
+  txId       String   @db.VarChar(66)
+  reference  String   @unique
+  acquiredAt DateTime @default(now())
+
+  @@map("user_powers")
+}
+
+model PowerDraft {
+  reference  String   @id
+  userId     String   @db.VarChar(42)
+  targetCode String
+  amountWLD  String
+  createdAt  DateTime @default(now())
+  status     String   @default("pending") // pending, used, cancelled
+
+  @@index([userId])
+  @@index([status])
+  @@map("power_drafts")
+}
