@@ -640,16 +640,7 @@ const useMiniKit = () => {
 
             console.log('🔄 Starting polling for transaction:', transactionId);
 
-          } catch (confirmError: any) {
-            console.error('❌ Confirm-payment API call failed:', confirmError);
-            return { success: false, error: 'Payment failed: Could not confirm transaction' };
-          }
-
-          // Poll for transaction confirmation
-          const transactionId = confirmData?.transaction?.transaction_id;
-          if (!transactionId) {
-            return { success: false, error: 'Payment failed: No transaction ID received' };
-          }
+            // Poll for transaction confirmation
 
           let attempts = 0;
           const maxAttempts = 20;
