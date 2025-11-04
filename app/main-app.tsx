@@ -536,8 +536,8 @@ const useMiniKit = () => {
           console.warn('⚠️ MiniKit.commandsAsync.walletAuth not available');
         }
       } else {
-        // Not in World App - this is fine for web browser testing
-        console.log('ℹ️ Not running in World App (web browser mode)');
+        // Only World App is supported
+        console.warn('⚠️ MiniKit is not available. Please open this app in World App.');
       }
     } catch (error) {
       console.error('❌ Error connecting wallet:', error);
@@ -655,40 +655,8 @@ const useMiniKit = () => {
           return { success: false, error: payError.message || 'Payment failed' };
         }
       } else {
-        // Fallback: Use direct ERC20 transfer (for web browsers or non-World App)
-        console.log(`💸 Using direct ERC20 transfer: ${amount} ${params.currency} to ${TREASURY_ADDRESS}...`);
-        
-        const amountWei = ethers.parseUnits(amount.toString(), 18);
-        
-        // Check balance first using provider (for reading)
-        if (!provider || !wallet.address) {
-          return { success: false, error: 'No provider or wallet address available' };
-        }
-        
-        const wldContractRead = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, provider);
-        const balance = await wldContractRead.balanceOf(wallet.address);
-        if (balance < amountWei) {
-          return { success: false, error: 'Insufficient WLD balance' };
-        }
-
-        // Get signer for writing transaction
-        const signer = await getSigner();
-        if (!signer) {
-          return { success: false, error: 'No signer available' };
-        }
-
-        // Transfer WLD tokens to treasury address
-        const wldContractWrite = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, signer as ethers.Signer);
-        const transferTx = await wldContractWrite.transfer(TREASURY_ADDRESS, amountWei);
-        const receipt = await transferTx.wait();
-      
-        const txHash = receipt?.hash || transferTx.hash;
-        console.log('✅ Payment successful:', txHash);
-        return {
-          success: true, 
-          transactionHash: txHash,
-          receipt 
-        };
+        // Only World App is supported
+        return { success: false, error: 'Payment is only available in World App. Please open this app in World App.' };
       }
     } catch (error: any) {
       console.error('❌ Payment error:', error);
@@ -1508,17 +1476,17 @@ const LuminexApp = () => {
         USER_ADDRESS: addressToUse 
       });
       
-      // Check if running in browser (web) or World App
-      const isWebBrowser = typeof window !== 'undefined' && !(window as any).MiniKit;
+      // Only World App is supported
+      const hasMiniKit = typeof window !== 'undefined' && (window as any).MiniKit;
       
-      if (isWebBrowser) {
-        // For web browsers: show mock balance for testing
-        console.log('🌐 Running in web browser, using mock WLD balance for testing');
-        const mockWldBalance = 10.5; // Mock balance for testing
-        setWldBalance(mockWldBalance);
-        setBalance(0); // LUX balance not used, set to 0
-        console.log('✅ Mock WLD Balance (web):', mockWldBalance);
-      } else {
+      if (!hasMiniKit) {
+        console.warn('⚠️ Not running in World App. Balance fetch requires World App.');
+        setWldBalance(0);
+        setBalance(0);
+        return;
+      }
+      
+      {
         // For World App: fetch real balance using server-side API
         console.log('📱 Running in World App, fetching WLD balance via API');
         console.log('🔍 Using API route for balance fetch');
@@ -1736,11 +1704,9 @@ const LuminexApp = () => {
         console.log('✅ Loaded verified address from session:', verifiedAddr);
       }
       } else {
-        // For web browsers: use mock address for testing
-        const mockAddress = '0x1234567890123456789012345678901234567890';
-        setVerifiedAddress(mockAddress);
-        setVerified(true); // Auto-verify for web testing
-        console.log('🌐 Running in web browser, using mock address for testing');
+        // Only World App is supported
+        console.warn('⚠️ Not running in World App. Please open this app in World App.');
+        // Don't set verified address or verified status - require World App
       }
       
       const userName = sessionStorage.getItem('userName');
