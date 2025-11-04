@@ -644,43 +644,43 @@ const useMiniKit = () => {
             const maxAttempts = 20;
 
             while (attempts < maxAttempts) {
-            const statusResponse = await fetch('/api/confirm-payment', {        
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                payload: {
-                  transaction_id: transactionId,
-                  reference: referenceId
+                            const statusResponse = await fetch('/api/confirm-payment', {        
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  payload: {
+                    transaction_id: transactionId,
+                    reference: referenceId
+                  }
+                })
+              });
+
+              const statusData = await statusResponse.json();
+              console.log(`🔄 Poll attempt ${attempts + 1}/${maxAttempts}:`, statusData);                                                                       
+
+              if (statusData.success && statusData.transaction) {
+                const status = statusData.transaction.transaction_status || statusData.transaction.status;                                                        
+                console.log('📊 Transaction status:', status);
+
+                if (status === 'confirmed' || status === 'mined') {
+                  const txHash = statusData.transaction.transaction_hash || statusData.transaction?.transaction_hash || confirmData?.transaction?.transaction_hash;                                                                               
+                  console.log('✅ Payment confirmed:', txHash);
+                  return {
+                    success: true,
+                    transactionHash: txHash,
+                    transaction: statusData.transaction
+                  };
                 }
-              })
-            });
 
-            const statusData = await statusResponse.json();
-            console.log(`🔄 Poll attempt ${attempts + 1}/${maxAttempts}:`, statusData);
-
-            if (statusData.success && statusData.transaction) {
-              const status = statusData.transaction.transaction_status || statusData.transaction.status;
-              console.log('📊 Transaction status:', status);
-
-              if (status === 'confirmed' || status === 'mined') {
-                const txHash = statusData.transaction.transaction_hash || statusData.transaction?.transaction_hash || confirmData?.transaction?.transaction_hash;
-                console.log('✅ Payment confirmed:', txHash);
-                return {
-                  success: true,
-                  transactionHash: txHash,
-                  transaction: statusData.transaction
-                };
+                if (status === 'failed') {
+                  return { success: false, error: 'Transaction failed on blockchain' };                                                                           
+                }
               }
 
-              if (status === 'failed') {
-                return { success: false, error: 'Transaction failed on blockchain' };
-              }
+              // Wait before next attempt
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              attempts++;
             }
-
-            // Wait before next attempt
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            attempts++;
-          }
 
               // If polling timed out, return the transaction_id anyway (transaction might be pending)                                                              
               console.log('⏱️ Polling timeout, returning pending transaction');   
