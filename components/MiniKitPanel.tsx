@@ -30,8 +30,10 @@ export default function MiniKitPanel() {
   const genReference = async () => {
     const r = await fetch('/api/initiate-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, symbol: 'WLD' }) });
     const j = await r.json();
-    setReference(j.id || '');
-    log('Generated reference: ' + (j.id || ''));
+    const refId = j.id || '';
+    setReference(refId);
+    log('Generated reference: ' + refId);
+    return refId; // ✅ Return reference ID to avoid React state update race condition
   };
 
   const doVerify = async () => {
@@ -93,14 +95,24 @@ export default function MiniKitPanel() {
     setStep('initiated');
     try {
       setBusy(true);
-      if (!reference) await genReference();
-      const payload = await pay(reference, (TREASURY_ADDRESS as `0x${string}`) || '0x0000000000000000000000000000000000000000', amount, 'WLD');
+      // ✅ Use local variable to avoid React state update race condition
+      let ref = reference;
+      if (!ref) {
+        ref = await genReference(); // Get reference ID directly from function return
+      }
+      
+      if (!ref || ref.length < 8) {
+        throw new Error('Invalid reference ID: must be at least 8 characters');
+      }
+      
+      log('Using reference: ' + ref);
+      const payload = await pay(ref, (TREASURY_ADDRESS as `0x${string}`) || '0x0000000000000000000000000000000000000000', amount, 'WLD');
       const r = await fetch('/api/confirm-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payload }) });
       const j = await r.json();
       setResult(j);
       log('Confirm-payment response: ' + JSON.stringify(j));
       if (j?.transaction?.transaction_id) {
-        await pollConfirm(j.transaction.transaction_id, reference);
+        await pollConfirm(j.transaction.transaction_id, ref); // ✅ Use same reference that was used for payment
       }
     } catch (e: any) { log('Pay error: ' + e?.message); }
     finally { setBusy(false); }
