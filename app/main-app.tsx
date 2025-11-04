@@ -597,14 +597,15 @@ const useMiniKit = () => {
           }
           console.log('📦 Final payload:', finalPayload);
 
-          // Check if finalPayload has error status
-          if (finalPayload?.status === 'error') {
+                    // Check if finalPayload has error status
+          const payloadAny = finalPayload as any;
+          if (payloadAny?.status === 'error') {
             console.error('❌ MiniKit pay returned error:', finalPayload);
             return { 
               success: false, 
-              error: finalPayload.description || finalPayload.error_code || 'Payment failed: MiniKit returned error' 
+              error: payloadAny.description || payloadAny.error_code || 'Payment failed: MiniKit returned error' 
             };
-      }
+          }
 
                     // Send finalPayload to confirm-payment API to get transaction details
           // This is the same pattern as MiniKitPanel.tsx
