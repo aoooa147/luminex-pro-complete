@@ -11,6 +11,64 @@ const FLIP_ANIMATION_DURATION = 1500;
 const RESULT_SHOW_DURATION = 1500;
 const DIFFICULTY_INCREASE_AT = [3, 6, 9]; // Increase difficulty at these streaks
 
+// Sound effects using Web Audio API
+function playSound(frequency: number, duration: number, type: 'sine' | 'square' | 'sawtooth' = 'sine') {
+  if (typeof window === 'undefined') return;
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = frequency;
+    oscillator.type = type;
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+  } catch (e) {
+    console.error('Failed to play sound:', e);
+  }
+}
+
+function playFlipSound() {
+  // Coin flip sound: rising pitch
+  playSound(300, 0.1, 'sine');
+  setTimeout(() => playSound(400, 0.1, 'sine'), 50);
+  setTimeout(() => playSound(500, 0.1, 'sine'), 100);
+}
+
+function playCorrectSound() {
+  // Success sound: pleasant chord
+  playSound(523, 0.2, 'sine'); // C
+  setTimeout(() => playSound(659, 0.2, 'sine'), 50); // E
+  setTimeout(() => playSound(784, 0.3, 'sine'), 100); // G
+}
+
+function playWrongSound() {
+  // Error sound: low descending
+  playSound(200, 0.3, 'sawtooth');
+  setTimeout(() => playSound(150, 0.3, 'sawtooth'), 100);
+}
+
+function playVictorySound() {
+  // Victory fanfare
+  playSound(523, 0.2, 'sine');
+  setTimeout(() => playSound(659, 0.2, 'sine'), 150);
+  setTimeout(() => playSound(784, 0.2, 'sine'), 300);
+  setTimeout(() => playSound(1047, 0.5, 'sine'), 450);
+}
+
+function playGameOverSound() {
+  // Sad sound
+  playSound(200, 0.5, 'sawtooth');
+  setTimeout(() => playSound(150, 0.5, 'sawtooth'), 200);
+}
+
 export default function CoinFlipPage() {
   const [address, setAddress] = useState('');
   const [energy, setEnergy] = useState(0);
@@ -24,6 +82,7 @@ export default function CoinFlipPage() {
   const [flipRotation, setFlipRotation] = useState(0);
   const [difficulty, setDifficulty] = useState(1); // 1 = normal, 2 = fast, 3 = very fast
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   
   const flipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const resultTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -33,6 +92,12 @@ export default function CoinFlipPage() {
     const a = sessionStorage.getItem('verifiedAddress') || localStorage.getItem('user_address') || '';
     setAddress(a);
     if (a) loadEnergy(a);
+    
+    // Check sound preference
+    const soundPref = localStorage.getItem('game_sound_enabled');
+    if (soundPref !== null) {
+      setSoundEnabled(soundPref === 'true');
+    }
   }, []);
 
   async function loadEnergy(addr: string) {
@@ -43,6 +108,12 @@ export default function CoinFlipPage() {
     } catch (e) {
       console.error('Failed to load energy:', e);
     }
+  }
+
+  function toggleSound() {
+    const newState = !soundEnabled;
+    setSoundEnabled(newState);
+    localStorage.setItem('game_sound_enabled', String(newState));
   }
 
   function startGame() {
@@ -76,6 +147,11 @@ export default function CoinFlipPage() {
     setGameState('flipping');
     setFlipRotation(0);
     
+    // Play flip sound
+    if (soundEnabled) {
+      playFlipSound();
+    }
+    
     // Start flip animation
     let rotation = 0;
     const interval = setInterval(() => {
@@ -101,6 +177,10 @@ export default function CoinFlipPage() {
     
     if (guess === result) {
       // Correct!
+      if (soundEnabled) {
+        playCorrectSound();
+      }
+      
       const newStreak = streak + 1;
       const newConsecutive = consecutiveCorrect + 1;
       setStreak(newStreak);
@@ -122,6 +202,9 @@ export default function CoinFlipPage() {
       if (newStreak >= TARGET_STREAK) {
         if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
         resultTimeoutRef.current = setTimeout(() => {
+          if (soundEnabled) {
+            playVictorySound();
+          }
           handleVictory();
         }, RESULT_SHOW_DURATION);
         return;
@@ -136,6 +219,10 @@ export default function CoinFlipPage() {
       }, RESULT_SHOW_DURATION);
     } else {
       // Wrong!
+      if (soundEnabled) {
+        playWrongSound();
+      }
+      
       const newLives = lives - 1;
       setLives(newLives);
       setConsecutiveCorrect(0);
@@ -144,6 +231,9 @@ export default function CoinFlipPage() {
         // Game over
         if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
         resultTimeoutRef.current = setTimeout(() => {
+          if (soundEnabled) {
+            playGameOverSound();
+          }
           handleGameOver();
         }, RESULT_SHOW_DURATION);
       } else {
@@ -213,9 +303,18 @@ export default function CoinFlipPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-purple-950 to-zinc-950 text-white p-4 pb-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent text-center">
-          🪙 Coin Flip Challenge 🪙
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
+            🪙 Coin Flip Challenge
+          </h1>
+          <button
+            onClick={toggleSound}
+            className="p-2 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800 transition-colors"
+            aria-label="Toggle sound"
+          >
+            {soundEnabled ? '🔊' : '🔇'}
+          </button>
+        </div>
 
         {/* Stats Bar */}
         <div className="grid grid-cols-4 gap-3">
