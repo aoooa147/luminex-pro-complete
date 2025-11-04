@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { MiniKit, VerificationLevel, ISuccessResult, MiniAppWalletAuthSuccessPayload } from '@worldcoin/minikit-js';
+import { MiniKit, VerificationLevel, ISuccessResult, MiniAppWalletAuthSuccessPayload, tokenToDecimals, Tokens } from '@worldcoin/minikit-js';
 
 /**
  * useMiniKit - thin wrapper around official MiniKit-JS
@@ -69,13 +69,21 @@ export const useMiniKit = () => {
         throw new Error(`Invalid amount: must be a positive number, got: ${safeAmount}`);
       }
 
+      // Convert amount to decimals using tokenToDecimals() as per MiniKit documentation
+      // WLD has 18 decimals, USDC has 6 decimals
+      // Example: tokenToDecimals(1, Tokens.WLD) = 1000000000000000000 (1 * 10^18)
+      const tokenSymbol = safeToken === 'WLD' ? Tokens.WLD : Tokens.USDC;
+      const amountInDecimals = tokenToDecimals(parseFloat(safeAmount), tokenSymbol);
+      const tokenAmountStr = amountInDecimals.toString();
+
       // MiniKit v1.9.8+ requires tokens as TokensPayload array with symbol and token_amount
+      // token_amount MUST be in smallest unit (decimals) as per documentation
       const payload = {
         reference: referenceId,
         to: toAddress,
         tokens: [{
-          symbol: safeToken, // 'WLD' or 'USDC'
-          token_amount: safeAmount // Amount as string
+          symbol: tokenSymbol, // Tokens.WLD or Tokens.USDC (enum, not string)
+          token_amount: tokenAmountStr // Amount in decimals (e.g., "1000000000000000000" for 1 WLD)
         }],
         description: `Payment of ${safeAmount} ${safeToken}`, // Required in v1.9.8+
       };
