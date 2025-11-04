@@ -24,7 +24,9 @@ export async function POST(request: NextRequest) {
     const { payload } = BodySchema.parse(body);
     
     // Extract transaction_id from payload (could be direct or nested)
-    const transactionId = payload.transaction_id || payload.transactionId;
+    // Use type assertion to handle union type
+    const payloadAny = payload as any;
+    const transactionId = payloadAny.transaction_id || payloadAny.transactionId;
     
     if (!transactionId) {
       console.warn(`[confirm-payment] missing_transaction_id rid=%s payload=%s`, rid, JSON.stringify(payload));
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
         c.cancel();
         if (r.ok) {
           const data = await r.json();
-          const ref = payload.reference || payload.referenceId || 'unknown';
+          const ref = payloadAny.reference || payloadAny.referenceId || 'unknown';
           console.log(`[confirm-payment] rid=%s ip=%s tx=%s ref=%s status=%s attempt=%d`, rid, ip, transactionId, ref, data?.transaction_status || data?.status, attempt);
           return NextResponse.json({ success: true, transaction: data, rid });
         } else if (r.status >= 400 && r.status < 500) {
@@ -84,7 +86,7 @@ export async function POST(request: NextRequest) {
       }
       await new Promise(r => setTimeout(r, attempt * 500));
     }
-    const ref = payload.reference || payload.referenceId || 'unknown';
+    const ref = payloadAny.reference || payloadAny.referenceId || 'unknown';
     console.error(`[confirm-payment] failed rid=%s tx=%s ref=%s err=%s`, rid, transactionId, ref, lastErr?.message);
     return NextResponse.json({ success: false, error: 'Developer API error or timeout', rid }, { status: 502 });
   } catch (e: any) {
