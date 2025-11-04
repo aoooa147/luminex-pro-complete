@@ -51,7 +51,7 @@ export const useMiniKit = () => {
         const { finalPayload } = await MiniKit.commandsAsync.pay({
           reference: referenceId,
           to: toAddress,
-          tokens: [token], // ✅ Array format required for v1.x: ['WLD'] or ['USDC']
+          tokens: [token] as any, // ✅ Array format required for v1.x: ['WLD'] or ['USDC'] - using as any due to type mismatch
           amount: String(amount), // ✅ Ensure it's a string
         });
         return finalPayload; // { transaction_id, reference, ... }
