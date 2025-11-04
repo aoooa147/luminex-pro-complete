@@ -583,8 +583,17 @@ const useMiniKit = () => {
 
           // Validate TREASURY_ADDRESS
           if (!TREASURY_ADDRESS || !TREASURY_ADDRESS.startsWith('0x') || TREASURY_ADDRESS.length !== 42) {
+            console.error('❌ Invalid TREASURY_ADDRESS:', TREASURY_ADDRESS);
             return { success: false, error: 'Invalid treasury address configuration' };
           }
+
+          // Check for zero address
+          if (TREASURY_ADDRESS === '0x0000000000000000000000000000000000000000') {
+            console.error('❌ TREASURY_ADDRESS is zero address! Please configure NEXT_PUBLIC_TREASURY_ADDRESS correctly.');
+            return { success: false, error: 'Treasury address not configured. Please set NEXT_PUBLIC_TREASURY_ADDRESS in environment variables.' };
+          }
+
+          console.log('✅ TREASURY_ADDRESS validated:', TREASURY_ADDRESS);
 
           // Call MiniKit pay API directly (cannot use hooks inside functions)
           const MiniKit = (window as any).MiniKit;
