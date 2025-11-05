@@ -1283,19 +1283,20 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
                   <>
                     <Shield className="w-5 h-5 drop-shadow-md" />
                     <span className="text-base font-extrabold tracking-wide drop-shadow-md">Verify</span>
-                  <motion.div
-                      className="w-2 h-2 bg-black/40 rounded-full shadow-lg"
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  </>
-              )}
-              </span>
-            </motion.button>
+                      <motion.div
+                        className="w-2 h-2 bg-black/40 rounded-full shadow-lg"
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                    </>
+                  )}
+                </span>
+              </motion.button>
+            </div>
           </div>
-      </motion.div>
+        </motion.div>
 
-                                 {/* Luxurious Footer */}
+        {/* Luxurious Footer */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1322,12 +1323,12 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
               <div className="w-2.5 h-2.5 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full shadow-lg" style={{
                 boxShadow: '0 0 10px rgba(234, 179, 8, 0.6)'
               }}></div>
-                  <motion.div
+              <motion.div
                 className="absolute inset-0 bg-yellow-400 rounded-full blur-md"
                 animate={{ opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                  />
-      </motion.div>
+              />
+            </motion.div>
         <motion.div
               className="relative"
               animate={{ 
