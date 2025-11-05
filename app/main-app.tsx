@@ -2109,6 +2109,44 @@ const LuminexApp = () => {
     setTimeout(() => setToast({ message: '', type: null }), 3000);
   };
 
+  // Helper function to send contract transaction via MiniKit
+  const sendContractTransaction = async (
+    to: string,
+    data: string,
+    description: string
+  ): Promise<string> => {
+    if (typeof window === 'undefined' || !(window as any).MiniKit) {
+      throw new Error('MiniKit is not available. Please open this app in World App.');
+    }
+
+    const MiniKit = (window as any).MiniKit;
+    if (!MiniKit.commandsAsync?.sendTransaction) {
+      throw new Error('MiniKit sendTransaction is not available. Please update World App.');
+    }
+
+    try {
+      console.log(`🔵 Sending transaction: ${description}`);
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+        to: to as `0x${string}`,
+        data: data as `0x${string}`,
+        value: '0x0',
+      });
+
+      if (!finalPayload?.transaction_id) {
+        throw new Error('Transaction failed: No transaction ID returned');
+      }
+
+      console.log('✅ Transaction sent:', finalPayload.transaction_id);
+      return finalPayload.transaction_id;
+    } catch (error: any) {
+      console.error('❌ Transaction error:', error);
+      if (error?.message?.includes('user_cancelled') || error?.message?.includes('cancel')) {
+        throw new Error('Transaction cancelled by user');
+      }
+      throw new Error(error?.message || 'Transaction failed');
+    }
+  };
+
   const handleStake = async () => {
     if (!stakeAmount) {
       setIsShowInput(true);
@@ -2133,34 +2171,62 @@ const LuminexApp = () => {
       const amountWei = ethers.parseUnits(amount.toString(), 18);
       const lockPeriod = POOLS[selectedPool].lockDays * 24 * 60 * 60; // Convert days to seconds
 
-      const signer = await getSigner();
-      if (!signer) {
-        throw new Error('No signer available');
+      // Check if MiniKit is available
+      const MiniKit = (window as any).MiniKit;
+      if (!MiniKit || !MiniKit.isInstalled()) {
+        throw new Error('Please use World App to stake tokens');
       }
 
-      // Check if signer has provider (standard signer)
-      if (!('provider' in signer) || !signer.provider) {
-        throw new Error('Staking requires standard wallet connection (use MetaMask)');
+      // Get provider for reading contract data
+      if (!provider) {
+        throw new Error('Provider not available');
       }
 
-      // Get token contract with signer for approval
-      const tokenContract = new ethers.Contract(LUX_TOKEN_ADDRESS, ERC20_ABI, signer as ethers.Signer);
-      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, signer as ethers.Signer);
+      // Get token contract interface for encoding
+      const tokenContractInterface = new ethers.Interface(ERC20_ABI);
+      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
 
-      // Check and approve if needed
-      const allowance = await tokenContract.allowance(actualAddress, STAKING_CONTRACT_ADDRESS);
+      // Check and approve if needed (read-only call)
+      const tokenContractRead = new ethers.Contract(LUX_TOKEN_ADDRESS, ERC20_ABI, provider);
+      const allowance = await tokenContractRead.allowance(actualAddress, STAKING_CONTRACT_ADDRESS);
+      
       if (allowance < amountWei) {
         console.log('🔄 Approving token spending...');
-        const approveTx = await tokenContract.approve(STAKING_CONTRACT_ADDRESS, amountWei);
-        await approveTx.wait();
+        // Encode approve function call
+        const approveData = tokenContractInterface.encodeFunctionData('approve', [STAKING_CONTRACT_ADDRESS, amountWei]);
+        
+        // Send transaction via MiniKit
+        const approveResult = await MiniKit.commandsAsync.sendTransaction({
+          to: LUX_TOKEN_ADDRESS,
+          data: approveData,
+          value: '0'
+        });
+        
+        if (!approveResult?.finalPayload?.transaction_id) {
+          throw new Error('Token approval failed');
+        }
         console.log('✅ Token approved');
       }
 
-      // Stake tokens
+      // Encode stake function call
+      const stakeData = stakingContractInterface.encodeFunctionData('stake', [selectedPool, amountWei, lockPeriod]);
+      
+      // Stake tokens via MiniKit
       console.log(`🔄 Staking ${amount} ${TOKEN_NAME} to pool ${selectedPool}...`);
-      const stakeTx = await stakingContract.stake(selectedPool, amountWei, lockPeriod);
-      await stakeTx.wait();
-      console.log('✅ Staking successful');
+      const stakeResult = await MiniKit.commandsAsync.sendTransaction({
+        to: STAKING_CONTRACT_ADDRESS,
+        data: stakeData,
+        value: '0'
+      });
+
+      if (!stakeResult?.finalPayload?.transaction_id) {
+        throw new Error('Staking transaction failed');
+      }
+      
+      console.log('✅ Staking transaction submitted:', stakeResult.finalPayload.transaction_id);
+
+      // Wait a bit for transaction to be mined (MiniKit transactions are async)
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Refresh data after successful transaction
       await Promise.all([
@@ -2190,24 +2256,35 @@ const LuminexApp = () => {
       return;
     }
 
-    setIsClaiming(true);
+        setIsClaiming(true);
     try {
-      const signer = await getSigner();
-      if (!signer) {
-        throw new Error('No signer available');
+      // Check if MiniKit is available
+      const MiniKit = (window as any).MiniKit;
+      if (!MiniKit || !MiniKit.isInstalled()) {
+        throw new Error('Please use World App to claim rewards');
       }
 
-      // Check if signer has provider (standard signer)
-      if (!('provider' in signer) || !signer.provider) {
-        throw new Error('Claim rewards requires standard wallet connection (use MetaMask)');
-      }
+      // Get staking contract interface for encoding
+      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
 
-      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, signer as ethers.Signer);
-
+      // Encode claimRewards function call
+      const claimData = stakingContractInterface.encodeFunctionData('claimRewards', [selectedPool]);
+      
       console.log(`🔄 Claiming rewards from pool ${selectedPool}...`);
-      const claimTx = await stakingContract.claimRewards(selectedPool);
-      await claimTx.wait();
-      console.log('✅ Rewards claimed');
+      const claimResult = await MiniKit.commandsAsync.sendTransaction({
+        to: STAKING_CONTRACT_ADDRESS,
+        data: claimData,
+        value: '0'
+      });
+
+      if (!claimResult?.finalPayload?.transaction_id) {
+        throw new Error('Claim rewards transaction failed');
+      }
+      
+      console.log('✅ Claim rewards transaction submitted:', claimResult.finalPayload.transaction_id);
+
+      // Wait a bit for transaction to be mined
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Refresh data after successful transaction
       await Promise.all([
@@ -2235,32 +2312,49 @@ const LuminexApp = () => {
       return;
     }
 
-    setIsWithdrawing(true);
+        setIsWithdrawing(true);
     try {
-      const signer = await getSigner();
-      if (!signer) {
-        throw new Error('No signer available');
+      // Check if MiniKit is available
+      const MiniKit = (window as any).MiniKit;
+      if (!MiniKit || !MiniKit.isInstalled()) {
+        throw new Error('Please use World App to withdraw balance');
       }
 
-      // Check if signer has provider (standard signer)
-      if (!('provider' in signer) || !signer.provider) {
-        throw new Error('Claim rewards requires standard wallet connection (use MetaMask)');
+      // Get provider for reading contract data
+      if (!provider) {
+        throw new Error('Provider not available');
       }
 
-      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, signer as ethers.Signer);
-      
+      // Get staking contract for reading and encoding
+      const stakingContractRead = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider);
+      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
+
       // Get user stake info to determine withdrawal amount
-      const stakeInfo = await stakingContract.getUserStakeInfo(actualAddress, selectedPool);
+      const stakeInfo = await stakingContractRead.getUserStakeInfo(actualAddress, selectedPool);
       const amountWei = stakeInfo.amount; // Withdraw all staked amount
 
       if (amountWei === 0n) {
         throw new Error('No staked balance to withdraw');
       }
 
+      // Encode withdraw function call
+      const withdrawData = stakingContractInterface.encodeFunctionData('withdraw', [selectedPool, amountWei]);
+      
       console.log(`🔄 Withdrawing from pool ${selectedPool}...`);
-      const withdrawTx = await stakingContract.withdraw(selectedPool, amountWei);
-      await withdrawTx.wait();
-      console.log('✅ Withdrawal successful');
+      const withdrawResult = await MiniKit.commandsAsync.sendTransaction({
+        to: STAKING_CONTRACT_ADDRESS,
+        data: withdrawData,
+        value: '0'
+      });
+
+      if (!withdrawResult?.finalPayload?.transaction_id) {
+        throw new Error('Withdrawal transaction failed');
+      }
+      
+      console.log('✅ Withdrawal transaction submitted:', withdrawResult.finalPayload.transaction_id);
+
+      // Wait a bit for transaction to be mined
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Refresh data after successful transaction
       await Promise.all([
@@ -2914,32 +3008,33 @@ const LuminexApp = () => {
                   )}
                 </motion.button>
 
-                {/* Free Token Button */}
+                                {/* Free Token Button */}
                 <motion.button
-                  whileHover={{ scale: 1.02, boxShadow: "0 15px 35px rgba(147, 51, 234, 0.4)" }}
+                  whileHover={{ scale: 1.02, boxShadow: "0 15px 35px rgba(147, 51, 234, 0.4)" }}                                                                
                   whileTap={{ scale: 0.98 }}
-                  className="w-full text-white font-bold py-3 px-4 rounded-2xl flex items-center justify-center space-x-2 relative overflow-hidden group"
+                  onClick={() => setActiveTab('game')}
+                  className="w-full text-white font-bold py-3 px-4 rounded-2xl flex items-center justify-center space-x-2 relative overflow-hidden group"       
                   style={{
-                    background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
+                    background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',                                                               
                     backgroundSize: '200% 100%',
-                    boxShadow: '0 8px 25px rgba(147, 51, 234, 0.3), 0 0 15px rgba(236, 72, 153, 0.2)'
+                    boxShadow: '0 8px 25px rgba(147, 51, 234, 0.3), 0 0 15px rgba(236, 72, 153, 0.2)'                                                           
                   }}
                 >
                   <motion.div
                     className="absolute inset-0 rounded-2xl"
                     animate={{
-                      backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                      backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']      
                     }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}                                                                              
                     style={{
-                      background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
+                      background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',                                                             
                       backgroundSize: '200% 100%'
                     }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/50 via-amber-400/50 to-yellow-400/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-2xl"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/50 via-amber-400/50 to-yellow-400/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>                                               
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-2xl"></div>                                            
                   <Gift className="w-6 h-6 relative z-10" />
-                  <span className="text-base relative z-10 font-extrabold">{t('freeToken')}</span>
+                  <span className="text-base relative z-10 font-extrabold">{t('freeToken')}</span>                                                              
                   <Sparkles className="w-5 h-5 relative z-10" />
                 </motion.button>
               </div>
