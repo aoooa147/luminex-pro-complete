@@ -1249,130 +1249,28 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
               </div>
             )}
 
+            {/* Verify Button */}
             <motion.button
-              whileHover={{ scale: 1.05, boxShadow: "0 20px 50px rgba(234, 179, 8, 0.6), 0 0 60px rgba(217, 119, 6, 0.4)" }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleVerify}
               disabled={isVerifying}
-              className="w-full text-black font-extrabold py-4 px-6 rounded-2xl flex items-center justify-center space-x-3 relative overflow-hidden group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all border-2 border-yellow-500/30"
-              style={{
-                background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 30%, #d97706 60%, #92400e 100%)',
-                boxShadow: '0 15px 40px rgba(234, 179, 8, 0.5), 0 0 30px rgba(217, 119, 6, 0.4), 0 0 50px rgba(251, 191, 36, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.2)',
-                willChange: 'transform',
-                transform: 'translateZ(0)'
-              }}
+              className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold py-3.5 px-6 rounded-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
             >
-              {/* Background gradient layer */}
-              <div 
-                className="absolute inset-0 rounded-2xl"
-                style={{
-                  background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 30%, #d97706 60%, #92400e 100%)',
-                  zIndex: 0
-                }}
-              />
-              
-              {/* Animated shimmer layer */}
-              <motion.div
-                className="absolute inset-0 rounded-2xl"
-                animate={{
-                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                }}
-                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                style={{
-                  background: 'linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%)',
-                  backgroundSize: '200% 100%',
-                  zIndex: 1
-                }}
-              />
-              
-              {/* Hover overlay */}
-              <div 
-                className="absolute inset-0 bg-gradient-to-r from-yellow-300/50 via-amber-300/50 to-yellow-300/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
-                style={{ zIndex: 2 }}
-              />
-              
-              {/* Inner glow */}
-              <div 
-                className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent rounded-2xl pointer-events-none"
-                style={{ zIndex: 3 }}
-              />
-              
-              {/* Button content - always on top */}
-              <span className="relative z-20 flex items-center justify-center space-x-3">
-                {isVerifying ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin drop-shadow-lg" />
-                    <span className="text-base font-extrabold tracking-wide drop-shadow-lg">Verifying...</span>
-                  </>
-                ) : (
-                  <>
-                    <Shield className="w-5 h-5 drop-shadow-md" />
-                    <span className="text-base font-extrabold tracking-wide drop-shadow-md">Verify</span>
-                  <motion.div
-                        className="w-2 h-2 bg-black/40 rounded-full shadow-lg"
-                        animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                    </>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="w-5 h-5" />
+                  <span>Verify</span>
+                </>
               )}
-                </span>
-              </motion.button>
-          </div>
-      </motion.div>
-      </div>
-
-      {/* Luxurious Footer */}
-        <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.6 }}
-        className="text-center mt-10 relative"
-        style={{ willChange: 'opacity, transform' }}
-      >
-          {/* Decorative top line */}
-          <div className="flex items-center justify-center mb-4">
-            <div className="h-px w-16 bg-gradient-to-r from-transparent via-yellow-600/40 to-transparent"></div>
-            <div className="mx-3 w-1 h-1 bg-yellow-500/60 rounded-full"></div>
-            <div className="h-px w-16 bg-gradient-to-l from-transparent via-yellow-600/40 to-transparent"></div>
-          </div>
-          
-          <div className="flex items-center justify-center space-x-3">
-            <motion.div 
-              className="relative"
-              animate={{ 
-                opacity: [0.6, 1, 0.6],
-                scale: [1, 1.3, 1]
-              }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <div className="w-2.5 h-2.5 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full shadow-lg" style={{
-                boxShadow: '0 0 10px rgba(234, 179, 8, 0.6)'
-              }}></div>
-              <motion.div
-                className="absolute inset-0 bg-yellow-400 rounded-full blur-md"
-                animate={{ opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-            </motion.div>
-        <motion.div
-              className="relative"
-              animate={{ 
-                opacity: [0.6, 1, 0.6],
-                scale: [1, 1.3, 1]
-              }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-            >
-              <div className="w-2.5 h-2.5 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full shadow-lg" style={{
-                boxShadow: '0 0 10px rgba(234, 179, 8, 0.6)'
-              }}></div>
-              <motion.div
-                className="absolute inset-0 bg-yellow-400 rounded-full blur-md"
-                animate={{ opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-              />
-        </motion.div>
-      </div>
-        </motion.div>
+            </motion.button>
+          </motion.div>
+        </div>
       </div>
 
       {/* "เปิด MiniKit" Button - Bottom Right Corner */}
