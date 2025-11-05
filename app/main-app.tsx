@@ -21,6 +21,7 @@ import {
   Calendar, Timer, TrendingUp as TrendingIcon, Share2, UserPlus, QrCode, Gamepad2
 } from "lucide-react";
 import QRCodeSVG from 'react-qr-code';
+import Logo3D from '@/components/Logo3D';
 
 const LOGO_URL = "https://i.postimg.cc/wvJqhSYW/Gemini-Generated-Image-ggu8gdggu8gdggu8-1.png";
 const TOKEN_NAME = "LUX";
@@ -1052,102 +1053,18 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
         <div className="absolute top-0 right-0 h-full w-px bg-gradient-to-b from-transparent via-yellow-600/30 to-transparent"></div>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-md w-full">
-        {/* Logo - Optimized */}
-      <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="text-center mb-6"
-          style={{ willChange: 'transform, opacity' }}
-        >
-          <div className="relative inline-block w-36 h-36" style={{ transform: 'translateZ(0)' }}>
-            {/* Luxurious multi-layer gold glow effects */}
-            <motion.div
-              className="absolute inset-0 blur-3xl bg-yellow-500/25 rounded-full"
-              animate={{ 
-                opacity: [0.2, 0.5, 0.2],
-                scale: [1, 1.15, 1]
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              style={{ willChange: 'opacity, transform', transform: 'translateZ(0)' }}
-            />
-            <motion.div 
-              className="absolute inset-0 blur-2xl bg-amber-500/20 rounded-full"
-              animate={{ 
-                opacity: [0.15, 0.3, 0.15],
-                scale: [1.05, 1.1, 1.05]
-              }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-            />
-            <div className="absolute inset-0 blur-xl bg-yellow-400/15 rounded-full"></div>
-            
-            {/* Decorative gold rings */}
-            <motion.div
-              className="absolute inset-[-10px] rounded-full border-2 border-yellow-600/20"
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            />
-            <motion.div
-              className="absolute inset-[-20px] rounded-full border border-yellow-500/10"
-              animate={{ rotate: [0, -360] }}
-              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            />
-            
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-              className="relative w-full h-full flex items-center justify-center"
-              style={{ willChange: 'transform' }}
-            >
-              <div className="relative w-32 h-32 rounded-full flex items-center justify-center shadow-2xl overflow-hidden" style={{ 
-                transform: 'translateZ(0)', 
-                boxShadow: '0 0 60px rgba(234, 179, 8, 0.5), 0 0 100px rgba(217, 119, 6, 0.3), inset 0 0 30px rgba(251, 191, 36, 0.1)'
-              }}>
-                {/* Luxurious multi-layer gold gradient border */}
-                <motion.div
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    background: 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706, #92400e, #fbbf24)',
-                    backgroundSize: '300% 300%',
-                    padding: '5px'
-                  }}
-                  animate={{
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                  }}
-                  transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                />
-                {/* Inner ornate border */}
-                <div className="absolute inset-[5px] rounded-full border border-yellow-600/40" style={{ 
-                  boxShadow: 'inset 0 0 20px rgba(234, 179, 8, 0.2), 0 0 10px rgba(251, 191, 36, 0.1)'
-                }}></div>
-                <div className="absolute inset-[8px] rounded-full bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center border border-yellow-700/40">
-                  <img src={LOGO_URL} alt="Luminex Logo" className="w-full h-full object-cover rounded-full" loading="eager" style={{
-                    filter: 'drop-shadow(0 0 10px rgba(234, 179, 8, 0.3))'
-                  }} />
-                </div>
-                {/* Multi-layer inner gold glow */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-500/15 via-yellow-600/5 to-transparent pointer-events-none"></div>
-                <div className="absolute inset-0 rounded-full bg-gradient-radial from-yellow-400/10 via-transparent to-transparent pointer-events-none"></div>
-                {/* Luxurious gold shimmer effects */}
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent"
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                />
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-500/20 via-transparent via-yellow-500/20 to-transparent"
-                  animate={{ rotate: [360, 0] }}
-                  transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                />
-                {/* Corner ornaments */}
-                <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-yellow-500/60 rounded-tl-full"></div>
-                <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-yellow-500/60 rounded-tr-full"></div>
-                <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-yellow-500/60 rounded-bl-full"></div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-yellow-500/60 rounded-br-full"></div>
-              </div>
-            </motion.div>
+              {/* Content */}
+        <div className="relative z-10 max-w-md w-full">
+          {/* Logo - 3D */}
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="text-center mb-6 flex justify-center"
+            style={{ willChange: 'transform, opacity' }}
+          >
+            <Logo3D size={144} interactive={true} />
+          </motion.div>
             {/* Luxurious ornate circuit rings */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 192 192" style={{ transformOrigin: 'center', transform: 'translateZ(0)' }}>
               {/* Outer ornate ring */}
@@ -2588,34 +2505,16 @@ const LuminexApp = () => {
           />
         </div>
         
-        <div className="text-center relative z-10 max-w-md w-full px-4">
-          {/* Large Logo with glow */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative inline-block w-40 h-40 mb-8"
-          >
-            <motion.div 
-              className="absolute inset-0 blur-3xl bg-yellow-500/30 rounded-full"
-              animate={{ 
-                opacity: [0.2, 0.5, 0.2],
-                scale: [1, 1.2, 1]
-              }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <div className="relative w-full h-full rounded-full flex items-center justify-center overflow-hidden border-4 border-yellow-600/50" style={{
-              boxShadow: '0 0 60px rgba(234, 179, 8, 0.6), 0 0 100px rgba(217, 119, 6, 0.4)'
-            }}>
-              <img 
-                src={LOGO_URL} 
-                alt="Luminex Logo" 
-                className="w-full h-full object-cover rounded-full" 
-                loading="eager"
-                fetchPriority="high"
-              />
-            </div>
-          </motion.div>
+                  <div className="text-center relative z-10 max-w-md w-full px-4">      
+            {/* Large Logo - 3D */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative inline-block mb-8 flex justify-center"
+            >
+              <Logo3D size={160} interactive={true} />
+            </motion.div>
           
           {/* Gold spinner */}
           <motion.div
