@@ -1008,7 +1008,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
       </div>
 
       {/* Main Content */}
-      <div className="min-h-screen flex items-center justify-center p-4 pt-20 pb-24"> 
+      <div className="min-h-screen flex items-center justify-center p-4 pt-20 pb-20 overflow-x-hidden"> 
       {/* Luxurious geometric background pattern */}
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none" style={{ 
         backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(234, 179, 8, 0.1) 35px, rgba(234, 179, 8, 0.1) 70px),
@@ -1084,7 +1084,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
             </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-md w-full">
+      <div className="relative z-10 max-w-md w-full px-2">
         {/* Logo - 3D */}
         <motion.div
           initial={{ opacity: 0, y: -50 }}
@@ -1114,8 +1114,8 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="text-transparent bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 bg-clip-text font-bold text-sm tracking-[0.2em] uppercase mt-3 whitespace-nowrap"                                                                              
-          style={{ willChange: 'opacity', letterSpacing: '0.3em' }}
+          className="text-transparent bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 bg-clip-text font-bold text-sm uppercase mt-3 whitespace-nowrap w-full text-center"                                                                              
+          style={{ willChange: 'opacity', letterSpacing: '0.25em' }}
         >
           STAKING PLATFORM
         </motion.p>
@@ -1230,21 +1230,22 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
               </motion.div>
             </div>
             
-            <h2 className="text-3xl font-extrabold mb-4 text-center tracking-tight relative">
-                <span className="relative z-10 bg-gradient-to-r from-yellow-300 via-yellow-400 via-yellow-500 via-amber-500 to-yellow-400 bg-clip-text text-transparent drop-shadow-lg" style={{
-                  textShadow: '0 0 20px rgba(234, 179, 8, 0.3), 0 0 40px rgba(217, 119, 6, 0.2)'
+            <h2 className="text-3xl font-extrabold mb-4 text-center tracking-tight relative">                                                                   
+                <span className="relative z-10 bg-gradient-to-r from-yellow-300 via-yellow-400 via-yellow-500 via-amber-500 to-yellow-400 bg-clip-text text-transparent drop-shadow-lg" style={{                                                
+                  textShadow: '0 0 20px rgba(234, 179, 8, 0.3), 0 0 40px rgba(217, 119, 6, 0.2)'                                                                
                 }}>
               Verify Humanity
                 </span>
-                <span className="absolute inset-0 bg-gradient-to-r from-yellow-400/50 via-amber-400/60 to-yellow-400/50 blur-xl opacity-60 -z-10"></span>
-                <span className="absolute inset-0 bg-gradient-to-r from-yellow-600/30 to-amber-600/30 blur-2xl opacity-40 -z-20"></span>
+                <span className="absolute inset-0 bg-gradient-to-r from-yellow-400/50 via-amber-400/60 to-yellow-400/50 blur-xl opacity-60 -z-10"></span>       
+                <span className="absolute inset-0 bg-gradient-to-r from-yellow-600/30 to-amber-600/30 blur-2xl opacity-40 -z-20"></span>                        
             </h2>
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="h-px w-12 bg-gradient-to-r from-transparent to-yellow-600/40 flex-shrink-0"></div>                                                              
-              <p className="text-gray-300 mb-0 text-center leading-relaxed text-base font-medium px-2">                                                              
-              You must verify your humanity to access the application.
-            </p>
-              <div className="h-px w-12 bg-gradient-to-l from-transparent to-yellow-600/40 flex-shrink-0"></div>                                                              
+            <div className="flex items-center justify-center gap-2 mb-6 w-full px-2">       
+              <div className="h-px w-8 bg-gradient-to-r from-transparent to-yellow-600/40 flex-shrink-0"></div>                                                
+              <p className="text-gray-300 mb-0 text-center leading-relaxed text-sm font-medium px-2 flex-1 min-w-0">                                                              
+                You must verify your humanity to access the application.
+              </p>
+              <div className="h-px w-8 bg-gradient-to-l from-transparent to-yellow-600/40 flex-shrink-0"></div>                                                              
+
             </div>
 
             {verifyError && (
@@ -1393,12 +1394,13 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
             alert('กรุณาเปิดแอปใน World App เพื่อใช้งาน MiniKit');
           }
         }}
-        className="fixed bottom-4 right-4 z-40 px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold text-sm rounded-lg shadow-lg hover:shadow-xl transition-all border-2 border-yellow-400/50 flex items-center gap-2"
+        className="fixed bottom-4 right-2 z-40 px-3 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-xs rounded-lg shadow-lg hover:shadow-xl transition-all border border-purple-400/50 flex items-center gap-1.5"
         style={{
-          boxShadow: '0 4px 12px rgba(234, 179, 8, 0.4), 0 0 20px rgba(234, 179, 8, 0.2)',
+          boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4), 0 0 20px rgba(168, 85, 247, 0.2)',
+          maxWidth: 'calc(100vw - 1rem)',
         }}
       >
-        <span>เปิด MiniKit</span>
+        <span className="whitespace-nowrap">เปิด MiniKit</span>
       </motion.button>
     </div>
   );

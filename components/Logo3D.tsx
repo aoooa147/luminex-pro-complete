@@ -284,15 +284,15 @@ const Logo3D: React.FC<Logo3DProps> = ({
             />
           </div>
 
-          {/* Edge highlight for depth */}
-          <div
-            className="absolute inset-0 rounded-full pointer-events-none"
-            style={{
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              boxShadow: 'inset 0 0 20px rgba(234, 179, 8, 0.3)',
-              transform: 'translateZ(1px)',
-            }}
-          />
+                     {/* Edge highlight for depth */}
+           <div
+             className="absolute inset-0 rounded-full pointer-events-none"
+             style={{
+               border: '1px solid rgba(255, 255, 255, 0.2)',
+               boxShadow: 'inset 0 0 20px rgba(184, 148, 31, 0.25)',
+               transform: 'translateZ(1px)',
+             }}
+           />
         </motion.div>
 
         {/* Ambient glow behind coin */}
