@@ -18,7 +18,8 @@ import {
   AlertTriangle, ExternalLink, Copy, Check, Loader2, Clock, Star, Droplet,
   DollarSign, Eye, BarChart3, Flame, Trophy, Award, TrendingDown, Globe, 
   PiggyBank, CreditCard, Gem, Sparkles, Crown, Rocket, DollarSign as DollarIcon,
-  Calendar, Timer, TrendingUp as TrendingIcon, Share2, UserPlus, QrCode, Gamepad2
+  Calendar, Timer, TrendingUp as TrendingIcon, Share2, UserPlus, QrCode, Gamepad2,
+  X, MoreVertical
 } from "lucide-react";
 import QRCodeSVG from 'react-qr-code';
 import Logo3D from '@/components/Logo3D';
@@ -977,8 +978,37 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden flex items-center justify-center p-4" style={{ willChange: 'auto' }}>
+    return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden" style={{ willChange: 'auto' }}>
+      {/* Header Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-yellow-600/20">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left: Close button */}
+          <button
+            onClick={() => window.history.back()}
+            className="w-8 h-8 flex items-center justify-center text-white hover:text-yellow-400 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Center: Logo and Title */}
+          <div className="flex items-center gap-2 flex-1 justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center border border-yellow-500/50">
+              <span className="text-black font-black text-sm">L</span>
+            </div>
+            <span className="text-white font-semibold text-sm">Luminex Staking</span>
+            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+          </div>
+
+          {/* Right: Menu button */}
+          <button className="w-8 h-8 flex items-center justify-center text-white hover:text-yellow-400 transition-colors">
+            <MoreVertical className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="min-h-screen flex items-center justify-center p-4 pt-20">
       {/* Luxurious geometric background pattern */}
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none" style={{ 
         backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(234, 179, 8, 0.1) 35px, rgba(234, 179, 8, 0.1) 70px),
@@ -1347,6 +1377,7 @@ const WorldIDVerification = ({ onVerify }: { onVerify: () => void }) => {
             </motion.div>
           </div>
         </motion.div>
+      </div>
     </div>
   );
 };
