@@ -2852,11 +2852,11 @@ const LuminexApp = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
+              className="space-y-3"
               style={{ willChange: 'transform, opacity' }}
             >
             {/* Pool Selection */}
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-1.5">
                 {POOLS.map((pool) => {
                   const Icon = pool.icon;
                   return (
@@ -2893,62 +2893,60 @@ const LuminexApp = () => {
               <motion.div
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
-                className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-5 text-white overflow-hidden border border-yellow-600/20"
+                className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-xl p-3 text-white overflow-hidden border border-yellow-600/20"
               >
-                <div className="relative z-10 space-y-4">
+                <div className="relative z-10 space-y-2">
                   {/* Power License Status */}
-                  <div className="flex items-center justify-between p-4 bg-black/40 rounded-xl border border-white/10">                                         
-                    <div className="flex items-center space-x-2">
-                      <Zap className="w-5 h-5 text-yellow-400" />
-                      <div>
-                        <span className="text-white/80 text-xs">Power License:</span>                                                                         
-                        <span className="text-white font-bold text-sm ml-2">
-                          {currentPower ? currentPower.name : 'None'}
-                        </span>
-                      </div>
+                  <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/10">                                         
+                    <div className="flex items-center space-x-1.5">
+                      <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                      <span className="text-white/80 text-[10px]">Power License:</span>                                                                         
+                      <span className="text-white font-bold text-xs">
+                        {currentPower ? currentPower.name : 'None'}
+                      </span>
                   </div>
                     <div className="text-right">
-                      <div className="text-yellow-300 font-bold text-base">{totalApy}% Total APY</div>                                                            
-                      <div className="text-white/60 text-xs mt-0.5">
+                      <div className="text-yellow-300 font-bold text-xs">{totalApy}% Total APY</div>                                                            
+                      <div className="text-white/60 text-[9px]">
                         Base {baseApy}% {powerBoost > 0 ? `+ ${powerBoost}%` : ''}                                                                              
                       </div>
                     </div>
                 </div>
 
                   {/* Staking Balance */}
-                  <div className="p-4 bg-black/40 rounded-xl border border-white/10">                                                                           
-                    <p className="text-white/80 text-xs mb-2">{t('myStakingBalance')}</p>                                                                   
+                  <div className="p-2 bg-black/40 rounded-lg border border-white/10">                                                                           
+                    <p className="text-white/80 text-[10px] mb-1">{t('myStakingBalance')}</p>                                                                   
                       {!actualAddress || !STAKING_CONTRACT_ADDRESS ? (
-                      <div className="flex items-center justify-center py-2">   
-                        <span className="text-yellow-400 text-sm text-center">                                                                              
+                      <div className="flex items-center justify-center py-1">   
+                        <span className="text-yellow-400 text-[10px] text-center">                                                                              
                           {!actualAddress ? 'Connect wallet' : 'Contract not configured'}                                                                       
                           </span>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">     
-                        <div className="flex items-center space-x-2">
-                          <Coins className="w-5 h-5 text-yellow-300" />
-                          <span className="text-2xl font-extrabold text-white">{formattedStakedAmount}</span>                                                    
-                          <span className="text-white/60 text-sm">LUX</span>    
+                        <div className="flex items-center space-x-1.5">
+                          <Coins className="w-4 h-4 text-yellow-300" />
+                          <span className="text-lg font-extrabold text-white">{formattedStakedAmount}</span>                                                    
+                          <span className="text-white/60 text-xs">LUX</span>    
                             </div>
-                        <TrendingUp className="w-5 h-5 text-green-300" />       
+                        <TrendingUp className="w-4 h-4 text-green-300" />       
                         </div>
                       )}
                   </div>
 
                   {/* Earned Interest */}
-                  <div className="p-4 bg-black/40 rounded-xl border border-white/10">                                                                           
-                    <p className="text-white/80 text-xs mb-2">{t('earnedInterest')}</p>                                                                     
+                  <div className="p-2 bg-black/40 rounded-lg border border-white/10">                                                                           
+                    <p className="text-white/80 text-[10px] mb-1">{t('earnedInterest')}</p>                                                                     
                     <div className="flex items-center justify-between">
-                      <span className="text-2xl font-extrabold text-yellow-300">{formattedPendingRewards}</span>                                                 
-                      <span className="text-white/60 text-sm">LUX</span>        
+                      <span className="text-xl font-extrabold text-yellow-300">{formattedPendingRewards}</span>                                                 
+                      <span className="text-white/60 text-xs">LUX</span>        
                     </div>
                   </div>
 
                                     {/* Time Elapsed */}
                   {timeElapsed.days > 0 || timeElapsed.hours > 0 || timeElapsed.minutes > 0 ? (
-                    <div className="flex items-center space-x-2 text-xs text-white/70 bg-white/5 rounded-lg px-3 py-2">
-                      <Timer className="w-4 h-4 flex-shrink-0" />
+                    <div className="flex items-center space-x-1.5 text-[10px] text-white/70 bg-white/5 rounded-lg px-2 py-1">
+                      <Timer className="w-3 h-3 flex-shrink-0" />
                       <span className="font-mono">
                         {timeElapsed.days}D {timeElapsed.hours}H {timeElapsed.minutes}m
                       </span>
@@ -2958,16 +2956,16 @@ const LuminexApp = () => {
               </motion.div>
 
                                           {/* Action Buttons */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   {/* STAKING Button */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowStakeModal(true)}
-                    className="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 text-sm shadow-lg"
+                    className="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 text-xs shadow-lg"
                   >
-                    <BarChart3 className="w-5 h-5" />
+                    <BarChart3 className="w-4 h-4" />
                     <span>{t('staking')}</span>
                   </motion.button>
 
@@ -2977,13 +2975,13 @@ const LuminexApp = () => {
                     whileTap={{ scale: 0.98 }}
                     onClick={handleClaimInterest}
                     disabled={isClaimingInterest || pendingRewards === 0}
-                    className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 disabled:opacity-50 text-sm shadow-lg"
+                    className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
                   >
                     {isClaimingInterest ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        <DollarIcon className="w-5 h-5" />
+                        <DollarIcon className="w-4 h-4" />
                         <span>{t('withdrawInterest')}</span>
                       </>
                     )}
@@ -2996,13 +2994,13 @@ const LuminexApp = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleWithdrawBalance}
                   disabled={isWithdrawing || stakedAmount === 0}
-                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 disabled:opacity-50 text-sm shadow-lg"
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
                 >
                   {isWithdrawing ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <TrendingDown className="w-5 h-5" />
+                      <TrendingDown className="w-4 h-4" />
                       <span>{t('withdrawBalance')}</span>
                     </>
                   )}
@@ -3048,26 +3046,26 @@ const LuminexApp = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
+              className="space-y-3"
               style={{ willChange: 'transform, opacity' }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between mb-3 px-2">
-                <div className="flex items-center space-x-2">
-                  <Zap className="w-5 h-5 text-yellow-400" />
-                  <span className="text-yellow-400 font-bold text-sm">POWER LICENSES</span>
+              <div className="flex items-center justify-between mb-1.5 px-1">
+                <div className="flex items-center space-x-1.5">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  <span className="text-yellow-400 font-bold text-xs">POWER LICENSES</span>
                     </div>
                 {currentPower && (
-                  <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-yellow-500/20 rounded-lg border border-yellow-400/30">
-                    <span className="text-base">⚡</span>
-                    <span className="text-white font-bold text-xs">{currentPower.name}</span>
-                    <span className="text-yellow-300 font-bold text-xs">{totalApy}%</span>
+                  <div className="flex items-center space-x-1 px-1.5 py-0.5 bg-yellow-500/20 rounded border border-yellow-400/30">
+                    <span className="text-xs">⚡</span>
+                    <span className="text-white font-bold text-[10px]">{currentPower.name}</span>
+                    <span className="text-yellow-300 font-bold text-[10px]">{totalApy}%</span>
                 </div>
                 )}
                 </div>
 
               {/* Power Tiers */}
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {POWERS.map((power, index) => {
                   const isOwned = currentPower?.code === power.code;
                   const canUpgrade = !currentPower || (getPowerByCode(currentPower.code) && parseFloat(getPowerByCode(currentPower.code)!.priceWLD) < parseFloat(power.priceWLD));
@@ -3079,28 +3077,28 @@ const LuminexApp = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className={`flex items-center justify-between p-4 rounded-xl border ${
+                      className={`flex items-center justify-between p-1.5 rounded-lg border ${
                         isOwned ? 'border-yellow-400 bg-yellow-500/10' : 'border-white/10 bg-black/20'
                       }`}
                     >
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <span className="text-lg">⚡</span>
+                      <div className="flex items-center space-x-1.5 flex-1 min-w-0">
+                        <span className="text-xs">⚡</span>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="text-white font-bold text-base">{power.name}</span>
-                            <span className="text-yellow-300 font-bold text-sm">{power.totalAPY}% APY</span>
+                          <div className="flex items-center space-x-1.5">
+                            <span className="text-white font-bold text-[11px]">{power.name}</span>
+                            <span className="text-yellow-300 font-bold text-[10px]">{power.totalAPY}% APY</span>
                           </div>
-                          <div className="text-white/70 text-xs">
+                          <div className="text-white/70 text-[9px] mt-0.5">
                             +{power.totalAPY - BASE_APY}% Power Boost
                           </div>
                         </div>
                       </div>
                       <motion.button
-                        whileHover={{ scale: canUpgrade && !isPurchasingPower ? 1.05 : 1 }}
-                        whileTap={{ scale: canUpgrade && !isPurchasingPower ? 0.95 : 1 }}
+                        whileHover={{ scale: canUpgrade && !isPurchasingPower ? 1.03 : 1 }}
+                        whileTap={{ scale: canUpgrade && !isPurchasingPower ? 0.97 : 1 }}
                         onClick={() => canUpgrade && !isPurchasingPower ? handlePurchasePower(power.code) : undefined}
                         disabled={!canUpgrade || isPurchasingPower || !!isLower}
-                        className={`px-4 py-2 font-bold rounded-lg text-xs whitespace-nowrap ml-3 ${
+                        className={`px-2 py-1 font-bold rounded text-[10px] whitespace-nowrap ml-1.5 ${
                           isOwned
                             ? 'bg-yellow-400 text-black cursor-default'
                             : isLower || !canUpgrade
@@ -3109,15 +3107,15 @@ const LuminexApp = () => {
                         }`}
                       >
                         {isPurchasingPower ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
                         ) : isOwned ? (
-                          '✓ Active'
+                          '✓'
                         ) : isLower ? (
                           '↓'
                         ) : !currentPower ? (
                           `${power.priceWLD} WLD`
                         ) : (
-                          `+${(parseFloat(power.priceWLD) - parseFloat(getPowerByCode(currentPower.code)!.priceWLD)).toFixed(1)} WLD`
+                          `+${(parseFloat(power.priceWLD) - parseFloat(getPowerByCode(currentPower.code)!.priceWLD)).toFixed(1)}`
                         )}
                       </motion.button>
                     </motion.div>
