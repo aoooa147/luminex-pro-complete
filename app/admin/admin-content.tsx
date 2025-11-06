@@ -77,9 +77,28 @@ const AdminPage = () => {
     totalStaking: 0,
     totalRevenue: 0,
     totalReferrals: 0,
+    trends: {
+      users: 0,
+      staking: 0,
+      revenue: 0,
+      referrals: 0,
+    },
   });
+  const [activities, setActivities] = useState<Array<{
+    id: string;
+    type: string;
+    user: string;
+    amount: string;
+    time: string;
+    status: string;
+    txHash?: string;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
 
   // Check admin access
   useEffect(() => {
@@ -95,7 +114,7 @@ const AdminPage = () => {
         setShowAccessDenied(!isAdminUser);
         
         if (isAdminUser) {
-          await loadAdminStats();
+          await Promise.all([loadAdminStats(), loadActivities()]);
         }
       } catch (error) {
         console.error('Error checking admin access:', error);
@@ -120,6 +139,12 @@ const AdminPage = () => {
           totalStaking: data.stats.totalStaking || 0,
           totalRevenue: data.stats.totalRevenue || 0,
           totalReferrals: data.stats.totalReferrals || 0,
+          trends: data.stats.trends || {
+            users: 0,
+            staking: 0,
+            revenue: 0,
+            referrals: 0,
+          },
         });
       } else {
         console.error('Failed to load admin stats:', data.error);
@@ -129,25 +154,57 @@ const AdminPage = () => {
           totalStaking: 0,
           totalRevenue: 0,
           totalReferrals: 0,
+          trends: {
+            users: 0,
+            staking: 0,
+            revenue: 0,
+            referrals: 0,
+          },
         });
       }
     } catch (error) {
       console.error('Error loading admin stats:', error);
-      // Fallback to default values on error
-      setStats({
-        totalUsers: 0,
-        totalStaking: 0,
-        totalRevenue: 0,
-        totalReferrals: 0,
-      });
+        // Fallback to default values on error
+        setStats({
+          totalUsers: 0,
+          totalStaking: 0,
+          totalRevenue: 0,
+          totalReferrals: 0,
+          trends: {
+            users: 0,
+            staking: 0,
+            revenue: 0,
+            referrals: 0,
+          },
+        });
+    }
+  };
+
+  const loadActivities = async () => {
+    setLoadingActivities(true);
+    try {
+      const response = await fetch('/api/admin/activity?limit=20');
+      const data = await response.json();
+      
+      if (data.success && data.activities) {
+        setActivities(data.activities);
+      } else {
+        console.error('Failed to load activities:', data.error);
+        setActivities([]);
+      }
+    } catch (error) {
+      console.error('Error loading activities:', error);
+      setActivities([]);
+    } finally {
+      setLoadingActivities(false);
     }
   };
 
   const refreshStats = async () => {
     setRefreshing(true);
     try {
-      // Fetch fresh stats from API
-      await loadAdminStats();
+      // Fetch fresh stats and activities from API
+      await Promise.all([loadAdminStats(), loadActivities()]);
       
       // Haptic feedback
       if ((window as any).MiniKit?.commandsAsync?.sendHapticFeedback) {
@@ -158,6 +215,81 @@ const AdminPage = () => {
     } finally {
       setRefreshing(false);
     }
+  };
+
+  const handleViewAnalytics = async () => {
+    try {
+      const response = await fetch('/api/admin/analytics');
+      const data = await response.json();
+      
+      if (data.success && data.analytics) {
+        setAnalyticsData(data.analytics);
+        setShowAnalyticsModal(true);
+      } else {
+        alert('Failed to load analytics');
+      }
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+      alert('Error loading analytics');
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      const response = await fetch('/api/admin/export?format=json');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `luminex-export-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      // Haptic feedback
+      if ((window as any).MiniKit?.commandsAsync?.sendHapticFeedback) {
+        await (window as any).MiniKit.commandsAsync.sendHapticFeedback({ type: 'success' });
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Error exporting data');
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      const response = await fetch('/api/admin/report?period=month');
+      const data = await response.json();
+      
+      if (data.success && data.report) {
+        const reportText = `Luminex Admin Report\n\nPeriod: ${data.report.period}\nGenerated: ${new Date(data.report.generatedAt).toLocaleString()}\n\nSummary:\n- Total Users: ${data.report.summary.totalUsers}\n- New Users: ${data.report.summary.newUsers}\n- New Memberships: ${data.report.summary.newMemberships}\n- Game Plays: ${data.report.summary.gamePlays}\n- Total Referrals: ${data.report.summary.totalReferrals}\n- New Referrals: ${data.report.summary.newReferrals}`;
+        
+        const blob = new Blob([reportText], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `luminex-report-${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        // Haptic feedback
+        if ((window as any).MiniKit?.commandsAsync?.sendHapticFeedback) {
+          await (window as any).MiniKit.commandsAsync.sendHapticFeedback({ type: 'success' });
+        }
+      } else {
+        alert('Failed to generate report');
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Error generating report');
+    }
+  };
+
+  const handleSettings = () => {
+    setShowSettingsModal(true);
   };
 
   // Access Denied Screen
@@ -312,7 +444,9 @@ const AdminPage = () => {
             </div>
             <p className="text-gray-400 text-sm mb-2">Total Users</p>
             <p className="text-3xl font-extrabold text-white">{stats.totalUsers}</p>
-            <p className="text-green-400 text-xs mt-2">↗ +12% this month</p>
+            <p className={`text-xs mt-2 ${stats.trends.users >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {stats.trends.users >= 0 ? '↗' : '↘'} {Math.abs(stats.trends.users).toFixed(1)}% this month
+            </p>
           </motion.div>
 
           <motion.div
@@ -329,7 +463,9 @@ const AdminPage = () => {
             </div>
             <p className="text-gray-400 text-sm mb-2">Total Staking</p>
             <p className="text-3xl font-extrabold text-white">{formatNumber(stats.totalStaking)}</p>
-            <p className="text-purple-400 text-xs mt-2">↗ +8.5% this month</p>
+            <p className={`text-xs mt-2 ${stats.trends.staking >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {stats.trends.staking >= 0 ? '↗' : '↘'} {Math.abs(stats.trends.staking).toFixed(1)}% this month
+            </p>
           </motion.div>
 
           <motion.div
@@ -346,7 +482,9 @@ const AdminPage = () => {
             </div>
             <p className="text-gray-400 text-sm mb-2">Total Revenue</p>
             <p className="text-3xl font-extrabold text-white">${formatNumber(stats.totalRevenue)}</p>
-            <p className="text-green-400 text-xs mt-2">↗ +15% this month</p>
+            <p className={`text-xs mt-2 ${stats.trends.revenue >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {stats.trends.revenue >= 0 ? '↗' : '↘'} {Math.abs(stats.trends.revenue).toFixed(1)}% this month
+            </p>
           </motion.div>
 
           <motion.div
@@ -363,7 +501,9 @@ const AdminPage = () => {
             </div>
             <p className="text-gray-400 text-sm mb-2">Total Referrals</p>
             <p className="text-3xl font-extrabold text-white">{stats.totalReferrals}</p>
-            <p className="text-yellow-400 text-xs mt-2">↗ +25% this month</p>
+            <p className={`text-xs mt-2 ${stats.trends.referrals >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {stats.trends.referrals >= 0 ? '↗' : '↘'} {Math.abs(stats.trends.referrals).toFixed(1)}% this month
+            </p>
           </motion.div>
         </div>
 
@@ -382,6 +522,7 @@ const AdminPage = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleViewAnalytics}
               className="glass-card glass-card-hover rounded-xl p-4 flex flex-col items-center space-y-2 text-white border border-blue-400/30 magnetic-hover"
             >
               <BarChart3 className="w-6 h-6 text-blue-400" />
@@ -390,6 +531,7 @@ const AdminPage = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleExportData}
               className="glass-card glass-card-hover rounded-xl p-4 flex flex-col items-center space-y-2 text-white border border-purple-400/30 magnetic-hover"
             >
               <Archive className="w-6 h-6 text-purple-400" />
@@ -398,6 +540,7 @@ const AdminPage = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleDownloadReport}
               className="glass-card glass-card-hover rounded-xl p-4 flex flex-col items-center space-y-2 text-white border border-green-400/30 magnetic-hover"
             >
               <Download className="w-6 h-6 text-green-400" />
@@ -406,6 +549,7 @@ const AdminPage = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleSettings}
               className="glass-card glass-card-hover rounded-xl p-4 flex flex-col items-center space-y-2 text-white border border-yellow-400/30 magnetic-hover"
             >
               <Settings className="w-6 h-6 text-yellow-400" />
@@ -477,42 +621,107 @@ const AdminPage = () => {
             Recent Activity
           </h2>
           <div className="space-y-3">
-            {/* Mock recent activities */}
-            {[
-              { type: 'staking', user: '0x1234...5678', amount: '5,000 LUX', time: '2 mins ago', status: 'success' },
-              { type: 'membership', user: '0xabcd...efgh', amount: 'Gold Tier', time: '15 mins ago', status: 'success' },
-              { type: 'referral', user: '0x5678...1234', amount: 'New referral', time: '1 hour ago', status: 'success' },
-              { type: 'withdrawal', user: '0x9876...5432', amount: '2,500 LUX', time: '3 hours ago', status: 'success' },
-            ].map((activity, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 + index * 0.1 }}
-                className="flex items-center justify-between p-4 rounded-xl bg-black/30 border border-purple-400/20 hover:border-purple-400/40 transition-colors"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-white font-semibold">{activity.type.toUpperCase()}</p>
-                    <p className="text-gray-400 text-sm">{activity.user}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="text-white font-semibold">{activity.amount}</p>
-                    <p className="text-gray-400 text-sm">{activity.time}</p>
-                  </div>
-                  {activity.status === 'success' && (
-                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+            {loadingActivities ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+              </div>
+            ) : activities.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p>No recent activity</p>
+              </div>
+            ) : (
+              activities.map((activity, index) => {
+                const getTypeIcon = (type: string) => {
+                  switch (type.toLowerCase()) {
+                    case 'staking':
+                      return <PiggyBank className="w-5 h-5 text-white" />;
+                    case 'membership':
+                      return <Crown className="w-5 h-5 text-white" />;
+                    case 'referral':
+                      return <UserPlus className="w-5 h-5 text-white" />;
+                    case 'game':
+                      return <Activity className="w-5 h-5 text-white" />;
+                    default:
+                      return <Wallet className="w-5 h-5 text-white" />;
+                  }
+                };
+                
+                const getTypeColor = (type: string) => {
+                  switch (type.toLowerCase()) {
+                    case 'staking':
+                      return 'from-blue-500 to-cyan-500';
+                    case 'membership':
+                      return 'from-yellow-500 to-orange-500';
+                    case 'referral':
+                      return 'from-green-500 to-emerald-500';
+                    case 'game':
+                      return 'from-purple-500 to-pink-500';
+                    default:
+                      return 'from-purple-500 to-pink-500';
+                  }
+                };
+                
+                const shortAddress = activity.user 
+                  ? `${activity.user.slice(0, 6)}...${activity.user.slice(-4)}`
+                  : 'Unknown';
+                
+                const shortTxHash = activity.txHash 
+                  ? `${activity.txHash.slice(0, 6)}...${activity.txHash.slice(-4)}`
+                  : null;
+                
+                return (
+                  <motion.div
+                    key={activity.id || index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-400/30 hover:border-purple-400/50 transition-all hover:shadow-lg hover:shadow-purple-500/20"
+                  >
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className={`w-12 h-12 bg-gradient-to-br ${getTypeColor(activity.type)} rounded-full flex items-center justify-center shadow-lg`}>
+                        {getTypeIcon(activity.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-sm mb-1">{activity.type.toUpperCase()}</p>
+                        <p className="text-white/90 text-sm mb-1">{activity.amount}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-gray-400 text-xs font-mono">{shortAddress}</p>
+                          {shortTxHash && (
+                            <a
+                              href={`https://optimistic.etherscan.io/tx/${activity.txHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 text-xs font-mono underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {shortTxHash}
+                            </a>
+                          )}
+                        </div>
+                        <p className="text-gray-500 text-xs mt-1">{activity.time}</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                    <div className="flex items-center space-x-3 ml-4">
+                      {activity.status === 'success' && (
+                        <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center border border-green-500/30">
+                          <CheckCircle className="w-6 h-6 text-green-400" />
+                        </div>
+                      )}
+                      {activity.status === 'pending' && (
+                        <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center border border-yellow-500/30">
+                          <Loader2 className="w-6 h-6 text-yellow-400 animate-spin" />
+                        </div>
+                      )}
+                      {activity.status === 'failed' && (
+                        <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/30">
+                          <XCircle className="w-6 h-6 text-red-400" />
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         </motion.div>
       </div>
@@ -525,6 +734,231 @@ const AdminPage = () => {
         </div>
         <span>© {new Date().getFullYear()} Luminex Staking - Admin Panel</span>
       </div>
+
+      {/* Analytics Modal */}
+      <AnimatePresence>
+        {showAnalyticsModal && analyticsData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowAnalyticsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card rounded-2xl p-6 border border-purple-400/30 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <BarChart3 className="w-6 h-6 text-blue-400" />
+                  Analytics Dashboard
+                </h2>
+                <button
+                  onClick={() => setShowAnalyticsModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Users */}
+                <div className="bg-black/30 rounded-xl p-4 border border-blue-400/20">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-400" />
+                    Users
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-gray-400 text-sm">Total</p>
+                      <p className="text-2xl font-bold text-white">{analyticsData.users.total}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Active (30d)</p>
+                      <p className="text-2xl font-bold text-white">{analyticsData.users.active}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">New This Month</p>
+                      <p className="text-2xl font-bold text-white">{analyticsData.users.newThisMonth || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Staking */}
+                <div className="bg-black/30 rounded-xl p-4 border border-purple-400/20">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <PiggyBank className="w-5 h-5 text-purple-400" />
+                    Staking
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400 text-sm">Total Staked</p>
+                      <p className="text-2xl font-bold text-white">{formatNumber(analyticsData.staking.total)} LUX</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Average per User</p>
+                      <p className="text-2xl font-bold text-white">{formatNumber(analyticsData.staking.average)} LUX</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Revenue */}
+                <div className="bg-black/30 rounded-xl p-4 border border-green-400/20">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-green-400" />
+                    Revenue
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Total Revenue</span>
+                      <span className="text-xl font-bold text-white">${formatNumber(analyticsData.revenue.total)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">This Month</span>
+                      <span className="text-xl font-bold text-white">${formatNumber(analyticsData.revenue.thisMonth || 0)}</span>
+                    </div>
+                    {Object.keys(analyticsData.revenue.byPower || {}).length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-700">
+                        <p className="text-gray-400 text-sm mb-2">By Power Tier:</p>
+                        {Object.entries(analyticsData.revenue.byPower).map(([tier, amount]: [string, any]) => (
+                          <div key={tier} className="flex justify-between text-sm">
+                            <span className="text-gray-300 capitalize">{tier}</span>
+                            <span className="text-white">${formatNumber(amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Referrals */}
+                <div className="bg-black/30 rounded-xl p-4 border border-yellow-400/20">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-yellow-400" />
+                    Referrals
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Total Referrals</span>
+                      <span className="text-xl font-bold text-white">{analyticsData.referrals.total}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">This Month</span>
+                      <span className="text-xl font-bold text-white">{analyticsData.referrals.thisMonth || 0}</span>
+                    </div>
+                    {analyticsData.referrals.topReferrers && analyticsData.referrals.topReferrers.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-700">
+                        <p className="text-gray-400 text-sm mb-2">Top Referrers:</p>
+                        {analyticsData.referrals.topReferrers.slice(0, 5).map((ref: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-sm">
+                            <span className="text-gray-300 font-mono text-xs">
+                              {ref.address.slice(0, 6)}...{ref.address.slice(-4)}
+                            </span>
+                            <span className="text-white">{ref.count} referrals</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Games */}
+                <div className="bg-black/30 rounded-xl p-4 border border-pink-400/20">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-pink-400" />
+                    Games
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-gray-400 text-sm">Total Plays</p>
+                      <p className="text-2xl font-bold text-white">{analyticsData.games.totalPlays}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Unique Players</p>
+                      <p className="text-2xl font-bold text-white">{analyticsData.games.uniquePlayers}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Avg Score</p>
+                      <p className="text-2xl font-bold text-white">{Math.round(analyticsData.games.averageScore || 0)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowSettingsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card rounded-2xl p-6 border border-yellow-400/30 max-w-md w-full"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <Settings className="w-6 h-6 text-yellow-400" />
+                  Settings
+                </h2>
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-black/30 rounded-xl p-4 border border-purple-400/20">
+                  <h3 className="text-white font-semibold mb-2">Admin Wallet</h3>
+                  <p className="text-gray-400 text-sm font-mono break-all">{ADMIN_WALLET_ADDRESS}</p>
+                </div>
+
+                <div className="bg-black/30 rounded-xl p-4 border border-blue-400/20">
+                  <h3 className="text-white font-semibold mb-2">System Status</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Database</span>
+                      <span className="text-green-400 flex items-center gap-1">
+                        <CheckCircle className="w-4 h-4" />
+                        Connected
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Storage</span>
+                      <span className="text-green-400 flex items-center gap-1">
+                        <CheckCircle className="w-4 h-4" />
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-500/20 border border-amber-500/30 rounded-xl p-4">
+                  <p className="text-amber-300 text-sm">
+                    ⚠️ Settings configuration coming soon. Currently using environment variables.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
