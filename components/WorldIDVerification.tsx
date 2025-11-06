@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Loader2 } from 'lucide-react';
 import Logo3D from './Logo3D';
@@ -12,9 +12,38 @@ interface WorldIDVerificationProps {
 export default function WorldIDVerification({ onVerify }: WorldIDVerificationProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const minikitProbeRef = useRef<HTMLDivElement>(null);
   
   // Check if running in MiniKit environment
   const isMiniKit = typeof window !== 'undefined' && !!(window as any).MiniKit;
+
+  // Dynamic MiniKit gap measurement using ResizeObserver
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Set initial value
+    document.documentElement.style.setProperty('--minikit-gap', '84px');
+
+    // Only measure if NOT in MiniKit environment (button is visible)
+    if (isMiniKit) {
+      document.documentElement.style.setProperty('--minikit-gap', '0px');
+      return;
+    }
+
+    const ro = new ResizeObserver(() => {
+      const vh = window.innerHeight;
+      const r = document.documentElement.getBoundingClientRect();
+      const used = Math.max(0, (r.bottom - vh)); // ส่วนที่เกิน
+      const gap = Math.max(72, Math.min(128, Math.round(used + 12))); // clamp ค่า
+      document.documentElement.style.setProperty('--minikit-gap', gap + 'px');
+    });
+
+    ro.observe(document.documentElement);
+
+    return () => {
+      ro.disconnect();
+    };
+  }, [isMiniKit]);
 
   const handleVerify = async () => {
     setIsVerifying(true);
@@ -75,12 +104,28 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
       style={{
         height: '100dvh',
         paddingTop: 'var(--safe-top)',
-        paddingBottom: 'var(--safe-bottom)',
+        paddingBottom: 'calc(24px + var(--safe-bottom) + var(--minikit-gap))',
         paddingLeft: 'var(--safe-left)',
         paddingRight: 'var(--safe-right)',
         overflowY: 'hidden',
       }}
     >
+      {/* MiniKit probe element for measurement */}
+      {!isMiniKit && (
+        <div 
+          ref={minikitProbeRef}
+          id="minikit-probe" 
+          style={{
+            position: 'fixed',
+            right: '16px',
+            bottom: 0,
+            width: '1px',
+            height: '1px',
+            zIndex: -1,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
       {/* Main Content - Full Screen Layout - Centered */}
       <div 
         className="flex flex-col items-center justify-center flex-1 overflow-y-auto"
@@ -108,7 +153,7 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
 
         {/* Hero Section - Centered Layout */}
         <section className="w-full max-w-lg flex flex-col items-center justify-center gap-6 mx-auto">
-          {/* Logo Section - Centered */}
+          {/* Logo Section - Centered with Grid + Aspect Ratio */}
           <motion.div
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -116,9 +161,11 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
             className="flex flex-col items-center justify-center space-y-3 w-full"
           >
             <div 
-              className="w-full max-w-[min(75vw,420px)] mx-auto flex items-center justify-center"
+              className="mx-auto mb-[18px] grid place-items-center"
               style={{
-                aspectRatio: '1/1',
+                maxWidth: '520px',
+                width: 'min(92vw, 520px)',
+                aspectRatio: '4 / 3',
               }}
             >
               <Logo3D size={160} interactive={true} />
@@ -208,16 +255,18 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
 
               {/* Action Buttons - Side by Side */}
               <div className="w-full flex flex-col sm:flex-row gap-3">
-                {/* Verify Button */}
+                {/* Verify Button - Responsive with min() + clamp() */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleVerify}
                   disabled={isVerifying}
-                  className="flex-1 rounded-[16px] bg-gradient-to-b from-[#f7c948] to-[#d08b26] text-black font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+                  className="flex-1 bg-gradient-to-b from-[#f7c948] to-[#d08b26] text-black font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
                   style={{
-                    height: '56px',
-                    fontSize: 'clamp(16px, 3.5vw, 18px)',
+                    width: 'min(100%, 560px)',
+                    height: 'clamp(48px, 6.2vw, 56px)',
+                    borderRadius: '14px',
+                    fontSize: 'clamp(14px, 3.8vw, 16px)',
                     letterSpacing: '0.2px',
                     boxShadow: '0 10px 30px rgba(234, 179, 8, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
                   }}
@@ -243,10 +292,12 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
                     onClick={() => {
                       alert('กรุณาเปิดแอปใน World App เพื่อใช้งาน MiniKit');
                     }}
-                    className="flex-1 rounded-[16px] bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
                     style={{
-                      height: '56px',
-                      fontSize: 'clamp(16px, 3.5vw, 18px)',
+                      width: 'min(100%, 560px)',
+                      height: 'clamp(48px, 6.2vw, 56px)',
+                      borderRadius: '14px',
+                      fontSize: 'clamp(14px, 3.8vw, 16px)',
                       letterSpacing: '0.2px',
                       boxShadow: '0 4px 12px rgba(168, 85, 247, 0.5), 0 0 20px rgba(168, 85, 247, 0.3)',
                     }}
