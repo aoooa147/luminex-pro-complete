@@ -118,7 +118,7 @@ export function getReferrerAddressFromCode(referralCode: string): string | null 
   return referralCodeMap.get(referralCode) || null;
 }
 
-export function addReferral(referrerAddress: string, newUserAddress: string, reward: number = 50) {
+export function addReferral(referrerAddress: string, newUserAddress: string, reward: number = 5) {
   const referrerKey = referrerAddress.toLowerCase();
   const newUserKey = newUserAddress.toLowerCase();
   

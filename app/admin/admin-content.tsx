@@ -586,7 +586,7 @@ const AdminPage = () => {
                 </li>
                 <li className="flex items-start space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                  <span><strong>Referrals:</strong> 50 LUX each to referrer + new user (one-time)</span>
+                  <span><strong>Referrals:</strong> 5 LUX each to referrer + new user (one-time)</span>
                 </li>
                 <li className="flex items-start space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />

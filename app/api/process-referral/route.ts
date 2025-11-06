@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Reward amount (configurable)
-    const REFERRER_REWARD = 50; // LUX tokens per referral
+    const REFERRER_REWARD = 5; // LUX tokens per referral
 
     // Add referral (this will also check for duplicates internally)
     const added = addReferral(referrerAddress, newUserId, REFERRER_REWARD);

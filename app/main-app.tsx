@@ -126,7 +126,7 @@ const translations: Record<string, Record<string, string>> = {
     
     // Referral tab
     'inviteFriends': 'Invite Friends!',
-    'referralDesc': 'Get 50 LUX for each friend you invite',
+    'referralDesc': 'Get 5 LUX for each friend you invite',
     'earnTogether': '💰 Earn More Together! 💰',
     'totalReferrals': 'Total Referrals',
     'totalEarnings': 'Total Earnings',
@@ -136,7 +136,7 @@ const translations: Record<string, Record<string, string>> = {
     'showQRCode': 'Show QR Code',
     'howItWorks': 'How It Works',
     'howItWorks1': 'Share your referral code with friends',
-    'howItWorks2': 'Get 50 LUX when they sign up',
+    'howItWorks2': 'Get 5 LUX when they sign up',
     'howItWorks3': 'Unlimited referrals!',
     
     // Toast messages
@@ -189,7 +189,7 @@ const translations: Record<string, Record<string, string>> = {
     
     // Referral tab
     'inviteFriends': 'เชิญเพื่อน!',
-    'referralDesc': 'รับ 50 LUX สำหรับแต่ละคนที่คุณเชิญ',
+    'referralDesc': 'รับ 5 LUX สำหรับแต่ละคนที่คุณเชิญ',
     'earnTogether': '💰 ร่วมกันหารายได้มากขึ้น! 💰',
     'totalReferrals': 'เชิญเพื่อนทั้งหมด',
     'totalEarnings': 'รายได้รวม',
@@ -199,7 +199,7 @@ const translations: Record<string, Record<string, string>> = {
     'showQRCode': 'แสดง QR Code',
     'howItWorks': 'วิธีการทำงาน',
     'howItWorks1': 'แชร์รหัสแนะนำของคุณกับเพื่อน',
-    'howItWorks2': 'รับ 50 LUX เมื่อพวกเขาสมัคร',
+    'howItWorks2': 'รับ 5 LUX เมื่อพวกเขาสมัคร',
     'howItWorks3': 'เชิญเพื่อนได้ไม่จำกัด!',
     
     // Toast messages
@@ -252,7 +252,7 @@ const translations: Record<string, Record<string, string>> = {
     
     // Referral tab
     'inviteFriends': '邀请朋友！',
-    'referralDesc': '每邀请一位朋友即可获得 50 LUX',
+    'referralDesc': '每邀请一位朋友即可获得 5 LUX',
     'earnTogether': '💰 一起赚更多！💰',
     'totalReferrals': '总推荐人数',
     'totalEarnings': '总收入',
@@ -262,7 +262,7 @@ const translations: Record<string, Record<string, string>> = {
     'showQRCode': '显示二维码',
     'howItWorks': '如何运作',
     'howItWorks1': '与朋友分享您的推荐代码',
-    'howItWorks2': '他们注册时您将获得 50 LUX',
+    'howItWorks2': '他们注册时您将获得 5 LUX',
     'howItWorks3': '推荐人数无限制！',
     
     // Toast messages
@@ -315,7 +315,7 @@ const translations: Record<string, Record<string, string>> = {
     
     // Referral tab
     'inviteFriends': '友人を招待！',
-    'referralDesc': '友人1人あたり50 LUXを獲得',
+    'referralDesc': '友人1人あたり5 LUXを獲得',
     'earnTogether': '💰 一緒にもっと稼ごう！💰',
     'totalReferrals': '紹介総数',
     'totalEarnings': '総収益',
@@ -325,7 +325,7 @@ const translations: Record<string, Record<string, string>> = {
     'showQRCode': 'QRコードを表示',
     'howItWorks': '仕組み',
     'howItWorks1': '紹介コードを友人と共有',
-    'howItWorks2': '登録で50 LUXを獲得',
+    'howItWorks2': '登録で5 LUXを獲得',
     'howItWorks3': '紹介人数に制限なし！',
     
     // Toast messages
@@ -378,7 +378,7 @@ const translations: Record<string, Record<string, string>> = {
     
     // Referral tab
     'inviteFriends': '¡Invita Amigos!',
-    'referralDesc': 'Obtén 50 LUX por cada amigo que invites',
+    'referralDesc': 'Obtén 5 LUX por cada amigo que invites',
     'earnTogether': '💰 ¡Gana Más Juntos! 💰',
     'totalReferrals': 'Invitaciones Totales',
     'totalEarnings': 'Ganancias Totales',
@@ -388,7 +388,7 @@ const translations: Record<string, Record<string, string>> = {
     'showQRCode': 'Mostrar Código QR',
     'howItWorks': 'Cómo Funciona',
     'howItWorks1': 'Comparte tu código de referido con amigos',
-    'howItWorks2': 'Obtén 50 LUX cuando se registren',
+    'howItWorks2': 'Obtén 5 LUX cuando se registren',
     'howItWorks3': '¡Invitaciones ilimitadas!',
     
     // Toast messages
@@ -1386,7 +1386,7 @@ const LuminexApp = () => {
       
       if (data.success) {
         console.log('✅ Referral processed:', data);
-        showToast(`${translations[language].membershipActivated?.replace('{tier}', '50 LUX') || 'You received 50 LUX for using referral code!'}`, 'success');
+        showToast(`${translations[language].membershipActivated?.replace('{tier}', '5 LUX') || 'You received 5 LUX for using referral code!'}`, 'success');
         // Refresh stats
         fetchReferralStats();
       } else {

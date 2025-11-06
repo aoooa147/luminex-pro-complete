@@ -30,14 +30,14 @@ export const STAKING_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_STAKING_CONTRACT
 export const WLD_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_WLD_TOKEN_ADDRESS || "0x2cFc85d8E48F8EAB294be644d9E25C3030863003";
 
 // Network Configuration
-// LUX and Staking Contract are on Optimism
-export const LUX_TOKEN_NETWORK = 'optimism' as const; // For sendTransaction network parameter
-export const STAKING_CONTRACT_NETWORK = 'optimism' as const; // For sendTransaction network parameter
+// LUX and Staking Contract are on World Chain
+export const LUX_TOKEN_NETWORK = 'worldchain' as const; // For sendTransaction network parameter
+export const STAKING_CONTRACT_NETWORK = 'worldchain' as const; // For sendTransaction network parameter
 
 export const WALLET_RPC_URL = process.env.NEXT_PUBLIC_WALLET_RPC_URL || "https://worldchain-mainnet.g.alchemy.com/public";
 export const WALLET_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_WALLET_CHAIN_ID || "480", 10);
-export const CONTRACT_RPC_URL = process.env.NEXT_PUBLIC_CONTRACT_RPC_URL || "https://mainnet.optimism.io";
-export const CONTRACT_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CONTRACT_CHAIN_ID || "10", 10);
+export const CONTRACT_RPC_URL = process.env.NEXT_PUBLIC_CONTRACT_RPC_URL || "https://worldchain-mainnet.g.alchemy.com/public";
+export const CONTRACT_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CONTRACT_CHAIN_ID || "480", 10);
 
 // Uniswap / DEX Configuration for LUX/WLD Swap
 export const UNISWAP_ROUTER_V2_ADDRESS = '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45'; // Optimism Uniswap V2 Router
