@@ -6,6 +6,15 @@ export const BRAND_NAME = process.env.NEXT_PUBLIC_BRAND_NAME || "Luminex";
 // You can override this with NEXT_PUBLIC_TREASURY_ADDRESS environment variable
 export const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_ADDRESS || "0xdc6c9ac4c8ced68c9d8760c501083cd94dcea4e8";
 
+// Languages
+export const LANGUAGES = [
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+];
+
 // World App Configuration
 export const WORLD_APP_ID = process.env.NEXT_PUBLIC_WORLD_APP_ID || ""; // set in .env.local
 export const WORLD_ACTION = process.env.NEXT_PUBLIC_WORLD_ACTION || "luminexstaking";

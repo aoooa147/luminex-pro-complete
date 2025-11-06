@@ -8,7 +8,7 @@ import { ethers } from "ethers";
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { MiniKit, tokenToDecimals, Tokens } from '@worldcoin/minikit-js';
-import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION, WALLET_RPC_URL, WALLET_CHAIN_ID, CONTRACT_RPC_URL, CONTRACT_CHAIN_ID, LUX_TOKEN_ADDRESS as LUX_TOKEN_ADDRESS_FROM_CONSTANTS, STAKING_CONTRACT_ADDRESS as STAKING_CONTRACT_ADDRESS_FROM_CONSTANTS, WLD_TOKEN_ADDRESS as WLD_TOKEN_ADDRESS_FROM_CONSTANTS, TREASURY_ADDRESS as TREASURY_ADDRESS_FROM_CONSTANTS } from '@/lib/utils/constants';
+import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION, WALLET_RPC_URL, WALLET_CHAIN_ID, CONTRACT_RPC_URL, CONTRACT_CHAIN_ID, LUX_TOKEN_ADDRESS as LUX_TOKEN_ADDRESS_FROM_CONSTANTS, STAKING_CONTRACT_ADDRESS as STAKING_CONTRACT_ADDRESS_FROM_CONSTANTS, WLD_TOKEN_ADDRESS as WLD_TOKEN_ADDRESS_FROM_CONSTANTS, TREASURY_ADDRESS as TREASURY_ADDRESS_FROM_CONSTANTS, LANGUAGES } from '@/lib/utils/constants';
 import { POWERS, BASE_APY, getPowerByCode, getPowerBoost, type PowerCode } from '@/lib/utils/powerConfig';
 import { useMiniKit as useMiniKitVerify } from '@/hooks/useMiniKit';
 const MiniKitPanel = dynamic(() => import('@/components/world/MiniKitPanel'), { ssr: false });
@@ -24,6 +24,14 @@ import {
 import QRCodeSVG from 'react-qr-code';
 import Logo3D from '@/components/ui/Logo3D';
 import WorldIDVerification from '@/components/world/WorldIDVerification';
+import StakingTab from '@/components/staking/StakingTab';
+import MembershipTab from '@/components/membership/MembershipTab';
+import ReferralTab from '@/components/referral/ReferralTab';
+import GameTab from '@/components/game/GameTab';
+import AppHeader from '@/components/layout/AppHeader';
+import BottomNav from '@/components/layout/BottomNav';
+import StakeModal from '@/components/modals/StakeModal';
+import QRModal from '@/components/modals/QRModal';
 
 const LOGO_URL = "https://i.postimg.cc/wvJqhSYW/Gemini-Generated-Image-ggu8gdggu8gdggu8-1.png";
 const TOKEN_NAME = "LUX";
@@ -410,14 +418,6 @@ const translations: Record<string, Record<string, string>> = {
     'verify': 'Verificar',
   },
 };
-
-const LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'th', name: 'ไทย', flag: '🇹🇭' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-];
 
 const POOLS = [
   { id: 0, name: "Flexible", lockDays: 0, apy: 50, icon: Unlock, color: "from-blue-400 to-cyan-400", bgColor: "bg-blue-500/10", desc: "No lock required" },
@@ -2093,130 +2093,18 @@ const LuminexApp = () => {
       </div>
 
       {/* Header */}
-      <div className="relative z-10 overflow-visible" style={{
-        background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(17, 24, 39, 0.8) 100%)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(234, 179, 8, 0.2)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(234, 179, 8, 0.05), inset 0 1px 0 rgba(234, 179, 8, 0.1)'
-      }}>
-        <div className="max-w-md mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center space-x-2">
-              <img src={LOGO_URL} alt="LUX" className="w-8 h-8 rounded-full ring-2 ring-purple-400/50" />
-              <div>
-                <h1 className="text-lg font-bold text-white">
-                  Luminex Staking
-                </h1>
-              </div>
-            </div>
-            </div>
-            
-          {/* User ID & Balance */}
-          <div className="mt-2 space-y-1.5 overflow-visible">
-            <div className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-yellow-500/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between backdrop-blur-lg border border-yellow-600/20 relative overflow-visible" style={{
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(234, 179, 8, 0.1)'
-            }}>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-full flex items-center justify-center" style={{
-                  boxShadow: '0 0 15px rgba(234, 179, 8, 0.4)'
-                }}>
-                  <span className="text-white text-xs font-bold">U</span>
-                </div>
-                <span className="text-white text-sm font-medium">
-                  {(() => {
-                    const userName = userInfo?.name || userInfo?.username;
-                    if (userName && typeof userName === 'string') return userName;
-                    if (actualAddress && typeof actualAddress === 'string') {
-                      return `@${actualAddress.slice(0, 8)}...${actualAddress.slice(-6)}`;
-                    }
-                    return 'USER';
-                  })()}
-                  </span>
-                </div>
-              <div className="relative language-menu z-[9999]">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Language button clicked!');
-                    setShowLanguageMenu(!showLanguageMenu);
-                  }}
-                  className="flex items-center space-x-1 bg-black/40 rounded-lg px-2 py-1 border border-white/10 hover:border-yellow-500/50 transition-colors cursor-pointer z-[9999] relative"
-                  style={{ userSelect: 'none', pointerEvents: 'auto' }}
-                >
-                  <span className="text-white text-xs font-semibold whitespace-nowrap">
-                    {activeLanguage.flag} {activeLanguage.code.toUpperCase()}
-                  </span>
-                  <svg className={`w-3 h-3 text-white/70 transition-transform ${showLanguageMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {/* Language Dropdown */}
-                <AnimatePresence>
-                  {showLanguageMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute right-0 mt-2 w-40 bg-black/95 backdrop-blur-xl rounded-xl border border-yellow-600/30 shadow-2xl py-2 z-[9999]"
-                    >
-                      {LANGUAGES.map((lang) => (
-                  <button
-                          type="button"
-                          key={lang.code}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('Language selected:', lang.code);
-                            setLanguage(lang.code);
-                          // Save language preference to localStorage
-                          localStorage.setItem('preferredLanguage', lang.code);
-                            setShowLanguageMenu(false);
-                          }}
-                          className={`w-full px-4 py-2 text-left hover:bg-yellow-500/10 transition-colors flex items-center space-x-2 cursor-pointer ${
-                            language === lang.code ? 'bg-yellow-500/15 text-yellow-400' : 'text-gray-300'
-                          }`}
-                        >
-                          <span className="text-lg">{lang.flag}</span>
-                          <span className="text-sm font-medium">{lang.name}</span>
-                  </button>
-                      ))}
-                    </motion.div>
-                )}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between bg-black/40 rounded-lg px-2.5 py-1.5 backdrop-blur-lg border border-white/10 relative" style={{ zIndex: -1 }}>
-              <div className="flex items-center text-white">
-                <div className="w-7 h-7 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg flex items-center justify-center mr-1.5" style={{
-                  boxShadow: '0 0 10px rgba(234, 179, 8, 0.3)'
-                }}>
-                  <Wallet className="w-3.5 h-3.5" />
-          </div>
-                <span className="text-[10px] font-medium">{t('yourBalance')}</span>
-        </div>
-              <div className="text-right">
-                {!actualAddress ? (
-                  <div className="text-yellow-400 text-xs">Connect wallet</div>
-                ) : isLoadingBalance ? (
-                  <div className="flex items-center justify-end space-x-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
-                    <span className="text-yellow-400 text-sm">Loading...</span>
-      </div>
-                ) : (
-                  <>
-                    <div className="text-pink-400 font-bold text-base">{formattedBalance} {TOKEN_NAME}</div>
-                    <div className="text-green-400 font-bold text-xs">{formattedWldBalance} WLD</div>
-                  </>
-                )}
-                  </div>
-                </div>
-                  </div>
-                </div>
-                  </div>
+      <AppHeader
+        actualAddress={actualAddress}
+        userInfo={userInfo}
+        formattedBalance={formattedBalance}
+        formattedWldBalance={formattedWldBalance}
+        isLoadingBalance={isLoadingBalance}
+        language={language}
+        showLanguageMenu={showLanguageMenu}
+        setShowLanguageMenu={setShowLanguageMenu}
+        setLanguage={setLanguage}
+        t={t}
+      />
 
       {/* Main Content */}
       <div 
@@ -2224,657 +2112,77 @@ const LuminexApp = () => {
       >
         <AnimatePresence mode="wait">
           {activeTab === 'staking' && (
-              <motion.div
-              key="staking"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-                            className="space-y-2"
-              style={{ willChange: 'transform, opacity' }}
-            >
-            {/* Pool Selection */}
-              <div className="grid grid-cols-5 gap-1.5">
-                {POOLS.map((pool) => {
-                  const Icon = pool.icon;
-                  return (
-                    <motion.button
-                      key={pool.id}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setSelectedPool(pool.id)}
-                      className={`relative p-1.5 rounded-lg border-2 transition-all overflow-hidden ${                                                            
-                        selectedPool === pool.id
-                          ? 'border-yellow-500 bg-gradient-to-br from-yellow-500/20 to-amber-500/20 shadow-lg shadow-yellow-500/20'                             
-                          : 'border-white/10 bg-black/40 backdrop-blur-lg hover:border-white/20'
-                      }`}
-                      style={{ willChange: 'transform' }}
-                    >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${pool.color} opacity-10`}></div>
-                      <div className="relative">
-                        <i
-                          className={`flex justify-center mb-0.5 ${
-                            selectedPool === pool.id ? 'text-yellow-400' : 'text-white/60'                                                                      
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                        </i>
-                        <p className="text-white font-bold text-[9px] leading-tight">{pool.name}</p>                                                           
-                        <p className={`text-[8px] font-semibold mt-0.5 ${selectedPool === pool.id ? 'text-yellow-400' : 'text-white/50'}`}>{pool.apy}%</p>      
-                      </div>
-                    </motion.button>
-                  );
-                })}
-            </div>
-
-                                                        {/* Staking Card */}
-              <motion.div
-                initial={{ scale: 0.95 }}
-                animate={{ scale: 1 }}
-                className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-xl p-3 text-white overflow-hidden border border-yellow-600/20"
-              >
-                <div className="relative z-10 space-y-2">
-                  {/* Power License Status */}
-                  <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/10">                                         
-                    <div className="flex items-center space-x-1.5">
-                      <Zap className="w-3.5 h-3.5 text-yellow-400" />
-                      <span className="text-white/80 text-[10px]">Power License:</span>                                                                           
-                      <span className="text-white font-bold text-xs">
-                          {currentPower ? currentPower.name : 'None'}
-                            </span>
-                  </div>
-                    <div className="text-right">
-                      <div className="text-yellow-300 font-bold text-xs">{totalApy}% Total APY</div>                                                            
-                      <div className="text-white/60 text-[9px] mt-0.5">
-                        Base {baseApy}% {powerBoost > 0 ? `+ ${powerBoost}%` : ''}                                                                              
-                      </div>
-                    </div>
-                </div>
-
-                  {/* Staking Balance */}
-                  <div className="p-2 bg-black/40 rounded-lg border border-white/10">                                                                           
-                    <p className="text-white/80 text-[10px] mb-1">{t('myStakingBalance')}</p>                                                                   
-                      {!actualAddress || !STAKING_CONTRACT_ADDRESS ? (
-                      <div className="flex items-center justify-center py-1">   
-                          <span className="text-yellow-400 text-[10px] text-center">
-                          {!actualAddress ? 'Connect wallet' : 'Contract not configured'}                                                                       
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1.5">
-                          <Coins className="w-4 h-4 text-yellow-300" />
-                          <span className="text-lg font-extrabold text-white">{formattedStakedAmount}</span>                                                    
-                          <span className="text-white/60 text-xs">LUX</span>    
-                            </div>
-                        <TrendingUp className="w-4 h-4 text-green-300" />       
-                        </div>
-                      )}
-                  </div>
-
-                  {/* Earned Interest */}
-                  <div className="p-2 bg-black/40 rounded-lg border border-white/10">                                                                           
-                    <p className="text-white/80 text-[10px] mb-1">{t('earnedInterest')}</p>                                                                     
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl font-extrabold text-yellow-300">{formattedPendingRewards}</span>                                                 
-                      <span className="text-white/60 text-xs">LUX</span>        
-                    </div>
-                  </div>
-
-                  {/* Time Elapsed */}
-                  {timeElapsed.days > 0 || timeElapsed.hours > 0 || timeElapsed.minutes > 0 ? (
-                    <div className="flex items-center space-x-1.5 text-[10px] text-white/70 bg-white/5 rounded-lg px-2 py-1">
-                    <Timer className="w-3 h-3 flex-shrink-0" />
-                      <span className="font-mono">
-                        {timeElapsed.days}D {timeElapsed.hours}H {timeElapsed.minutes}m
-                      </span>
-                  </div>
-                  ) : null}
-                </div>
-              </motion.div>
-
-              {/* Action Buttons */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  {/* STAKING Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setShowStakeModal(true)}
-                    className="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 text-xs shadow-lg"                                                                   
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    <span>{t('staking')}</span>
-                  </motion.button>
-
-                  {/* Withdraw Interest */}
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    onClick={handleClaimInterest}
-                    disabled={isClaimingInterest || pendingRewards === 0}
-                    className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
-                  >
-                    {isClaimingInterest ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <DollarIcon className="w-4 h-4" />
-                        <span>{t('withdrawInterest')}</span>
-                      </>
-                    )}
-                      </motion.button>
-                </div>
-
-                {/* Withdraw Balance */}
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                  onClick={handleWithdrawBalance}
-                  disabled={isWithdrawing || stakedAmount === 0}
-                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
-                >
-                  {isWithdrawing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <TrendingDown className="w-4 h-4" />
-                      <span>{t('withdrawBalance')}</span>
-                    </>
-                  )}
-                      </motion.button>
-
-                {/* Free Token Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02, boxShadow: "0 15px 35px rgba(147, 51, 234, 0.4)" }}                                                                
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveTab('game')}
-                  className="w-full text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center space-x-1.5 relative overflow-hidden group text-xs"       
-                  style={{
-                    background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',                                                               
-                    backgroundSize: '200% 100%',
-                    boxShadow: '0 8px 25px rgba(147, 51, 234, 0.3), 0 0 15px rgba(236, 72, 153, 0.2)'                                                           
-                  }}
-                >
-                                    <motion.div
-                    className="absolute inset-0 rounded-lg"
-                    animate={{
-                      backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']      
-                    }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}                                                                              
-                    style={{
-                      background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',                                                             
-                      backgroundSize: '200% 100%'
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/50 via-amber-400/50 to-yellow-400/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>                                               
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-lg"></div>                                            
-                  <Gift className="w-4 h-4 relative z-10" />
-                  <span className="text-xs relative z-10 font-extrabold">{t('freeToken')}</span>                                                              
-                  <Sparkles className="w-3.5 h-3.5 relative z-10" />
-                </motion.button>
-              </div>
-            </motion.div>
+            <StakingTab
+              selectedPool={selectedPool}
+              setSelectedPool={setSelectedPool}
+              currentPower={currentPower}
+              totalApy={totalApy}
+              baseApy={baseApy}
+              powerBoost={powerBoost}
+              actualAddress={actualAddress}
+              STAKING_CONTRACT_ADDRESS={STAKING_CONTRACT_ADDRESS}
+              formattedStakedAmount={formattedStakedAmount}
+              formattedPendingRewards={formattedPendingRewards}
+              timeElapsed={timeElapsed}
+              setShowStakeModal={setShowStakeModal}
+              handleClaimInterest={handleClaimInterest}
+              handleWithdrawBalance={handleWithdrawBalance}
+              setActiveTab={setActiveTab}
+              isClaimingInterest={isClaimingInterest}
+              isWithdrawing={isWithdrawing}
+              pendingRewards={pendingRewards}
+              stakedAmount={stakedAmount}
+              t={t}
+            />
           )}
           
           {activeTab === 'membership' && (
-            /* Membership Tab */
-            <motion.div
-              key="membership"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
-              style={{ willChange: 'transform, opacity' }}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-3 px-2">
-                <div className="flex items-center space-x-2">
-                  <Zap className="w-5 h-5 text-yellow-400" />
-                  <span className="text-yellow-400 font-bold text-sm">POWER LICENSES</span>
-                    </div>
-                {currentPower && (
-                  <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-yellow-500/20 rounded-lg border border-yellow-400/30">
-                    <span className="text-base">⚡</span>
-                    <span className="text-white font-bold text-xs">{currentPower.name}</span>
-                    <span className="text-yellow-300 font-bold text-xs">{totalApy}%</span>
-                </div>
-                )}
-                </div>
-
-              {/* Power Tiers */}
-                <div className="space-y-3">
-                {POWERS.map((power, index) => {
-                  const isOwned = currentPower?.code === power.code;
-                  const canUpgrade = !currentPower || (getPowerByCode(currentPower.code) && parseFloat(getPowerByCode(currentPower.code)!.priceWLD) < parseFloat(power.priceWLD));
-                  const isLower = currentPower && parseFloat(getPowerByCode(currentPower.code)!.priceWLD) > parseFloat(power.priceWLD);
-
-                  return (
-                    <motion.div
-                      key={power.code}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
-                      className={`flex items-center justify-between p-4 rounded-xl border ${
-                        isOwned ? 'border-yellow-400 bg-yellow-500/10' : 'border-white/10 bg-black/20'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <span className="text-lg">⚡</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="text-white font-bold text-base">{power.name}</span>
-                            <span className="text-yellow-300 font-bold text-sm">{power.totalAPY}% APY</span>
-                          </div>
-                          <div className="text-white/70 text-xs">
-                            +{power.totalAPY - BASE_APY}% Power Boost
-                          </div>
-                        </div>
-                      </div>
-                      <motion.button
-                        whileHover={{ scale: canUpgrade && !isPurchasingPower ? 1.05 : 1 }}
-                        whileTap={{ scale: canUpgrade && !isPurchasingPower ? 0.95 : 1 }}
-                        onClick={() => canUpgrade && !isPurchasingPower ? handlePurchasePower(power.code) : undefined}
-                        disabled={!canUpgrade || isPurchasingPower || !!isLower}
-                        className={`px-4 py-2 font-bold rounded-lg text-xs whitespace-nowrap ml-3 ${
-                          isOwned
-                            ? 'bg-yellow-400 text-black cursor-default'
-                            : isLower || !canUpgrade
-                            ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
-                            : 'bg-green-500 hover:bg-green-400 text-white'
-                        }`}
-                      >
-                        {isPurchasingPower ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : isOwned ? (
-                          '✓ Active'
-                        ) : isLower ? (
-                          '↓'
-                        ) : !currentPower ? (
-                          `${power.priceWLD} WLD`
-                        ) : (
-                          `+${(parseFloat(power.priceWLD) - parseFloat(getPowerByCode(currentPower.code)!.priceWLD)).toFixed(1)} WLD`
-                        )}
-                      </motion.button>
-                    </motion.div>
-                  );
-                })}
-                  </div>
-            </motion.div>
+            <MembershipTab
+              currentPower={currentPower}
+              totalApy={totalApy}
+              isPurchasingPower={isPurchasingPower}
+              handlePurchasePower={handlePurchasePower}
+            />
           )}
           
           {activeTab === 'referral' && (
-            /* Referral Tab */
-            <motion.div
-              key="referral"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-3"
-              style={{ willChange: 'transform, opacity' }}
-            >
-              {/* Hero Section */}
-              <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-3xl p-8 text-center overflow-hidden border-2 border-yellow-600/30" style={{
-                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(234, 179, 8, 0.1), inset 0 1px 0 rgba(234, 179, 8, 0.1)'
-              }}>
-                <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 via-transparent to-transparent animate-pulse"></div>
-                <div className="relative z-10">
-                  <motion.div
-                    animate={{ rotate: [0, 15, -15, 0] }}
-                    transition={{ duration: 5, repeat: Infinity }}
-                    className="text-7xl mb-4"
-                  >
-                    🎁🎊
-                  </motion.div>
-                  <h1 className="text-2xl font-extrabold text-white mb-2">
-                    Invite Friends!
-                  </h1>
-                  <p className="text-white/90 mb-1.5 text-sm">Get 50 {TOKEN_NAME} for each friend you invite</p>
-                  <p className="text-yellow-300 font-bold text-base">💰 Earn More Together! 💰</p>
-                    </div>
-                  </div>
-
-              {/* Stats Cards */}
-              <div className="grid grid-cols-2 gap-2">
-              <motion.div
-                  initial={{ scale: 0.95 }}
-                  animate={{ scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl p-3 text-black font-bold" style={{
-                    boxShadow: '0 4px 15px rgba(234, 179, 8, 0.3)',
-                    willChange: 'transform'
-                  }}
-                >
-                  <div className="flex items-center space-x-2 mb-1">
-                    <UserPlus className="w-5 h-5" />
-                  <div>
-                      <p className="text-white/80 text-xs">Total Referrals</p>
-                      <p className="text-xl font-extrabold">{safeTotalReferrals}</p>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                  initial={{ scale: 0.95 }}
-                  animate={{ scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl p-3 text-white"
-                  style={{ willChange: 'transform' }}
-                >
-                  <div className="flex items-center space-x-2 mb-1">
-                    <Coins className="w-5 h-5" />
-                  <div>
-                      <p className="text-white/80 text-xs">Total Earnings</p>
-                      <p className="text-xl font-extrabold">{safeTotalEarnings}</p>
-                  </div>
-                </div>
-              </motion.div>
-              </div>
-
-              {/* Referral Code */}
-              <div className="bg-black/40 backdrop-blur-2xl rounded-2xl p-4 border border-white/10 shadow-2xl">
-                <h2 className="text-white font-bold text-base mb-2 flex items-center gap-2">
-                  <Share2 className="w-5 h-5" />
-                  Your Referral Code
-                </h2>
-                
-                <div className="relative">
-              <motion.div
-                    whileHover={{ scale: 1.01 }}
-                    className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-xl p-3 border-2 border-yellow-500/40"
-                    style={{ willChange: 'transform' }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                        <p className="text-yellow-400 text-xs mb-1">Share this code with friends</p>
-                        <p className="text-2xl font-extrabold text-white font-mono tracking-wider">{safeReferralCode}</p>
-                  </div>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => {
-                          navigator.clipboard.writeText(referralCode);
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 2000);
-                        }}
-                        className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg flex items-center justify-center" style={{
-                          boxShadow: '0 0 15px rgba(234, 179, 8, 0.4)',
-                          willChange: 'transform'
-                        }}
-                      >
-                        {copied ? (
-                          <Check className="w-5 h-5 text-white" />
-                        ) : (
-                          <Copy className="w-5 h-5 text-white" />
-                        )}
-                      </motion.button>
-                </div>
-              </motion.div>
-                </div>
-
-                {/* Share Buttons */}
-                <div className="mt-4 space-y-2">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={async () => {
-                      try {
-                        const WORLD_APP_ID = process.env.NEXT_PUBLIC_WORLD_APP_ID || '';
-                        const inviteLink = `https://world.org/mini-app?app_id=${WORLD_APP_ID}&path=${encodeURIComponent(`/?ref=${safeReferralCode}`)}`;
-                        if (navigator.share) {
-                          await navigator.share({
-                            title: 'Join Luminex Staking!',
-                            text: `Use my referral code ${safeReferralCode} and get 50 LUX!`,
-                            url: inviteLink,
-                          });
-                        } else {
-                          await navigator.clipboard.writeText(inviteLink);
-                          setCopied(true);
-                          showToast('Link copied to clipboard!', 'success');
-                          setTimeout(() => setCopied(false), 2000);
-                        }
-                      } catch (error) {
-                        console.error('Error sharing:', error);
-                      }
-                    }}
-                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/30 text-sm"                                  
-                  >
-                    <Share2 className="w-5 h-5" />
-                    <span>{translations[language].shareLink || 'Share Link'}</span>
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setShowQRModal(true)}
-                    className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center space-x-2 text-sm" style={{                                                   
-                      boxShadow: '0 4px 20px rgba(234, 179, 8, 0.4)'
-                    }}
-                  >
-                    <QrCode className="w-5 h-5" />
-                    <span>{translations[language].showQRCode || 'Show QR Code'}</span>                                                                          
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Rewards Info */}
-              <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-3 border border-yellow-400/30">
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-yellow-500/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Gift className="w-5 h-5 text-yellow-300" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold text-base mb-1.5">How It Works</h3>
-                    <ul className="space-y-1.5 text-white/80 text-xs">
-                      <li className="flex items-center space-x-2">
-                        <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                        <span>Share your referral code with friends</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                        <span>Get 50 {TOKEN_NAME} when they sign up</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                        <span>Unlimited referrals!</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                </div>
-              </motion.div>
+            <ReferralTab
+              safeTotalReferrals={safeTotalReferrals}
+              safeTotalEarnings={safeTotalEarnings}
+              safeReferralCode={safeReferralCode}
+              referralCode={referralCode}
+              copied={copied}
+              setCopied={setCopied}
+              setShowQRModal={setShowQRModal}
+              t={t}
+            />
           )}
 
           {activeTab === 'game' && (
-            <motion.div
-              key="game"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-3"
-              style={{ willChange: 'transform, opacity' }}
-            >
-              {/* Game Tab */}
-              <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-3xl p-8 text-center overflow-hidden border-2 border-yellow-600/30" style={{
-                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(234, 179, 8, 0.1), inset 0 1px 0 rgba(234, 179, 8, 0.1)'
-              }}>
-                                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 via-transparent to-transparent animate-pulse"></div>
-                <div className="relative z-10">
-                  <motion.div
-                    animate={{ rotate: [0, 15, -15, 0] }}
-                    transition={{ duration: 5, repeat: Infinity }}
-                    className="text-7xl mb-4"
-                  >
-                    🎮
-                  </motion.div>
-                  <h1 className="text-2xl font-extrabold text-white mb-2">
-                    Play & Earn!
-                  </h1>
-                  <p className="text-white/90 mb-2 text-lg">Play games and earn rewards</p>
-                </div>
-              </div>
-
-              {/* Game Launcher */}
-              <GameLauncherCard />
-              </motion.div>
+            <GameTab />
           )}
         </AnimatePresence>
             </div>
 
       {/* Stake Modal */}
-      <AnimatePresence>
-        {showStakeModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => { setShowStakeModal(false); setIsShowInput(false); }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-4 w-full max-w-md border border-yellow-600/30 shadow-2xl"
-              style={{ willChange: 'auto' }}
-            >
-              <h3 className="text-2xl font-bold text-white mb-4 text-center">Stake {TOKEN_NAME}</h3>
-              {isShowInput && (
-                <div className="mb-4">
-                  <label className="block text-white/70 text-sm mb-2">Amount to Stake</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={stakeAmount}
-                      onChange={(e) => setStakeAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full bg-white/5 border border-yellow-600/40 rounded-2xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-yellow-500 text-lg"
-                    />
-                    <button
-                      onClick={() => setStakeAmount(balance.toString())}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold text-sm px-3 py-1 rounded-xl hover:from-yellow-400 hover:to-amber-500" style={{
-                        boxShadow: '0 2px 10px rgba(234, 179, 8, 0.3)'
-                      }}
-                    >
-                      MAX
-                    </button>
-                </div>
-                </div>
-              )}
-              <div className="flex space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => { setShowStakeModal(false); setIsShowInput(false); }}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2.5 px-4 rounded-2xl text-sm"
-                >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleStake}
-                  disabled={isStaking}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold py-2.5 px-4 rounded-2xl disabled:opacity-50 text-sm"
-                >
-                  {isStaking ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin inline mr-2" />
-                      Staking...
-                    </>
-                  ) : (
-                    'Confirm Stake'
-                  )}
-                </motion.button>
-                </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <StakeModal
+        showStakeModal={showStakeModal}
+        setShowStakeModal={setShowStakeModal}
+        isShowInput={isShowInput}
+        setIsShowInput={setIsShowInput}
+        stakeAmount={stakeAmount}
+        setStakeAmount={setStakeAmount}
+        balance={balance}
+        isStaking={isStaking}
+        handleStake={handleStake}
+      />
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-2xl border-t border-yellow-600/20 z-40" style={{
-        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(234, 179, 8, 0.05)'
-      }}>
-        <div className="max-w-md mx-auto px-4 py-3 flex justify-around">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab('staking')}
-            className={`flex flex-col items-center space-y-1 relative ${activeTab === 'staking' ? 'text-white' : 'text-gray-500'}`}
-          >
-            {activeTab === 'staking' && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
-              />
-            )}
-            <PiggyBank className="w-6 h-6 relative z-10" />
-            <span className="text-xs font-bold relative z-10">Staking</span>
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab('membership')}
-            className={`flex flex-col items-center space-y-1 relative ${activeTab === 'membership' ? 'text-white' : 'text-gray-500'}`}
-          >
-            {activeTab === 'membership' && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
-              />
-            )}
-            <Zap className="w-6 h-6 relative z-10" />
-            <span className="text-xs font-bold relative z-10">Power</span>
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab('referral')}
-            className={`flex flex-col items-center space-y-1 relative ${activeTab === 'referral' ? 'text-white' : 'text-gray-500'}`}
-          >
-            {activeTab === 'referral' && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
-              />
-            )}
-            <UserPlus className="w-6 h-6 relative z-10" />
-            <span className="text-xs font-bold relative z-10">Referral</span>
-          </motion.button>
-                          <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('game')}
-                className={`flex flex-col items-center space-y-1 relative ${activeTab === 'game' ? 'text-white' : 'text-gray-500'}`}
-              >
-                {activeTab === 'game' && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
-                  />
-                )}
-                <Gamepad2 className="w-6 h-6 relative z-10" />
-                <span className="text-xs font-bold relative z-10">Game</span>
-              </motion.button>
-              {/* Admin Button - Only visible to admin users */}
-              {isAdmin && (
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.location.assign('/admin');
-                    }
-                  }}
-                  className="flex flex-col items-center space-y-1 relative text-yellow-400 hover:text-yellow-300"
-                >
-                  <Shield className="w-6 h-6 relative z-10" />
-                  <span className="text-xs font-bold relative z-10">Admin</span>
-                </motion.button>
-              )}
-              </div>
-            </div>
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isAdmin={isAdmin}
+      />
 
       {/* Toast Notification */}
       <AnimatePresence>
@@ -2904,66 +2212,12 @@ const LuminexApp = () => {
       </AnimatePresence>
 
       {/* QR Code Modal */}
-      <AnimatePresence>
-        {showQRModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-            onClick={() => setShowQRModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-6 border border-yellow-600/30 max-w-sm w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white font-bold text-lg">QR Code</h3>
-                <button
-                  onClick={() => setShowQRModal(false)}
-                  className="text-white/70 hover:text-white transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="bg-white p-4 rounded-xl mb-4 flex items-center justify-center">
-                {safeReferralCode && (
-                  <QRCodeSVG
-                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/invite?ref=${safeReferralCode}`}
-                    size={256}
-                    level="H"
-                  />
-                )}
-        </div>
-
-              <div className="text-center">
-                <p className="text-white/80 text-sm mb-2">Scan this QR code to join Luminex!</p>
-                <p className="text-yellow-400 text-xs font-mono">{safeReferralCode}</p>
-      </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  const inviteLink = `https://world.org/mini-app?app_id=${process.env.NEXT_PUBLIC_WORLD_APP_ID || ''}&path=${encodeURIComponent(`/?ref=${safeReferralCode}`)}`;
-                  navigator.clipboard.writeText(inviteLink);
-                  showToast('Link copied to clipboard!', 'success');
-                }}
-                className="w-full mt-4 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2"
-              >
-                <Copy className="w-5 h-5" />
-                <span>Copy Link</span>
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <QRModal
+        showQRModal={showQRModal}
+        setShowQRModal={setShowQRModal}
+        safeReferralCode={safeReferralCode}
+        showToast={showToast}
+      />
 
       {/* Spacer for bottom nav */}
       <div className="h-16"></div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMiniKit } from '../hooks/useMiniKit';
+import { useMiniKit } from '@/hooks/useMiniKit';
 import { WORLD_APP_ID, WORLD_ACTION, TREASURY_ADDRESS, TOKEN_NAME, LOGO_URL, BRAND_NAME } from '@/lib/utils/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { t } from '@/lib/utils/i18n';
