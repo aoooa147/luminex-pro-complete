@@ -2048,7 +2048,7 @@ const LuminexApp = () => {
   const totalApy = currentPower ? currentPower.totalAPY : baseApy;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-y-auto">
       {/* Luxurious gold geometric background pattern */}
       <div className="fixed inset-0 opacity-[0.02] pointer-events-none" style={{ 
         backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(234, 179, 8, 0.08) 35px, rgba(234, 179, 8, 0.08) 70px),
