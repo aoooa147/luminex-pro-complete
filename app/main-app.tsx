@@ -2220,12 +2220,7 @@ const LuminexApp = () => {
 
       {/* Main Content */}
       <div 
-        className="relative max-w-md mx-auto px-4 py-2 overflow-y-auto"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-          WebkitOverflowScrolling: 'touch',
-        }}
+        className="relative max-w-md mx-auto px-4 py-2 pb-20 overflow-y-auto"
       >
         <AnimatePresence mode="wait">
           {activeTab === 'staking' && (
