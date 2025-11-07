@@ -1,10 +1,16 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
 # dependencies
-node_modules
+/node_modules
 /.pnp
 .pnp.js
 
 # testing
 /coverage
+/.nyc_output
+/test-results
+/playwright-report
+/playwright/.cache
 
 # next.js
 /.next/
@@ -32,3 +38,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prisma
+/prisma/migrations
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
