@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readJSON } from '@/lib/game/storage';
 import { TREASURY_ADDRESS } from '@/lib/utils/constants';
 import { logger } from '@/lib/utils/logger';
+import { withErrorHandler, createErrorResponse, createSuccessResponse } from '@/lib/utils/apiHandler';
 
 export const runtime = 'nodejs';
 
@@ -9,8 +10,7 @@ export const runtime = 'nodejs';
  * Admin Stats API
  * Returns real statistics from storage files
  */
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withErrorHandler(async (req: NextRequest) => {
     // Check admin authorization (optional - can be enhanced with JWT/session)
     const adminAddress = req.headers.get('x-admin-address');
     const expectedAdmin = process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS || TREASURY_ADDRESS;
@@ -210,8 +210,7 @@ export async function GET(req: NextRequest) {
       : totalReferrals > 0 ? 100 : 0;
 
     // Return stats
-    return NextResponse.json({
-      success: true,
+    return createSuccessResponse({
       stats: {
         totalUsers,
         totalStaking: Math.round(totalStaking), // Round to avoid decimals
@@ -231,17 +230,4 @@ export async function GET(req: NextRequest) {
       },
       timestamp: Date.now(),
     });
-  } catch (error: any) {
-    logger.error('Admin stats error', error, 'admin/stats');
-    return NextResponse.json({
-      success: false,
-      error: error?.message || 'Failed to fetch admin stats',
-      stats: {
-        totalUsers: 0,
-        totalStaking: 0,
-        totalRevenue: 0,
-        totalReferrals: 0,
-      },
-    }, { status: 500 });
-  }
-}
+}, 'admin/stats');

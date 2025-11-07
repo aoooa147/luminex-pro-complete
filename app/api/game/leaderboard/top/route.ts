@@ -15,5 +15,5 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   logger.debug('Leaderboard fetched', { period, limit, count: row.length }, 'game/leaderboard/top');
 
-  return NextResponse.json({ ok: true, period, top: row.slice(0, limit) });
+  return createSuccessResponse({ ok: true, period, top: row.slice(0, limit) });
 }, 'game/leaderboard/top');

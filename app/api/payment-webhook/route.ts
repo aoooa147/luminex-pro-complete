@@ -14,5 +14,5 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   const body = await request.json();
   logger.info('Payment webhook received', { body, ip }, 'payment-webhook');
   
-  return NextResponse.json({ ok: true });
+  return createSuccessResponse({ ok: true });
 }, 'payment-webhook');

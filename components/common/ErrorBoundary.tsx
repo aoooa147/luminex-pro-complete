@@ -23,7 +23,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught:', error, errorInfo);
+    // Use logger if available, otherwise fallback to console
+    if (typeof window !== 'undefined') {
+      // Client-side: log to console for now (logger is server-side only)
+      console.error('ErrorBoundary caught:', error, errorInfo);
+    }
   }
 
   render() {

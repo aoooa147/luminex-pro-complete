@@ -21,6 +21,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   logger.debug('Nonce generated for wallet authentication', { nonce }, 'nonce');
   
-  return NextResponse.json({ nonce });
+  return createSuccessResponse({ nonce });
 }, 'nonce');
 

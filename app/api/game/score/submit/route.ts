@@ -1,7 +1,9 @@
-import { NextRequest } from 'next/server'; 
+import { NextRequest, NextResponse } from 'next/server'; 
 import { readJSON, writeJSON } from '@/lib/game/storage'; 
 import { verifyScoreSignature } from '@/lib/game/verify';
 import { logger } from '@/lib/utils/logger';
+import { withErrorHandler, createErrorResponse, createSuccessResponse, validateBody } from '@/lib/utils/apiHandler';
+import { isValidAddress } from '@/lib/utils/validation';
 
 export const runtime = 'nodejs';
 
@@ -11,31 +13,50 @@ const MAX_SCORE_PER_ACTION = 10000;
 const MIN_GAME_DURATION_FOR_HIGH_SCORE = 10; // seconds
 const HIGH_SCORE_THRESHOLD = 50000;
 
-export async function POST(req: NextRequest){ 
-  const { address, payload, sig } = await req.json();
-  if(!address||!payload?.nonce) return Response.json({ok:false,error:'bad_payload'},{status:400});
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  const body = await req.json();
+  const { address, payload, sig } = body;
+  
+  // Validate required fields
+  if (!address || !payload?.nonce || !sig) {
+    return createErrorResponse('Missing address, payload.nonce, or sig', 'MISSING_FIELDS', 400);
+  }
+  
   const { score, ts, nonce, gameDuration, actionsCount } = payload; 
-  if(typeof score!=='number'||!ts||!nonce) return Response.json({ok:false,error:'bad_payload'},{status:400});
+  if (typeof score !== 'number' || !ts || !nonce) {
+    return createErrorResponse('Invalid payload format', 'INVALID_PAYLOAD', 400);
+  }
+  
+  // Validate address format
+  if (!isValidAddress(address)) {
+    return createErrorResponse('Invalid address format', 'INVALID_ADDRESS', 400);
+  }
   
   // Enhanced anti-cheat validation
-  const addressLower = (address as string).toLowerCase();
+  const addressLower = address.toLowerCase();
   
   // Validate nonce
-  const nonces=readJSON<Record<string,string>>('nonces',{}); 
-  const expected=nonces[addressLower]; 
-  if(!expected||expected!==nonce) return Response.json({ok:false,error:'nonce_invalid'},{status:400});
+  const nonces = readJSON<Record<string,string>>('nonces',{}); 
+  const expected = nonces[addressLower]; 
+  if (!expected || expected !== nonce) {
+    return createErrorResponse('Invalid or expired nonce', 'NONCE_INVALID', 400);
+  }
   
   // Verify signature
-  const ok=await verifyScoreSignature({ 
+  const ok = await verifyScoreSignature({ 
     address: address as `0x${string}`, 
     payload:{ address, score, ts, nonce }, 
     signature:sig as `0x${string}`
   }); 
-  if(!ok) return Response.json({ok:false,error:'sig_invalid'},{status:400});
+  if (!ok) {
+    return createErrorResponse('Invalid signature', 'SIG_INVALID', 400);
+  }
   
   // Check timestamp freshness
-  const now=Date.now(); 
-  if(Math.abs(now-Number(ts))>WINDOW_MS) return Response.json({ok:false,error:'stale'},{status:400});
+  const now = Date.now(); 
+  if (Math.abs(now - Number(ts)) > WINDOW_MS) {
+    return createErrorResponse('Request timestamp is stale', 'STALE_TIMESTAMP', 400);
+  }
   
     // Enhanced anti-cheat checks using the anti-cheat system
   const { antiCheat } = await import('@/lib/game/anticheat');
@@ -49,7 +70,11 @@ export async function POST(req: NextRequest){
         reason: scoreCheck.reason || 'suspicious_score', 
         confidence: scoreCheck.confidence 
       }, 'game/score/submit');
-      return Response.json({ok:false,error:scoreCheck.reason || 'suspicious_score'},{status:400});
+      return createErrorResponse(
+        scoreCheck.reason || 'Suspicious score detected',
+        'SUSPICIOUS_SCORE',
+        400
+      );
     }
 
     // Additional checks for extra security
@@ -60,7 +85,7 @@ export async function POST(req: NextRequest){
         address: addressLower, 
         scorePerSecond: scorePerSecond.toFixed(2) 
       }, 'game/score/submit');
-      return Response.json({ok:false,error:'suspicious_score_rate'},{status:400});
+      return createErrorResponse('Score rate too high', 'SUSPICIOUS_SCORE_RATE', 400);
     }
 
     // Check 2: High score with suspiciously short duration
@@ -70,7 +95,7 @@ export async function POST(req: NextRequest){
         score, 
         gameDuration 
       }, 'game/score/submit');
-      return Response.json({ok:false,error:'suspicious_score_duration'},{status:400});
+      return createErrorResponse('High score with suspiciously short duration', 'SUSPICIOUS_SCORE_DURATION', 400);
     }
   }
 
@@ -82,20 +107,45 @@ export async function POST(req: NextRequest){
         address: addressLower, 
         scorePerAction: scorePerAction.toFixed(2) 
       }, 'game/score/submit');
-      return Response.json({ok:false,error:'suspicious_score_per_action'},{status:400});
+      return createErrorResponse('Score per action too high', 'SUSPICIOUS_SCORE_PER_ACTION', 400);
     }
   }
   
-  // Check 4: Score cap (existing check - will be applied later)
-  const energies=readJSON<Record<string,{energy:number;max:number;day:string}>>('energies',{}); const today=new Date().toISOString().slice(0,10);
-  if(!energies[address.toLowerCase()]||energies[address.toLowerCase()].day!==today){ const freePerDay=Number(process.env.GAME_ENERGY_FREE_PER_DAY ?? 5); energies[address.toLowerCase()]={energy:freePerDay,max:freePerDay,day:today}; }
-  if(energies[address.toLowerCase()].energy<=0) return Response.json({ok:false,error:'no_energy'},{status:400});
-  energies[address.toLowerCase()].energy-=1; writeJSON('energies',energies);
+  // Check 4: Energy check and score cap
+  const energies = readJSON<Record<string,{energy:number;max:number;day:string}>>('energies',{}); 
+  const today = new Date().toISOString().slice(0,10);
+  if (!energies[addressLower] || energies[addressLower].day !== today) { 
+    const freePerDay = Number(process.env.GAME_ENERGY_FREE_PER_DAY ?? 5); 
+    energies[addressLower] = {energy:freePerDay,max:freePerDay,day:today}; 
+  }
+  if (energies[addressLower].energy <= 0) {
+    return createErrorResponse('No energy remaining', 'NO_ENERGY', 400);
+  }
+  energies[addressLower].energy -= 1; 
+  writeJSON('energies',energies);
+  
   // Apply score cap
-  const capped=Math.max(0,Math.min(score,100000)); 
-  const period=today;
-  const scores=readJSON<any[]>('scores',[]); scores.push({address:address.toLowerCase(),score:capped,period,ts:Date.now()}); writeJSON('scores',scores);
-  const board=readJSON<Record<string,Record<string,number>>>('leaderboards',{}); if(!board[period]) board[period]={}; board[period][address.toLowerCase()]=(board[period][address.toLowerCase()]||0)+capped; writeJSON('leaderboards',board);
-  delete nonces[address.toLowerCase()]; writeJSON('nonces',nonces);
-  return Response.json({ok:true,newEnergy:energies[address.toLowerCase()].energy});
-}
+  const capped = Math.max(0, Math.min(score, 100000)); 
+  const period = today;
+  const scores = readJSON<any[]>('scores',[]); 
+  scores.push({address:addressLower,score:capped,period,ts:Date.now()}); 
+  writeJSON('scores',scores);
+  const board = readJSON<Record<string,Record<string,number>>>('leaderboards',{}); 
+  if (!board[period]) board[period] = {}; 
+  board[period][addressLower] = (board[period][addressLower] || 0) + capped; 
+  writeJSON('leaderboards',board);
+  delete nonces[addressLower]; 
+  writeJSON('nonces',nonces);
+  
+  logger.success('Score submitted successfully', {
+    address: addressLower,
+    score: capped,
+    newEnergy: energies[addressLower].energy
+  }, 'game/score/submit');
+  
+  return createSuccessResponse({
+    ok: true,
+    newEnergy: energies[addressLower].energy,
+    score: capped
+  });
+}, 'game/score/submit');

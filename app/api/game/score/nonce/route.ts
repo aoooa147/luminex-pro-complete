@@ -22,5 +22,5 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   logger.debug('Nonce generated', { address }, 'game/score/nonce');
 
-  return NextResponse.json({ ok: true, nonce });
+  return createSuccessResponse({ ok: true, nonce });
 }, 'game/score/nonce');

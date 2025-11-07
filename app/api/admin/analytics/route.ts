@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readJSON } from '@/lib/game/storage';
 import { TREASURY_ADDRESS } from '@/lib/utils/constants';
 import { logger } from '@/lib/utils/logger';
+import { withErrorHandler, createErrorResponse, createSuccessResponse } from '@/lib/utils/apiHandler';
 
 export const runtime = 'nodejs';
 
@@ -9,8 +10,7 @@ export const runtime = 'nodejs';
  * Admin Analytics API
  * Returns detailed analytics data
  */
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withErrorHandler(async (req: NextRequest) => {
     // Get stats from storage
     const referralFileData = readJSON<{
       referralData?: Record<string, any>;
@@ -146,18 +146,9 @@ export async function GET(req: NextRequest) {
     const totalScore = validScores.reduce((sum: number, s: any) => sum + (s.score || 0), 0);
     analytics.games.averageScore = validScores.length > 0 ? totalScore / validScores.length : 0;
     
-    return NextResponse.json({
-      success: true,
+    return createSuccessResponse({
       analytics,
       timestamp: Date.now(),
     });
-  } catch (error: any) {
-    logger.error('Admin analytics error', error, 'admin/analytics');
-    return NextResponse.json({
-      success: false,
-      error: error?.message || 'Failed to fetch analytics',
-      analytics: null,
-    }, { status: 500 });
-  }
-}
+}, 'admin/analytics');
 

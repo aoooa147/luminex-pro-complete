@@ -43,7 +43,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   logger.debug('Cooldown checked', { address: addressLower, gameId, isOnCooldown }, 'game/cooldown/check');
 
-  return NextResponse.json({
+  return createSuccessResponse({
     ok: true,
     isOnCooldown,
     lastPlayTime,

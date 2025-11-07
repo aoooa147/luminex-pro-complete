@@ -3,6 +3,7 @@ import { getPowerDraft, markDraftAsUsed, setUserPower, getUserPower } from '@/li
 import { getPowerByCode } from '@/lib/utils/powerConfig';
 import { WORLD_API_KEY, WORLD_APP_ID } from '@/lib/utils/constants';
 import { logger } from '@/lib/utils/logger';
+import { withErrorHandler, createErrorResponse, createSuccessResponse, validateBody } from '@/lib/utils/apiHandler';
 
 interface ConfirmPowerRequest {
   payload: {
@@ -44,99 +45,78 @@ async function verifyTransactionWithWorldcoin(transactionId: string, reference: 
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json() as ConfirmPowerRequest;
-    const { payload } = body;
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  const body = await req.json() as ConfirmPowerRequest;
+  const { payload } = body;
 
-    if (!payload || !payload.reference) {
-      return NextResponse.json({
-        success: false,
-        error: 'payload with reference is required',
-      }, { status: 400 });
-    }
-
-    // Check if user cancelled (no transaction_id)
-    if (!payload.transaction_id) {
-      return NextResponse.json({
-        success: false,
-        error: 'user_cancelled',
-        message: 'Payment was cancelled',
-      }, { status: 400 });
-    }
-
-        // Get draft
-    const draft = await getPowerDraft(payload.reference);
-    if (!draft) {
-      return NextResponse.json({
-        success: false,
-        error: 'invalid_reference',
-        message: 'Reference not found or expired',
-      }, { status: 400 });
-    }
-
-    if (draft.status !== 'pending') {
-      return NextResponse.json({
-        success: false,
-        error: 'draft_already_used',
-        message: 'This draft has already been used',
-      }, { status: 400 });
-    }
-
-    // Verify transaction with Worldcoin API
-    const verified = await verifyTransactionWithWorldcoin(payload.transaction_id, payload.reference);                                                           
-    if (!verified) {
-      return NextResponse.json({
-        success: false,
-        error: 'verification_failed',
-        message: 'Transaction verification failed',
-      }, { status: 400 });
-    }
-
-    // Get current power to check if upgrade is valid
-    const current = await getUserPower(draft.userId);
-
-    // Update or create user power (paid purchase)
-    const userPower = await setUserPower(
-      draft.userId,
-      draft.targetCode,
-      payload.transaction_id,
-      payload.reference,
-      true // isPaid = true for purchased powers
+  // Validate required fields
+  const bodyValidation = validateBody(body, ['payload']);
+  if (!bodyValidation.valid) {
+    return createErrorResponse(
+      `Missing required fields: ${bodyValidation.missing?.join(', ')}`,
+      'MISSING_FIELDS',
+      400
     );
-
-    // Mark draft as used
-    await markDraftAsUsed(payload.reference);
-
-    const power = getPowerByCode(draft.targetCode);
-    if (!power) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid power code',
-      }, { status: 500 });
-    }
-
-    logger.success('Power purchase confirmed', {
-      userId: draft.userId,
-      targetCode: draft.targetCode,
-      transactionId: payload.transaction_id,
-      previousCode: current?.code || 'none',
-    }, 'power/confirm');
-
-    return NextResponse.json({
-      success: true,
-      ok: true,
-      power: {
-        code: power.code,
-        name: power.name,
-        totalAPY: power.totalAPY,
-      },
-    });
-  } catch (error: any) {
-    logger.error('Error confirming power purchase', error, 'power/confirm');
-    return NextResponse.json({
-      success: false,
-      error: error.message || 'Failed to confirm power purchase',
-    }, { status: 500 });
   }
-}
+
+  if (!payload || !payload.reference) {
+    return createErrorResponse('payload with reference is required', 'MISSING_REFERENCE', 400);
+  }
+
+  // Check if user cancelled (no transaction_id)
+  if (!payload.transaction_id) {
+    return createErrorResponse('Payment was cancelled', 'USER_CANCELLED', 400);
+  }
+
+  // Get draft
+  const draft = await getPowerDraft(payload.reference);
+  if (!draft) {
+    return createErrorResponse('Reference not found or expired', 'INVALID_REFERENCE', 400);
+  }
+
+  if (draft.status !== 'pending') {
+    return createErrorResponse('This draft has already been used', 'DRAFT_ALREADY_USED', 400);
+  }
+
+  // Verify transaction with Worldcoin API
+  const verified = await verifyTransactionWithWorldcoin(payload.transaction_id, payload.reference);                                                           
+  if (!verified) {
+    return createErrorResponse('Transaction verification failed', 'VERIFICATION_FAILED', 400);
+  }
+
+  // Get current power to check if upgrade is valid
+  const current = await getUserPower(draft.userId);
+
+  // Update or create user power (paid purchase)
+  const userPower = await setUserPower(
+    draft.userId,
+    draft.targetCode,
+    payload.transaction_id,
+    payload.reference,
+    true // isPaid = true for purchased powers
+  );
+
+  // Mark draft as used
+  await markDraftAsUsed(payload.reference);
+
+  const power = getPowerByCode(draft.targetCode);
+  if (!power) {
+    return createErrorResponse('Invalid power code', 'INVALID_POWER_CODE', 500);
+  }
+
+  logger.success('Power purchase confirmed', {
+    userId: draft.userId,
+    targetCode: draft.targetCode,
+    transactionId: payload.transaction_id,
+    previousCode: current?.code || 'none',
+  }, 'power/confirm');
+
+  return createSuccessResponse({
+    ok: true,
+    power: {
+      code: power.code,
+      name: power.name,
+      totalAPY: power.totalAPY,
+    },
+  });
+}, 'power/confirm');

@@ -35,7 +35,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   logger.info('Global cooldown started', { address: addressLower, gameId }, 'game/cooldown/start');
 
-  return NextResponse.json({
+  return createSuccessResponse({
     ok: true,
     message: 'Global cooldown started - all games locked for 24 hours',
     lastPlayTime: cooldowns[addressLower],

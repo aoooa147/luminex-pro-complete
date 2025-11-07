@@ -22,7 +22,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   logger.info('SIWE verification', { isValid: result.isValid, ip }, 'complete-siwe');
 
-  return NextResponse.json({ 
+  return createSuccessResponse({ 
     status: 'ok', 
     isValid: result.isValid,
     siweMessageData: result.siweMessageData

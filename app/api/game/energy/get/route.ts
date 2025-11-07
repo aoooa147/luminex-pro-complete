@@ -24,5 +24,5 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   logger.debug('Energy fetched', { address, energy: energies[address].energy }, 'game/energy/get');
 
-  return NextResponse.json({ ok: true, ...energies[address] });
+  return createSuccessResponse({ ok: true, ...energies[address] });
 }, 'game/energy/get');

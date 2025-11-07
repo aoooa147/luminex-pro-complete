@@ -27,5 +27,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   logger.info('World ID verification', { success: out.success, action, ip }, 'verify');
 
-  return NextResponse.json({ success: out.success, detail: out }, { status: out.success ? 200 : 400 });
+  if (out.success) {
+    return createSuccessResponse({ success: true, detail: out });
+  } else {
+    return createErrorResponse('Verification failed', 'VERIFICATION_FAILED', 400);
+  }
 }, 'verify');

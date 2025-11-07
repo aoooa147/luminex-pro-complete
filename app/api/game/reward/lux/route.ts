@@ -87,11 +87,11 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     const timeSinceLastPlay = Date.now() - lastPlayTime;
     
     if (timeSinceLastPlay < COOLDOWN_MS) {
-      return NextResponse.json({ 
-        ok: false, 
-        error: 'Still on cooldown',
-        remainingMs: COOLDOWN_MS - timeSinceLastPlay
-      }, { status: 400 });
+      return createErrorResponse(
+        'Still on cooldown',
+        'COOLDOWN_ACTIVE',
+        400
+      );
     }
     
     // Calculate reward
@@ -111,7 +111,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     luxReward: luxAmount
   }, 'game/reward/lux');
 
-  return NextResponse.json({
+  return createSuccessResponse({
     ok: true,
     luxReward: luxAmount,
     score,
