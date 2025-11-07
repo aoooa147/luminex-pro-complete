@@ -84,22 +84,17 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         'suspicious_pattern': 'Suspicious referral pattern detected. Your IP has been temporarily blocked.',
       };
 
-      return NextResponse.json({
-        success: false,
-        reason,
-        message: reasonMessages[reason] || 'Referral validation failed',
-        blocked,
-      }, { status: blocked ? 403 : 400 });
+      return createErrorResponse(
+        reasonMessages[reason] || 'Referral validation failed',
+        reason || 'INVALID_REFERRAL',
+        blocked ? 403 : 400
+      );
     }
 
     // Prevent self-referral (double-check)
     if (newUserId.toLowerCase() === referrerAddress.toLowerCase()) {
       referralAntiCheat.recordAttempt(ip, referrerAddress, newUserId, false, 'self_referral');
-      return NextResponse.json({
-        success: false,
-        reason: 'self_referral',
-        message: 'Cannot refer yourself',
-      }, { status: 400 });
+      return createErrorResponse('Cannot refer yourself', 'SELF_REFERRAL', 400);
     }
 
     // Reward amount (configurable)
@@ -110,11 +105,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
     if (!added) {
       referralAntiCheat.recordAttempt(ip, referrerAddress, newUserId, false, 'already_referred');
-      return NextResponse.json({
-        success: false,
-        reason: 'already_referred',
-        message: 'Referral already exists',
-      }, { status: 400 });
+      return createErrorResponse('Referral already exists', 'ALREADY_REFERRED', 400);
     }
 
   // Record successful referral

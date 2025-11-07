@@ -123,6 +123,7 @@ const ReferralTab = memo(({
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
+                aria-label={copied ? 'Referral code copied' : 'Copy referral code'}
                 className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg flex items-center justify-center"
                 style={{
                   boxShadow: '0 0 15px rgba(234, 179, 8, 0.4)',
@@ -130,9 +131,9 @@ const ReferralTab = memo(({
                 }}
               >
                 {copied ? (
-                  <Check className="w-5 h-5 text-white" />
+                  <Check className="w-5 h-5 text-white" aria-hidden="true" />
                 ) : (
-                  <Copy className="w-5 h-5 text-white" />
+                  <Copy className="w-5 h-5 text-white" aria-hidden="true" />
                 )}
               </motion.button>
             </div>
@@ -160,24 +161,26 @@ const ReferralTab = memo(({
                   setTimeout(() => setCopied(false), 2000);
                 }
               } catch (error) {
-                console.error('Error sharing:', error);
+                // Error sharing - silent error handling
               }
             }}
+            aria-label="Share referral link"
             className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/30 text-sm"
           >
-            <Share2 className="w-5 h-5" />
+            <Share2 className="w-5 h-5" aria-hidden="true" />
             <span>{t('shareLink') || 'Share Link'}</span>
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowQRModal(true)}
+            aria-label="Show QR code for referral"
             className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center space-x-2 text-sm"
             style={{
               boxShadow: '0 4px 20px rgba(234, 179, 8, 0.4)'
             }}
           >
-            <QrCode className="w-5 h-5" />
+            <QrCode className="w-5 h-5" aria-hidden="true" />
             <span>{t('showQRCode') || 'Show QR Code'}</span>
           </motion.button>
         </div>

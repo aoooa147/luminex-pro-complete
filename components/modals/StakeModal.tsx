@@ -60,6 +60,7 @@ const StakeModal = memo(({
                   />
                   <button
                     onClick={() => setStakeAmount(balance.toString())}
+                    aria-label="Set maximum stake amount"
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold text-sm px-3 py-1 rounded-xl hover:from-yellow-400 hover:to-amber-500"
                     style={{
                       boxShadow: '0 2px 10px rgba(234, 179, 8, 0.3)'
@@ -75,6 +76,7 @@ const StakeModal = memo(({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => { setShowStakeModal(false); setIsShowInput(false); }}
+                aria-label="Cancel staking"
                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2.5 px-4 rounded-2xl text-sm"
               >
                 Cancel
@@ -84,11 +86,13 @@ const StakeModal = memo(({
                 whileTap={{ scale: 0.95 }}
                 onClick={handleStake}
                 disabled={isStaking}
+                aria-label={isStaking ? 'Staking in progress...' : 'Confirm stake'}
+                aria-disabled={isStaking}
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold py-2.5 px-4 rounded-2xl disabled:opacity-50 text-sm"
               >
                 {isStaking ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin inline mr-2" />
+                    <Loader2 className="w-5 h-5 animate-spin inline mr-2" aria-hidden="true" />
                     Staking...
                   </>
                 ) : (

@@ -39,9 +39,10 @@ const QRModal = memo(({
               <h3 className="text-white font-bold text-lg">QR Code</h3>
               <button
                 onClick={() => setShowQRModal(false)}
+                aria-label="Close QR code modal"
                 className="text-white/70 hover:text-white transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -70,9 +71,10 @@ const QRModal = memo(({
                 navigator.clipboard.writeText(inviteLink);
                 showToast('Link copied to clipboard!', 'success');
               }}
+              aria-label="Copy referral link"
               className="w-full mt-4 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-2"
             >
-              <Copy className="w-5 h-5" />
+              <Copy className="w-5 h-5" aria-hidden="true" />
               <span>Copy Link</span>
             </motion.button>
           </motion.div>

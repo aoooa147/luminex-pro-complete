@@ -27,6 +27,8 @@ const BottomNav = memo(({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setActiveTab('staking')}
+          aria-label="Staking tab"
+          aria-pressed={activeTab === 'staking'}
           className={`flex flex-col items-center space-y-1 relative ${activeTab === 'staking' ? 'text-white' : 'text-gray-500'}`}
         >
           {activeTab === 'staking' && (
@@ -35,13 +37,15 @@ const BottomNav = memo(({
               className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
             />
           )}
-          <PiggyBank className="w-6 h-6 relative z-10" />
+          <PiggyBank className="w-6 h-6 relative z-10" aria-hidden="true" />
           <span className="text-xs font-bold relative z-10">Staking</span>
         </motion.button>
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setActiveTab('membership')}
+          aria-label="Power/Membership tab"
+          aria-pressed={activeTab === 'membership'}
           className={`flex flex-col items-center space-y-1 relative ${activeTab === 'membership' ? 'text-white' : 'text-gray-500'}`}
         >
           {activeTab === 'membership' && (
@@ -50,13 +54,15 @@ const BottomNav = memo(({
               className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
             />
           )}
-          <Zap className="w-6 h-6 relative z-10" />
+          <Zap className="w-6 h-6 relative z-10" aria-hidden="true" />
           <span className="text-xs font-bold relative z-10">Power</span>
         </motion.button>
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setActiveTab('referral')}
+          aria-label="Referral tab"
+          aria-pressed={activeTab === 'referral'}
           className={`flex flex-col items-center space-y-1 relative ${activeTab === 'referral' ? 'text-white' : 'text-gray-500'}`}
         >
           {activeTab === 'referral' && (
@@ -65,13 +71,15 @@ const BottomNav = memo(({
               className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
             />
           )}
-          <UserPlus className="w-6 h-6 relative z-10" />
+          <UserPlus className="w-6 h-6 relative z-10" aria-hidden="true" />
           <span className="text-xs font-bold relative z-10">Referral</span>
         </motion.button>
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setActiveTab('game')}
+          aria-label="Game tab"
+          aria-pressed={activeTab === 'game'}
           className={`flex flex-col items-center space-y-1 relative ${activeTab === 'game' ? 'text-white' : 'text-gray-500'}`}
         >
           {activeTab === 'game' && (
@@ -80,7 +88,7 @@ const BottomNav = memo(({
               className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
             />
           )}
-          <Gamepad2 className="w-6 h-6 relative z-10" />
+          <Gamepad2 className="w-6 h-6 relative z-10" aria-hidden="true" />
           <span className="text-xs font-bold relative z-10">Game</span>
         </motion.button>
         {/* Admin Button - Only visible to admin users */}
@@ -94,9 +102,10 @@ const BottomNav = memo(({
                 window.location.assign('/admin');
               }
             }}
+            aria-label="Admin dashboard"
             className="flex flex-col items-center space-y-1 relative text-yellow-400 hover:text-yellow-300"
           >
-            <Shield className="w-6 h-6 relative z-10" />
+            <Shield className="w-6 h-6 relative z-10" aria-hidden="true" />
             <span className="text-xs font-bold relative z-10">Admin</span>
           </motion.button>
         )}

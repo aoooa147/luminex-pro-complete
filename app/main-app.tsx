@@ -11,6 +11,7 @@ import { MiniKit, tokenToDecimals, Tokens } from '@worldcoin/minikit-js';
 import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION, WALLET_RPC_URL, WALLET_CHAIN_ID, CONTRACT_RPC_URL, CONTRACT_CHAIN_ID, LUX_TOKEN_ADDRESS as LUX_TOKEN_ADDRESS_FROM_CONSTANTS, STAKING_CONTRACT_ADDRESS as STAKING_CONTRACT_ADDRESS_FROM_CONSTANTS, WLD_TOKEN_ADDRESS as WLD_TOKEN_ADDRESS_FROM_CONSTANTS, TREASURY_ADDRESS as TREASURY_ADDRESS_FROM_CONSTANTS, LANGUAGES, POOLS as POOLS_FROM_CONSTANTS, MEMBERSHIP_TIERS as MEMBERSHIP_TIERS_FROM_CONSTANTS, POOL_ICONS, POOL_COLORS, POOL_BG_COLORS, MEMBERSHIP_COLORS, MEMBERSHIP_SPARKLE, LOGO_URL as LOGO_URL_FROM_CONSTANTS, TOKEN_NAME as TOKEN_NAME_FROM_CONSTANTS } from '@/lib/utils/constants';
 import { POWERS, BASE_APY, getPowerByCode, getPowerBoost, type PowerCode } from '@/lib/utils/powerConfig';
 import { useMiniKit as useMiniKitVerify } from '@/hooks/useMiniKit';
+import { registerServiceWorker, improveTouchInteractions } from '@/lib/utils/pwa';
 const MiniKitPanel = dynamic(() => import('@/components/world/MiniKitPanel'), { ssr: false });
 const GameLauncherCard = dynamic(() => import('@/components/game/GameLauncherCard'), { ssr: false });
 import { 
@@ -24,14 +25,16 @@ import {
 import QRCodeSVG from 'react-qr-code';
 import Logo3D from '@/components/ui/Logo3D';
 import WorldIDVerification from '@/components/world/WorldIDVerification';
-import StakingTab from '@/components/staking/StakingTab';
-import MembershipTab from '@/components/membership/MembershipTab';
-import ReferralTab from '@/components/referral/ReferralTab';
-import GameTab from '@/components/game/GameTab';
+// Lazy load tabs for better performance
+const StakingTab = dynamic(() => import('@/components/staking/StakingTab'), { ssr: false });
+const MembershipTab = dynamic(() => import('@/components/membership/MembershipTab'), { ssr: false });
+const ReferralTab = dynamic(() => import('@/components/referral/ReferralTab'), { ssr: false });
+const GameTab = dynamic(() => import('@/components/game/GameTab'), { ssr: false });
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/layout/BottomNav';
-import StakeModal from '@/components/modals/StakeModal';
-import QRModal from '@/components/modals/QRModal';
+// Lazy load modals
+const StakeModal = dynamic(() => import('@/components/modals/StakeModal'), { ssr: false });
+const QRModal = dynamic(() => import('@/components/modals/QRModal'), { ssr: false });
 
 const LOGO_URL = LOGO_URL_FROM_CONSTANTS;
 const TOKEN_NAME = TOKEN_NAME_FROM_CONSTANTS;
@@ -514,21 +517,19 @@ const useMiniKit = () => {
             const rpcProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
             setProvider(rpcProvider);
             
-            console.log('✅ Connected to wallet:', walletData.address, 'on Worldchain');
-            console.log('✅ Wallet state will be updated. actualAddress should be:', walletData.address);
+            // Wallet connected successfully
           } else {
-            console.warn('⚠️ MiniKit walletAuth returned no address');
-            console.warn('⚠️ Wallet data:', walletData);
+            // MiniKit walletAuth returned no address
         }
       } else {
-          console.warn('⚠️ MiniKit.commandsAsync.walletAuth not available');
+          // MiniKit.commandsAsync.walletAuth not available
         }
       } else {
         // Only World App is supported
-        console.warn('⚠️ MiniKit is not available. Please open this app in World App.');
+        // MiniKit is not available
       }
     } catch (error) {
-      console.error('❌ Error connecting wallet:', error);
+      // Error connecting wallet - silent error handling
     }
   };
 
@@ -552,8 +553,6 @@ const useMiniKit = () => {
       
       if (hasMiniKit) {
         // Use MiniKit pay API for World App
-        console.log(`💸 Using MiniKit pay API: ${amount} ${params.currency} to ${TREASURY_ADDRESS}...`);
-        
         try {
           // Generate payment reference - use validatedAmountStr to preserve exact format
           const referenceResponse = await fetch('/api/initiate-payment', {
@@ -567,8 +566,7 @@ const useMiniKit = () => {
             return { success: false, error: 'Failed to generate payment reference' };
           }
           
-                              const referenceId = referenceData.id;
-          console.log('✅ Generated payment reference:', referenceId);
+          const referenceId = referenceData.id;
 
           // Validate referenceId
           if (!referenceId || typeof referenceId !== 'string' || referenceId.length < 8) {
@@ -578,18 +576,14 @@ const useMiniKit = () => {
           // Validate TREASURY_ADDRESS
           const treasuryAddr = String(TREASURY_ADDRESS);
           if (!treasuryAddr || !treasuryAddr.startsWith('0x') || treasuryAddr.length !== 42) {
-            console.error('❌ Invalid TREASURY_ADDRESS:', treasuryAddr);
             return { success: false, error: 'Invalid treasury address configuration' };
       }
       
           // Check for zero address (runtime check)
           const zeroAddress = '0x0000000000000000000000000000000000000000';
           if (treasuryAddr.toLowerCase() === zeroAddress.toLowerCase()) {
-            console.error('❌ TREASURY_ADDRESS is zero address! Please configure NEXT_PUBLIC_TREASURY_ADDRESS correctly.');
             return { success: false, error: 'Treasury address not configured. Please set NEXT_PUBLIC_TREASURY_ADDRESS in environment variables.' };
           }
-
-          console.log('✅ TREASURY_ADDRESS validated:', treasuryAddr);
 
                     // Call MiniKit pay API directly (cannot use hooks inside functions)
           // Note: MiniKit is already imported at the top of the file
@@ -606,10 +600,8 @@ const useMiniKit = () => {
 
           // Use validatedAmountStr (original string format) to preserve exact format
           const finalAmountStr = validatedAmountStr;
-          console.log("🔍 DEBUG → finalAmountStr for MiniKit pay:", finalAmountStr, "original amount:", amount, "validatedAmountStr:", validatedAmountStr);                                             
 
-          if (!finalAmountStr || isNaN(parseFloat(finalAmountStr)) || parseFloat(finalAmountStr) <= 0) {                                                        
-            console.error("❌ Invalid finalAmountStr:", finalAmountStr);
+          if (!finalAmountStr || isNaN(parseFloat(finalAmountStr)) || parseFloat(finalAmountStr) <= 0) {
             return { success: false, error: 'Invalid amount format' };
           }
 
@@ -619,13 +611,6 @@ const useMiniKit = () => {
           const tokenSymbol = tokenType === 'WLD' ? Tokens.WLD : Tokens.USDC;
           const amountInDecimals = tokenToDecimals(parseFloat(finalAmountStr), tokenSymbol);
           const tokenAmountStr = amountInDecimals.toString();
-          
-          console.log("🔍 DEBUG → Amount conversion:", {
-            humanReadable: finalAmountStr,
-            tokenSymbol: tokenSymbol,
-            amountInDecimals: amountInDecimals.toString(),
-            tokenAmountStr: tokenAmountStr
-          });
 
           // MiniKit v1.9.8+ requires tokens as TokensPayload array with symbol and token_amount
           // token_amount MUST be in smallest unit (decimals) as per documentation
@@ -639,17 +624,12 @@ const useMiniKit = () => {
             description: params.description || `Payment of ${finalAmountStr} ${tokenType}`, // Required in v1.9.8+
           };
 
-          console.log(`💳 Calling MiniKit pay:`, JSON.stringify(payPayload, null, 2));
-          console.log(`🔍 DEBUG → amount about to pay:`, finalAmountStr, "in tokens:", payPayload.tokens[0].token_amount);
-          console.log(`🔍 DEBUG → Full tokens array:`, JSON.stringify(payPayload.tokens, null, 2));
-          console.log(`🔍 DEBUG → token_amount value:`, payPayload.tokens[0].token_amount, "type:", typeof payPayload.tokens[0].token_amount);
-      
-                        // Call MiniKit pay API - v1.9.8+ requires TokensPayload format     
+          // Call MiniKit pay API - v1.9.8+ requires TokensPayload format     
             let payResult;
             try {
               payResult = await MiniKit.commandsAsync.pay(payPayload);
           } catch (payApiError: any) {
-            console.error('❌ MiniKit.commandsAsync.pay() threw error:', payApiError);
+            // MiniKit pay API error - silent error handling
             
             // Detect user cancellation from SDK error
             const msg = String(payApiError?.message || '').toLowerCase();
@@ -681,19 +661,15 @@ const useMiniKit = () => {
           }
 
           const finalPayload = payResult?.finalPayload;
-          console.log('✅ MiniKit pay result (finalPayload):', finalPayload);
 
           // Check if finalPayload exists
           if (!finalPayload) {
-            console.error('❌ MiniKit pay did not return finalPayload');
             return { success: false, error: 'Payment failed: No transaction data received' };
           }
-          console.log('📦 Final payload:', finalPayload);
 
-                              // Check if finalPayload has error status or no transaction_id (user cancelled)
+          // Check if finalPayload has error status or no transaction_id (user cancelled)
           const payloadAny = finalPayload as any;
           if (payloadAny?.status === 'error' || !payloadAny?.transaction_id) {
-            console.error('❌ MiniKit pay returned error or no transaction_id:', finalPayload);
             
             // Check if it's user cancellation
             const msg = String(payloadAny?.description || payloadAny?.error_code || '').toLowerCase();
@@ -716,7 +692,7 @@ const useMiniKit = () => {
             };
           }
 
-                    // Send finalPayload to confirm-payment API to get transaction details
+          // Send finalPayload to confirm-payment API to get transaction details
           // This is the same pattern as MiniKitPanel.tsx
           try {
             const confirmResponse = await fetch('/api/confirm-payment', {       
@@ -725,11 +701,9 @@ const useMiniKit = () => {
               body: JSON.stringify({ payload: finalPayload })
             });
             const confirmData = await confirmResponse.json();
-            console.log('📦 Confirm response:', confirmData);
       
             // Check if confirm-payment returned error
             if (!confirmData.success) {
-              console.error('❌ Confirm-payment API error:', confirmData);      
               return {
                 success: false,
                 error: confirmData.error || 'Payment confirmation failed'       
@@ -740,7 +714,6 @@ const useMiniKit = () => {
             const transactionId = confirmData?.transaction?.transaction_id;     
 
             if (!transactionId) {
-              console.error('❌ No transaction_id in confirm response:', confirmData);
               
               // Check if it's user cancellation
               if (confirmData?.code === 'user_cancelled' || confirmData?.error?.includes('missing transaction_id')) {
@@ -754,14 +727,12 @@ const useMiniKit = () => {
               return { success: false, error: 'Payment failed: No transaction ID received' };                                                                   
             }
 
-            console.log('🔄 Starting polling for transaction:', transactionId);                                                                               
-
             // Poll for transaction confirmation
             let attempts = 0;
             const maxAttempts = 20;
 
             while (attempts < maxAttempts) {
-                            const statusResponse = await fetch('/api/confirm-payment', {        
+              const statusResponse = await fetch('/api/confirm-payment', {        
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -773,15 +744,12 @@ const useMiniKit = () => {
         });
 
               const statusData = await statusResponse.json();
-              console.log(`🔄 Poll attempt ${attempts + 1}/${maxAttempts}:`, statusData);                                                                       
 
               if (statusData.success && statusData.transaction) {
-                const status = statusData.transaction.transaction_status || statusData.transaction.status;                                                        
-                console.log('📊 Transaction status:', status);
+                const status = statusData.transaction.transaction_status || statusData.transaction.status;
 
                 if (status === 'confirmed' || status === 'mined') {
-                  const txHash = statusData.transaction.transaction_hash || statusData.transaction?.transaction_hash || confirmData?.transaction?.transaction_hash;                                                                               
-                  console.log('✅ Payment confirmed:', txHash);
+                  const txHash = statusData.transaction.transaction_hash || statusData.transaction?.transaction_hash || confirmData?.transaction?.transaction_hash;
         return { 
           success: true, 
           transactionHash: txHash,
@@ -799,20 +767,17 @@ const useMiniKit = () => {
               attempts++;
             }
 
-              // If polling timed out, return the transaction_id anyway (transaction might be pending)                                                              
-              console.log('⏱️ Polling timeout, returning pending transaction');   
-              const txHash = confirmData?.transaction?.transaction_hash || transactionId;                                                                           
+              // If polling timed out, return the transaction_id anyway (transaction might be pending)
+              const txHash = confirmData?.transaction?.transaction_hash || transactionId;
   return {
           success: true, 
                 transactionHash: txHash || transactionId,
                 transaction: confirmData?.transaction || { transaction_id: transactionId, status: 'pending' }                                                       
               };
             } catch (confirmError: any) {
-              console.error('❌ Confirm-payment API call failed:', confirmError);
               return { success: false, error: 'Payment failed: Could not confirm transaction' };
             }
           } catch (payError: any) {
-          console.error('❌ MiniKit pay error:', payError);
           return { success: false, error: payError.message || 'Payment failed' };
         }
       } else {
@@ -820,7 +785,6 @@ const useMiniKit = () => {
         return { success: false, error: 'Payment is only available in World App. Please open this app in World App.' };
       }
     } catch (error: any) {
-      console.error('❌ Payment error:', error);
       return { success: false, error: error.message || 'Payment failed' };
     }
   };
@@ -924,14 +888,7 @@ const LuminexApp = () => {
   // Get the actual address to use (prioritize wallet, then verified address)
   const actualAddress = useMemo(
     () => {
-      const addr = wallet?.address || verifiedAddress || userAddress || null;
-      console.log('🔍 actualAddress calculated:', {
-        fromWallet: wallet?.address,
-        fromVerified: verifiedAddress,
-        fromUser: userAddress,
-        final: addr
-      });
-      return addr;
+      return wallet?.address || verifiedAddress || userAddress || null;
     },
     [wallet?.address, verifiedAddress, userAddress]
   );
@@ -941,11 +898,6 @@ const LuminexApp = () => {
     if (actualAddress) {
       const isAdminUser = actualAddress.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase();
       setIsAdmin(isAdminUser);
-      console.log('🔍 Admin check:', {
-        address: actualAddress,
-        adminAddress: ADMIN_WALLET_ADDRESS,
-        isAdmin: isAdminUser
-      });
     } else {
       setIsAdmin(false);
     }
@@ -996,7 +948,6 @@ const LuminexApp = () => {
     const addressToUse = actualAddress;
     
     if (!addressToUse) {
-      console.log('⚠️ No address available for balance fetch');
       setBalance(0);
       setWldBalance(0);
       return;
@@ -1004,25 +955,17 @@ const LuminexApp = () => {
     
     // Prevent concurrent calls using ref
     if (balanceFetchInProgress.current) {
-      console.log('⏳ Balance fetch already in progress, skipping...');
       return;
     }
 
     try {
       balanceFetchInProgress.current = true;
       setIsLoadingBalance(true);
-      console.log('🔄 Fetching WLD balance from Worldchain for:', addressToUse);
-      console.log('🔍 Config:', { 
-        RPC_URL: WALLET_RPC_URL, 
-        WLD_ADDRESS: WLD_TOKEN_ADDRESS,
-        USER_ADDRESS: addressToUse 
-      });
       
       // Only World App is supported
       const hasMiniKit = typeof window !== 'undefined' && (window as any).MiniKit;
       
       if (!hasMiniKit) {
-        console.warn('⚠️ Not running in World App. Balance fetch requires World App.');
         setWldBalance(0);
         setBalance(0);
         return;
@@ -1030,9 +973,6 @@ const LuminexApp = () => {
       
       {
         // For World App: fetch real balance using server-side API
-        console.log('📱 Running in World App, fetching WLD balance via API');
-        console.log('🔍 Using API route for balance fetch');
-        
         try {
           const response = await fetch('/api/wld-balance', {
             method: 'POST',
@@ -1042,24 +982,14 @@ const LuminexApp = () => {
           });
       
           const data = await response.json();
-          console.log('🔍 API response:', data);
           
           if (data.success) {
             // Normalize the API response (handles both old and new formats)
             const balance = data.balance ?? data.formatted ?? 0;
-            const rawBalance = data.rawBalance ?? data.raw ?? '0';
-            const decimals = data.decimals ?? 18;
-            
-            console.log('🔍 Normalized API data:', { balance, rawBalance, decimals });
-            
             setWldBalance(balance);
             setBalance(0); // LUX balance not used, set to 0
-            console.log('✅ WLD Balance fetched via API:', balance, 'WLD');
-            console.log('🔍 Raw balance (wei):', rawBalance, 'decimals:', decimals);
           } else {
-            console.error('❌ API returned error:', data.error);
             // Fallback to direct RPC call
-            console.log('🔄 Falling back to direct RPC call...');
             const worldchainProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
             const wldContract = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, worldchainProvider);
         const wldBalanceBN = await wldContract.balanceOf(addressToUse);
@@ -1067,12 +997,8 @@ const LuminexApp = () => {
             const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, decimals));
         setWldBalance(wldBalanceFormatted);
             setBalance(0);
-            console.log('✅ WLD Balance fetched via fallback RPC:', wldBalanceFormatted);
           }
         } catch (apiError: any) {
-          console.error('❌ Error calling API:', apiError);
-          console.log('🔄 Falling back to direct RPC call...');
-          
           try {
             // Fallback to direct RPC call
             const worldchainProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
@@ -1082,9 +1008,7 @@ const LuminexApp = () => {
             const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, decimals));
         setWldBalance(wldBalanceFormatted);
             setBalance(0);
-            console.log('✅ WLD Balance fetched via fallback RPC:', wldBalanceFormatted);
           } catch (fallbackError: any) {
-            console.error('❌ Fallback RPC also failed:', fallbackError);
         setWldBalance(0);
             setBalance(0);
           }
@@ -1094,12 +1018,7 @@ const LuminexApp = () => {
       setIsLoadingBalance(false);
       balanceFetchInProgress.current = false;
     } catch (error: any) {
-      console.error('❌ Error fetching WLD balance:', error);
-      console.error('❌ Error details:', { 
-        message: error?.message, 
-        code: error?.code,
-        data: error?.data 
-      });
+      // Error fetching WLD balance - silent error handling
       setWldBalance(0);
       setBalance(0);
       setIsLoadingBalance(false);
@@ -1112,14 +1031,9 @@ const LuminexApp = () => {
     const addressToUse = actualAddress;
     
     if (!provider || !addressToUse || !STAKING_CONTRACT_ADDRESS) {
-      console.log('⚠️ Missing requirements for staking data fetch:', { 
-        provider: !!provider, 
-        address: addressToUse,
-        stakingContract: STAKING_CONTRACT_ADDRESS 
-      });
       // Reset to 0 if requirements not met (not mock data)
       if (!STAKING_CONTRACT_ADDRESS) {
-        console.warn('⚠️ STAKING_CONTRACT_ADDRESS is not configured! Please set NEXT_PUBLIC_STAKING_ADDRESS environment variable.');
+        // STAKING_CONTRACT_ADDRESS is not configured
       }
       setStakedAmount(0);
       setPendingRewards(0);
@@ -1130,13 +1044,11 @@ const LuminexApp = () => {
 
     // Prevent concurrent calls using ref
     if (stakingDataFetchInProgress.current) {
-      console.log('⏳ Staking data fetch already in progress, skipping...');
       return;
     }
 
     try {
       stakingDataFetchInProgress.current = true;
-      console.log('🔄 Fetching staking data from blockchain...');
       
       const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider);
       
@@ -1166,21 +1078,16 @@ const LuminexApp = () => {
           setTimeElapsed({ days, hours, minutes, seconds });
         }
       } catch (error) {
-        console.log('Could not fetch stake start time:', error);
+        // Could not fetch stake start time - silent error handling
       }
       
-                         // Note: Referral stats are now fetched from API instead of blockchain
-       // The blockchain referralCount may differ from API stats
-       // We keep the API fetch in a separate useEffect for better separation of concerns
-      
-      console.log('✅ Staking data fetched:', { 
-        staked: stakedFormatted, 
-        rewards: rewardsFormatted,
-      });
+      // Note: Referral stats are now fetched from API instead of blockchain
+      // The blockchain referralCount may differ from API stats
+      // We keep the API fetch in a separate useEffect for better separation of concerns
       
       stakingDataFetchInProgress.current = false;
     } catch (error) {
-      console.error('❌ Error fetching staking data:', error);
+      // Error fetching staking data - silent error handling
       stakingDataFetchInProgress.current = false;
       // If contract doesn't exist or function fails, keep values at 0
     }
@@ -1225,28 +1132,30 @@ const LuminexApp = () => {
   useEffect(() => {
     // Get verified status and address from sessionStorage
     if (typeof window !== 'undefined') {
+      // Register PWA service worker
+      registerServiceWorker();
+      // Improve mobile touch interactions
+      improveTouchInteractions();
+
       // For World App: load verified status and address
       if (isWorldApp()) {
         const verifiedFromStorage = sessionStorage.getItem('verified');
         if (verifiedFromStorage === 'true') {
           setVerified(true);
-          console.log('✅ Loaded verified status from session (World App)');
         }
         
       const verifiedAddr = sessionStorage.getItem('verifiedAddress');
       if (verifiedAddr) {
         setVerifiedAddress(verifiedAddr);
-        console.log('✅ Loaded verified address from session:', verifiedAddr);
       }
       } else {
         // Only World App is supported
-        console.warn('⚠️ Not running in World App. Please open this app in World App.');
+        // Not running in World App
         // Don't set verified address or verified status - require World App
       }
       
       const userName = sessionStorage.getItem('userName');
       if (userName) {
-        console.log('✅ Loaded user name from session:', userName);
         setUserInfo({ name: userName, username: userName });
     }
     
@@ -1254,13 +1163,11 @@ const LuminexApp = () => {
       const savedLanguage = localStorage.getItem('preferredLanguage');
       if (savedLanguage && translations[savedLanguage]) {
         setLanguage(savedLanguage);
-        console.log('✅ Loaded language from localStorage:', savedLanguage);
       } else {
     // Detect user's preferred language from browser
     const browserLang = navigator.language.slice(0, 2);
     if (translations[browserLang]) {
       setLanguage(browserLang);
-          console.log('✅ Using browser language:', browserLang);
         }
       }
     }
@@ -1269,7 +1176,6 @@ const LuminexApp = () => {
   // Auto-connect wallet after verification (call walletAuth every time)
   useEffect(() => {
     if (verified) {
-      console.log('✅ User verified, auto-connecting wallet (calling walletAuth)...');
       connectWallet();
     }
   }, [verified]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1296,13 +1202,11 @@ const LuminexApp = () => {
           name: data.power.name,
           totalAPY: data.power.totalAPY,
         });
-        console.log('✅ Power status loaded:', data.power);
       } else {
         setCurrentPower(null);
-        console.log('ℹ️ No power license found for address');
       }
     } catch (error: any) {
-      console.error('❌ Error fetching power status:', error);
+      // Error fetching power status - silent error handling
       setCurrentPower(null);
     }
   }, [actualAddress]);
@@ -1327,14 +1231,13 @@ const LuminexApp = () => {
       if (data.success && data.stats) {
         setTotalReferrals(data.stats.totalReferrals || 0);
         setTotalEarnings(data.stats.totalEarnings || 0);
-        console.log('✅ Referral stats loaded:', data.stats);
       } else {
         // If no stats found, set to 0
         setTotalReferrals(0);
         setTotalEarnings(0);
       }
     } catch (error) {
-      console.error('❌ Error fetching referral stats:', error);
+      // Error fetching referral stats - silent error handling
       setTotalReferrals(0);
       setTotalEarnings(0);
     }
@@ -1357,18 +1260,13 @@ const LuminexApp = () => {
       const data = await response.json();
       
       if (data.success) {
-        console.log('✅ Referral processed:', data);
         showToast(`${translations[language].membershipActivated?.replace('{tier}', '5 LUX') || 'You received 5 LUX for using referral code!'}`, 'success');
         // Refresh stats
         fetchReferralStats();
-      } else {
-        // Don't show error for already_referred - it's expected
-        if (data.reason !== 'already_referred') {
-          console.warn('⚠️ Referral processing failed:', data.reason || data.message);
-        }
       }
+      // Don't show error for already_referred - it's expected
     } catch (error) {
-      console.error('❌ Error processing referral:', error);
+      // Error processing referral - silent error handling
     }
   }, [actualAddress, language]);
 
@@ -1385,7 +1283,6 @@ const LuminexApp = () => {
       const referralCodeToProcess = refCode || storedCode;
       
       if (referralCodeToProcess) {
-        console.log('🔍 Found referral code:', referralCodeToProcess);
         processReferralCode(referralCodeToProcess);
         // Clear stored code
         if (storedCode) {
@@ -1399,7 +1296,6 @@ const LuminexApp = () => {
   useEffect(() => {
     if (actualAddress && !referralCode) {
       setReferralCode(`LUX${actualAddress.slice(2, 8).toUpperCase()}`);
-      console.log('✅ Generated referral code from address:', actualAddress);
     }
   }, [actualAddress, referralCode]);
 
@@ -1469,10 +1365,11 @@ const LuminexApp = () => {
     return () => clearInterval(interval);
   }, [stakedAmount]);
 
-  const showToast = (message: string, type: 'success' | 'error') => {
+  // Memoize showToast to avoid recreating on every render
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast({ message: '', type: null }), 3000);
-  };
+  }, []);
 
   // Helper function to send contract transaction via MiniKit
   const sendContractTransaction = async (
@@ -1490,7 +1387,6 @@ const LuminexApp = () => {
     }
 
     try {
-      console.log(`🔵 Sending transaction: ${description}`);
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         to: to as `0x${string}`,
         data: data as `0x${string}`,
@@ -1501,10 +1397,8 @@ const LuminexApp = () => {
         throw new Error('Transaction failed: No transaction ID returned');
       }
 
-      console.log('✅ Transaction sent:', finalPayload.transaction_id);
       return finalPayload.transaction_id;
     } catch (error: any) {
-      console.error('❌ Transaction error:', error);
       if (error?.message?.includes('user_cancelled') || error?.message?.includes('cancel')) {
         throw new Error('Transaction cancelled by user');
       }
@@ -1556,7 +1450,6 @@ const LuminexApp = () => {
       const allowance = await tokenContractRead.allowance(actualAddress, STAKING_CONTRACT_ADDRESS);
       
       if (allowance < amountWei) {
-        console.log('🔄 Approving token spending...');
         // Encode approve function call
         const approveData = tokenContractInterface.encodeFunctionData('approve', [STAKING_CONTRACT_ADDRESS, amountWei]);
         
@@ -1570,14 +1463,12 @@ const LuminexApp = () => {
         if (!approveResult?.finalPayload?.transaction_id) {
           throw new Error('Token approval failed');
         }
-        console.log('✅ Token approved');
       }
 
       // Encode stake function call
       const stakeData = stakingContractInterface.encodeFunctionData('stake', [selectedPool, amountWei, lockPeriod]);
       
       // Stake tokens via MiniKit
-      console.log(`🔄 Staking ${amount} ${TOKEN_NAME} to pool ${selectedPool}...`);
       const stakeResult = await MiniKit.commandsAsync.sendTransaction({
         to: STAKING_CONTRACT_ADDRESS,
         data: stakeData,
@@ -1587,16 +1478,14 @@ const LuminexApp = () => {
       if (!stakeResult?.finalPayload?.transaction_id) {
         throw new Error('Staking transaction failed');
       }
-      
-      console.log('✅ Staking transaction submitted:', stakeResult.finalPayload.transaction_id);
 
       // Wait a bit for transaction to be mined (MiniKit transactions are async)
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Refresh data after successful transaction
       await Promise.all([
-        fetchBalance().catch(err => console.error('Error refreshing balance:', err)),
-        fetchStakingData().catch(err => console.error('Error refreshing staking data:', err))
+        fetchBalance().catch(() => {}),
+        fetchStakingData().catch(() => {})
       ]);
 
       setIsStaking(false);
@@ -1605,7 +1494,6 @@ const LuminexApp = () => {
       showToast(`Successfully staked ${amount} ${TOKEN_NAME}!`, 'success');
     setStakeAmount('');
     } catch (error: any) {
-      console.error('❌ Staking error:', error);
     setIsStaking(false);
       showToast(error?.message || 'Staking failed', 'error');
     }
@@ -1635,7 +1523,6 @@ const LuminexApp = () => {
       // Encode claimRewards function call
       const claimData = stakingContractInterface.encodeFunctionData('claimRewards', [selectedPool]);
 
-      console.log(`🔄 Claiming rewards from pool ${selectedPool}...`);
       const claimResult = await MiniKit.commandsAsync.sendTransaction({
         to: STAKING_CONTRACT_ADDRESS,
         data: claimData,
@@ -1645,23 +1532,20 @@ const LuminexApp = () => {
       if (!claimResult?.finalPayload?.transaction_id) {
         throw new Error('Claim rewards transaction failed');
       }
-      
-      console.log('✅ Claim rewards transaction submitted:', claimResult.finalPayload.transaction_id);
 
       // Wait a bit for transaction to be mined
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Refresh data after successful transaction
       await Promise.all([
-        fetchBalance().catch(err => console.error('Error refreshing balance:', err)),
-        fetchStakingData().catch(err => console.error('Error refreshing staking data:', err))
+        fetchBalance().catch(() => {}),
+        fetchStakingData().catch(() => {})
       ]);
 
     setIsClaiming(false);
       const rewardsValue = typeof pendingRewards === 'number' && !isNaN(pendingRewards) ? pendingRewards : 0;
       showToast(`Claimed ${rewardsValue.toFixed(2)} ${TOKEN_NAME} rewards!`, 'success');
     } catch (error: any) {
-      console.error('❌ Claim rewards error:', error);
       setIsClaiming(false);
       showToast(error?.message || 'Claim failed', 'error');
     }
@@ -1705,7 +1589,6 @@ const LuminexApp = () => {
       // Encode withdraw function call
       const withdrawData = stakingContractInterface.encodeFunctionData('withdraw', [selectedPool, amountWei]);
 
-      console.log(`🔄 Withdrawing from pool ${selectedPool}...`);
       const withdrawResult = await MiniKit.commandsAsync.sendTransaction({
         to: STAKING_CONTRACT_ADDRESS,
         data: withdrawData,
@@ -1715,31 +1598,29 @@ const LuminexApp = () => {
       if (!withdrawResult?.finalPayload?.transaction_id) {
         throw new Error('Withdrawal transaction failed');
       }
-      
-      console.log('✅ Withdrawal transaction submitted:', withdrawResult.finalPayload.transaction_id);
 
       // Wait a bit for transaction to be mined
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Refresh data after successful transaction
       await Promise.all([
-        fetchBalance().catch(err => console.error('Error refreshing balance:', err)),
-        fetchStakingData().catch(err => console.error('Error refreshing staking data:', err))
+        fetchBalance().catch(() => {}),
+        fetchStakingData().catch(() => {})
       ]);
 
       setIsWithdrawing(false);
       showToast(`Withdrew ${ethers.formatUnits(amountWei, 18)} ${TOKEN_NAME}!`, 'success');
     } catch (error: any) {
-      console.error('❌ Withdraw error:', error);
       setIsWithdrawing(false);
       showToast(error?.message || 'Withdrawal failed', 'error');
     }
   };
 
-  const handleClaimInterest = async () => {
+  // Memoize handleClaimInterest
+  const handleClaimInterest = useCallback(async () => {
     // Claim interest uses the same claimRewards function
     await handleClaimRewards();
-  };
+  }, [handleClaimRewards]);
 
 
 
@@ -1833,7 +1714,6 @@ const LuminexApp = () => {
           await fetchPowerStatus();
         
           showToast(`Activated ${confirmData.power.name.toUpperCase()} Power!`, 'success');
-          console.log('✅ Power purchase confirmed:', confirmData);
       } else {
           // Map error codes
           const errorMessages: Record<string, string> = {
@@ -1867,7 +1747,6 @@ const LuminexApp = () => {
         showToast(payError?.message || 'Payment failed', 'error');
       }
     } catch (error: any) {
-      console.error('❌ Power purchase error:', error);
       showToast(error.message || 'Failed to purchase power', 'error');
     } finally {
       setIsPurchasingPower(false);
@@ -2218,7 +2097,7 @@ if (typeof window !== 'undefined') {
       el.__root = root;
       root.render(<MiniKitPanel />);
     } catch (e) {
-      console.error('MiniKitPanel bootstrap error:', e);
+      // MiniKitPanel bootstrap error - silent error handling
     }
   })();
 }

@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     initialScale: 1,
     maximumScale: 1,
     viewportFit: 'cover',
+    userScalable: false, // Better for mobile app experience
   },
   icons: {
     icon: '/icon-192.png',
@@ -26,6 +27,17 @@ export const metadata: Metadata = {
     title: 'Luminex Staking',
     description: 'Premium DeFi staking platform',
     type: 'website',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Luminex',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
 };
 
@@ -38,7 +50,11 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="miniapp-verify-action" content="luminexstaking" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Luminex" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="image" href="https://i.postimg.cc/wvJqhSYW/Gemini-Generated-Image-ggu8gdggu8gdggu8-1.png" />

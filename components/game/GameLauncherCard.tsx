@@ -1,4 +1,6 @@
 'use client';
+
+import React, { memo } from 'react';
 import Link from 'next/link';
 
 const GAMES = [
@@ -58,7 +60,7 @@ const GAMES = [
   },
 ];
 
-export default function GameLauncherCard() {
+const GameLauncherCard = memo(() => {
   return (
     <div className="space-y-3">
       <div className="text-center mb-4">
@@ -97,4 +99,8 @@ export default function GameLauncherCard() {
       </div>
     </div>
   );
-}
+});
+
+GameLauncherCard.displayName = 'GameLauncherCard';
+
+export default GameLauncherCard;

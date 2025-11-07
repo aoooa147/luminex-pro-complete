@@ -76,6 +76,14 @@ const MembershipTab = memo(({
                 whileTap={{ scale: canUpgrade && !isPurchasingPower ? 0.95 : 1 }}
                 onClick={() => canUpgrade && !isPurchasingPower ? handlePurchasePower(power.code) : undefined}
                 disabled={!canUpgrade || isPurchasingPower || !!isLower}
+                aria-label={
+                  isOwned 
+                    ? `${power.name} power is active` 
+                    : isPurchasingPower 
+                    ? 'Purchasing power...' 
+                    : `Purchase ${power.name} power for ${power.priceWLD} WLD`
+                }
+                aria-disabled={!canUpgrade || isPurchasingPower || !!isLower}
                 className={`px-4 py-2 font-bold rounded-lg text-xs whitespace-nowrap ml-3 ${
                   isOwned
                     ? 'bg-yellow-400 text-black cursor-default'
@@ -85,7 +93,7 @@ const MembershipTab = memo(({
                 }`}
               >
                 {isPurchasingPower ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 ) : isOwned ? (
                   '✓ Active'
                 ) : isLower ? (

@@ -191,9 +191,10 @@ const StakingTab = memo(({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowStakeModal(true)}
+            aria-label="Open stake modal"
             className="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 text-xs shadow-lg"
           >
-            <BarChart3 className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4" aria-hidden="true" />
             <span>{t('staking')}</span>
           </motion.button>
 
@@ -203,13 +204,15 @@ const StakingTab = memo(({
             whileTap={{ scale: 0.98 }}
             onClick={handleClaimInterest}
             disabled={isClaimingInterest || pendingRewards === 0}
+            aria-label={isClaimingInterest ? 'Claiming rewards...' : 'Claim rewards'}
+            aria-disabled={isClaimingInterest || pendingRewards === 0}
             className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
           >
             {isClaimingInterest ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
             ) : (
               <>
-                <DollarIcon className="w-4 h-4" />
+                <DollarIcon className="w-4 h-4" aria-hidden="true" />
                 <span>{t('withdrawInterest')}</span>
               </>
             )}
@@ -222,13 +225,15 @@ const StakingTab = memo(({
           whileTap={{ scale: 0.98 }}
           onClick={handleWithdrawBalance}
           disabled={isWithdrawing || stakedAmount === 0}
+          aria-label={isWithdrawing ? 'Withdrawing...' : 'Withdraw balance'}
+          aria-disabled={isWithdrawing || stakedAmount === 0}
           className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
         >
           {isWithdrawing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
           ) : (
             <>
-              <TrendingDown className="w-4 h-4" />
+              <TrendingDown className="w-4 h-4" aria-hidden="true" />
               <span>{t('withdrawBalance')}</span>
             </>
           )}
@@ -239,6 +244,7 @@ const StakingTab = memo(({
           whileHover={{ scale: 1.02, boxShadow: "0 15px 35px rgba(147, 51, 234, 0.4)" }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setActiveTab('game')}
+          aria-label="Play games to earn free tokens"
           className="w-full text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center space-x-1.5 relative overflow-hidden group text-xs"
           style={{
             background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
