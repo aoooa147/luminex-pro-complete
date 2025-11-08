@@ -41,11 +41,20 @@ class EnhancedAntiCheatSystem {
 
   constructor() {
     // Check database availability asynchronously
-    this.checkDatabaseAvailability();
+    // Don't await - let it run in background
+    this.checkDatabaseAvailability().catch(() => {
+      // Silent error handling - database will be marked as unavailable
+      this.databaseAvailable = false;
+    });
   }
 
   private async checkDatabaseAvailability() {
-    this.databaseAvailable = await isDatabaseAvailable();
+    try {
+      this.databaseAvailable = await isDatabaseAvailable();
+    } catch (error) {
+      // Silent error handling
+      this.databaseAvailable = false;
+    }
   }
 
   /**
@@ -84,7 +93,8 @@ class EnhancedAntiCheatSystem {
     }
 
     // Store in database if available
-    if (this.databaseAvailable) {
+    // Double-check database availability before calling Prisma
+    if (this.databaseAvailable && process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0) {
       try {
         await prisma.gameAction.create({
           data: {
@@ -134,7 +144,7 @@ class EnhancedAntiCheatSystem {
     }
 
     // Check device fingerprint if available
-    if (deviceId && this.databaseAvailable) {
+    if (deviceId && this.databaseAvailable && process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0) {
       try {
         const device = await prisma.deviceFingerprint.findUnique({
           where: { fingerprint: deviceId },
@@ -163,7 +173,7 @@ class EnhancedAntiCheatSystem {
     }
 
     // Check IP if available
-    if (ipAddress && this.databaseAvailable) {
+    if (ipAddress && this.databaseAvailable && process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0) {
       try {
         const ipRecord = await prisma.iPRecord.findUnique({
           where: { ipAddress },
@@ -354,7 +364,9 @@ class EnhancedAntiCheatSystem {
     ipAddress?: string,
     gameId?: string
   ): Promise<void> {
-    if (!this.databaseAvailable) return;
+    if (!this.databaseAvailable || !process.env.DATABASE_URL || process.env.DATABASE_URL.trim().length === 0) {
+      return;
+    }
 
     try {
       const severity = confidence >= 0.9 ? 'high' : confidence >= 0.7 ? 'medium' : 'low';
@@ -509,7 +521,9 @@ class EnhancedAntiCheatSystem {
     userId: string,
     metadata?: any
   ): Promise<void> {
-    if (!this.databaseAvailable) return;
+    if (!this.databaseAvailable || !process.env.DATABASE_URL || process.env.DATABASE_URL.trim().length === 0) {
+      return;
+    }
 
     try {
       const device = await prisma.deviceFingerprint.findUnique({
@@ -573,7 +587,9 @@ class EnhancedAntiCheatSystem {
       riskLevel?: 'low' | 'medium' | 'high';
     }
   ): Promise<void> {
-    if (!this.databaseAvailable) return;
+    if (!this.databaseAvailable || !process.env.DATABASE_URL || process.env.DATABASE_URL.trim().length === 0) {
+      return;
+    }
 
     try {
       const ipRecord = await prisma.iPRecord.findUnique({

@@ -93,8 +93,25 @@ loadFromFile();
 // Database functions
 async function useDatabase(): Promise<boolean> {
   try {
+    // Check DATABASE_URL first to avoid Prisma initialization errors
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl || dbUrl.trim().length === 0) {
+      return false;
+    }
     return await isDatabaseAvailable();
-  } catch {
+  } catch (error: any) {
+    // Silently fallback to in-memory storage
+    const errorMessage = error?.message || '';
+    if (
+      errorMessage.includes('DATABASE_URL') ||
+      errorMessage.includes('nonempty URL') ||
+      errorMessage.includes('empty string')
+    ) {
+      // Expected error when DATABASE_URL is not set
+      return false;
+    }
+    // Unexpected error - log but still fallback
+    console.warn('[power/storage] Database check failed:', errorMessage);
     return false;
   }
 }
