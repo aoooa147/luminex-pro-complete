@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playSound, isSoundEnabled, setSoundEnabled } from '@/lib/game/sounds';
 import { antiCheat, getRandomDifficulty, getDifficultyMultiplier } from '@/lib/game/anticheat';
 import { signMessageWithMiniKit } from '@/lib/game/auth';
+import { getDeviceFingerprint } from '@/lib/utils/deviceFingerprint';
 
 type Color = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
 type GameState = 'idle' | 'showing' | 'playing' | 'victory' | 'gameover';
@@ -37,6 +38,7 @@ export default function MemoryMatchPage() {
   const [cooldownRemaining, setCooldownRemaining] = useState({ hours: 0, minutes: 0 });
   const [highlightedColor, setHighlightedColor] = useState<Color | null>(null);
   const [luxReward, setLuxReward] = useState<number | null>(null);
+  const [deviceId, setDeviceId] = useState<string>('');
   
   const sequenceRef = useRef<Color[]>([]);
   const showingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,6 +46,15 @@ export default function MemoryMatchPage() {
   useEffect(() => {
     const a = sessionStorage.getItem('verifiedAddress') || '';
     setAddress(a);
+    
+    // Get device fingerprint
+    try {
+      const fingerprint = getDeviceFingerprint();
+      setDeviceId(fingerprint);
+    } catch (error) {
+      console.warn('Failed to get device fingerprint:', error);
+    }
+    
     if (a) {
       checkCooldown();
       const randomDiff = getRandomDifficulty(a, GAME_ID, 1, 3);
@@ -213,7 +224,7 @@ export default function MemoryMatchPage() {
       const rewardRes = await fetch('/api/game/reward/lux', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ address, gameId: GAME_ID, score })
+        body: JSON.stringify({ address, gameId: GAME_ID, score, deviceId })
       });
       const rewardData = await rewardRes.json();
       

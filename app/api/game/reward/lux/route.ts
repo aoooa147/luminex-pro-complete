@@ -4,6 +4,8 @@ import { LUX_TOKEN_ADDRESS } from '@/lib/utils/constants';
 import { withErrorHandler, createErrorResponse, createSuccessResponse, validateBody } from '@/lib/utils/apiHandler';
 import { isValidAddress } from '@/lib/utils/validation';
 import { logger } from '@/lib/utils/logger';
+import { getClientIP, checkIPRisk } from '@/lib/utils/ipTracking';
+import { enhancedAntiCheat } from '@/lib/game/anticheatEnhanced';
 
 export const runtime = 'nodejs';
 
@@ -60,7 +62,7 @@ function calculateLuxReward(score: number): number {
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
   const body = await request.json();
-  const { address, gameId, score } = body;
+  const { address, gameId, score, deviceId } = body;
   
   // Validate required fields
   if (!address || !gameId || typeof score !== 'number') {
@@ -71,10 +73,63 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   if (!isValidAddress(address)) {
     return createErrorResponse('Invalid address format', 'INVALID_ADDRESS', 400);
   }
+  
+  const addressLower = address.toLowerCase();
+  
+  // Get IP address and user agent
+  const ipAddress = getClientIP(request);
+  const userAgent = request.headers.get('user-agent') || undefined;
+  
+  // Check IP risk (async, don't block if it fails)
+  try {
+    const ipInfo = await checkIPRisk(ipAddress);
+    
+    // Register IP in database
+    await enhancedAntiCheat.registerIP(ipAddress, addressLower, ipInfo);
+    
+    // Block if high risk IP
+    if (ipInfo.riskLevel === 'high' && (ipInfo.isVPN || ipInfo.isProxy || ipInfo.isTor)) {
+      logger.warn('Anti-cheat: high risk IP detected', { 
+        address: addressLower, 
+        ipAddress,
+        riskLevel: ipInfo.riskLevel
+      }, 'game/reward/lux');
+      return createErrorResponse('High risk IP detected', 'HIGH_RISK_IP', 400);
+    }
+  } catch (error) {
+    // Silent fallback - continue without IP check
+    logger.warn('Failed to check IP risk', { error }, 'game/reward/lux');
+  }
+  
+  // Register device fingerprint if provided
+  if (deviceId) {
+    try {
+      await enhancedAntiCheat.registerDevice(deviceId, addressLower, {
+        userAgent,
+        ipAddress,
+      });
+    } catch (error) {
+      // Silent fallback
+    }
+  }
+  
+  // Record action for analysis
+  try {
+    await enhancedAntiCheat.recordAction(
+      addressLower,
+      'reward_claim',
+      { score, gameId },
+      gameId,
+      deviceId,
+      ipAddress,
+      userAgent
+    );
+  } catch (error) {
+    // Silent fallback
+  }
     
     // Check if user has already claimed reward for this game session
     const rewards = readJSON<Record<string, Record<string, { amount: number; timestamp: number }>>>('game_rewards', {});
-    const addressLower = address.toLowerCase();
     
     if (!rewards[addressLower]) {
       rewards[addressLower] = {};

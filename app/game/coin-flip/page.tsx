@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playSound, isSoundEnabled, setSoundEnabled } from '@/lib/game/sounds';
 import { antiCheat, getRandomDifficulty, getDifficultyMultiplier } from '@/lib/game/anticheat';
 import { signMessageWithMiniKit } from '@/lib/game/auth';
+import { getDeviceFingerprint } from '@/lib/utils/deviceFingerprint';
 
 type CoinSide = 'heads' | 'tails';
 type GameState = 'idle' | 'playing' | 'flipping' | 'result' | 'gameover' | 'victory';
@@ -33,6 +34,7 @@ export default function CoinFlipPage() {
   const [gameStartTime, setGameStartTime] = useState(0);
   const [isOnCooldown, setIsOnCooldown] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState({ hours: 0, minutes: 0 });
+  const [deviceId, setDeviceId] = useState<string>('');
   
   const flipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const resultTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -41,6 +43,15 @@ export default function CoinFlipPage() {
   useEffect(() => {
     const a = sessionStorage.getItem('verifiedAddress') || localStorage.getItem('user_address') || '';
     setAddress(a);
+    
+    // Get device fingerprint
+    try {
+      const fingerprint = getDeviceFingerprint();
+      setDeviceId(fingerprint);
+    } catch (error) {
+      console.warn('Failed to get device fingerprint:', error);
+    }
+    
     if (a) {
       loadEnergy(a);
       checkCooldown();
@@ -309,7 +320,7 @@ export default function CoinFlipPage() {
       await fetch('/api/game/score/submit', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ address, payload, sig: signature })
+        body: JSON.stringify({ address, payload, sig: signature, deviceId })
       });
       
       // Reward

@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playSound, isSoundEnabled, setSoundEnabled } from '@/lib/game/sounds';
 import { antiCheat, getRandomDifficulty, getDifficultyMultiplier } from '@/lib/game/anticheat';
+import { getDeviceFingerprint } from '@/lib/utils/deviceFingerprint';
 
 type GameState = 'idle' | 'showing' | 'inputting' | 'result' | 'gameover' | 'victory';
 
@@ -20,10 +21,20 @@ export default function NumberMemoryPage() {
   const [userInput, setUserInput] = useState('');
   const [round, setRound] = useState(0);
   const [soundEnabled, setSoundEnabledState] = useState(isSoundEnabled());
+  const [deviceId, setDeviceId] = useState<string>('');
 
   useEffect(() => {
     const a = sessionStorage.getItem('verifiedAddress') || localStorage.getItem('user_address') || '';
     setAddress(a);
+    
+    // Get device fingerprint
+    try {
+      const fingerprint = getDeviceFingerprint();
+      setDeviceId(fingerprint);
+    } catch (error) {
+      console.warn('Failed to get device fingerprint:', error);
+    }
+    
     if (a) loadEnergy(a);
   }, []);
 
@@ -151,7 +162,7 @@ export default function NumberMemoryPage() {
       await fetch('/api/game/score/submit', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ address, payload, sig: '0x' })
+        body: JSON.stringify({ address, payload, sig: '0x', deviceId })
       });
       
       const key = 'luminex_tokens';

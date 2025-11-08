@@ -4,6 +4,8 @@ import { verifyScoreSignature } from '@/lib/game/verify';
 import { logger } from '@/lib/utils/logger';
 import { withErrorHandler, createErrorResponse, createSuccessResponse, validateBody } from '@/lib/utils/apiHandler';
 import { isValidAddress } from '@/lib/utils/validation';
+import { getClientIP, checkIPRisk } from '@/lib/utils/ipTracking';
+import { enhancedAntiCheat } from '@/lib/game/anticheatEnhanced';
 
 export const runtime = 'nodejs';
 
@@ -15,7 +17,7 @@ const HIGH_SCORE_THRESHOLD = 50000;
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const body = await req.json();
-  const { address, payload, sig } = body;
+  const { address, payload, sig, deviceId } = body;
   
   // Validate required fields
   if (!address || !payload?.nonce || !sig) {
@@ -34,6 +36,44 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   
   // Enhanced anti-cheat validation
   const addressLower = address.toLowerCase();
+  
+  // Get IP address and user agent
+  const ipAddress = getClientIP(req);
+  const userAgent = req.headers.get('user-agent') || undefined;
+  
+  // Check IP risk (async, don't block if it fails)
+  let ipInfo;
+  try {
+    ipInfo = await checkIPRisk(ipAddress);
+    
+    // Register IP in database
+    await enhancedAntiCheat.registerIP(ipAddress, addressLower, ipInfo);
+    
+    // Block if high risk IP
+    if (ipInfo.riskLevel === 'high' && (ipInfo.isVPN || ipInfo.isProxy || ipInfo.isTor)) {
+      logger.warn('Anti-cheat: high risk IP detected', { 
+        address: addressLower, 
+        ipAddress,
+        riskLevel: ipInfo.riskLevel
+      }, 'game/score/submit');
+      return createErrorResponse('High risk IP detected', 'HIGH_RISK_IP', 400);
+    }
+  } catch (error) {
+    // Silent fallback - continue without IP check
+    logger.warn('Failed to check IP risk', { error }, 'game/score/submit');
+  }
+  
+  // Register device fingerprint if provided
+  if (deviceId) {
+    try {
+      await enhancedAntiCheat.registerDevice(deviceId, addressLower, {
+        userAgent,
+        ipAddress,
+      });
+    } catch (error) {
+      // Silent fallback
+    }
+  }
   
   // Validate nonce
   const nonces = readJSON<Record<string,string>>('nonces',{}); 
@@ -58,17 +98,37 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return createErrorResponse('Request timestamp is stale', 'STALE_TIMESTAMP', 400);
   }
   
-    // Enhanced anti-cheat checks using the anti-cheat system
-  const { antiCheat } = await import('@/lib/game/anticheat');
+  // Enhanced anti-cheat checks using the enhanced anti-cheat system
   const gameId = payload?.gameId || 'unknown';
   
+  // Record action for analysis
+  await enhancedAntiCheat.recordAction(
+    addressLower,
+    'score_submit',
+    { score, gameDuration, actionsCount },
+    gameId,
+    deviceId,
+    ipAddress,
+    userAgent
+  );
+  
   if (typeof gameDuration === 'number' && gameDuration > 0) {
-    const scoreCheck = antiCheat.validateScore(addressLower, score, gameDuration, actionsCount || 0, gameId);
+    const scoreCheck = await enhancedAntiCheat.validateScore(
+      addressLower, 
+      score, 
+      gameDuration, 
+      actionsCount || 0, 
+      gameId,
+      deviceId,
+      ipAddress
+    );
     if (scoreCheck.suspicious || scoreCheck.blocked) {
       logger.warn('Anti-cheat: suspicious score detected', { 
         address: addressLower, 
         reason: scoreCheck.reason || 'suspicious_score', 
-        confidence: scoreCheck.confidence 
+        confidence: scoreCheck.confidence,
+        deviceId,
+        ipAddress
       }, 'game/score/submit');
       return createErrorResponse(
         scoreCheck.reason || 'Suspicious score detected',

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playSound, isSoundEnabled, setSoundEnabled } from '@/lib/game/sounds';
 import { antiCheat, getRandomDifficulty, getDifficultyMultiplier } from '@/lib/game/anticheat';
 import { signMessageWithMiniKit } from '@/lib/game/auth';
+import { getDeviceFingerprint } from '@/lib/utils/deviceFingerprint';
 
 const WORDS = [
   ['G', 'A', 'M', 'E'], // GAME
@@ -40,6 +41,7 @@ export default function WordBuilderPage() {
   const [currentTargetWord, setCurrentTargetWord] = useState<string>('');
   const [isOnCooldown, setIsOnCooldown] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState({ hours: 0, minutes: 0 });
+  const [deviceId, setDeviceId] = useState<string>('');
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -48,6 +50,14 @@ export default function WordBuilderPage() {
   useEffect(() => {
     const a = sessionStorage.getItem('verifiedAddress') || '';
     setAddress(a);
+    
+    // Get device fingerprint
+    try {
+      const fingerprint = getDeviceFingerprint();
+      setDeviceId(fingerprint);
+    } catch (error) {
+      console.warn('Failed to get device fingerprint:', error);
+    }
     if (a) {
       loadEnergy(a);
       checkCooldown();
@@ -306,7 +316,7 @@ export default function WordBuilderPage() {
       await fetch('/api/game/score/submit', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ address, payload, sig: signature })
+        body: JSON.stringify({ address, payload, sig: signature, deviceId })
       });
       
       // Reward
