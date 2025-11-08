@@ -10,12 +10,14 @@ export function TronButton({
   onClick, 
   variant = 'primary',
   size = 'md',
+  disabled = false,
   className = '' 
 }: {
   children: React.ReactNode
   onClick?: () => void
   variant?: 'primary' | 'secondary' | 'danger' | 'success'
   size?: 'sm' | 'md' | 'lg'
+  disabled?: boolean
   className?: string
 }) {
   const variants = {
@@ -34,24 +36,28 @@ export function TronButton({
   return (
     <motion.button
       onClick={onClick}
+      disabled={disabled}
       className={`
         neon-button relative overflow-hidden
         border-2 rounded-lg font-orbitron font-semibold uppercase tracking-wider
         transition-all duration-300
         ${variants[variant]}
         ${sizes[size]}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
       `}
-      whileHover={{ scale: 1.05, y: -2 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={disabled ? {} : { scale: 1.05, y: -2 }}
+      whileTap={disabled ? {} : { scale: 0.95 }}
     >
       <span className="relative z-10">{children}</span>
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-        initial={{ x: '-100%' }}
-        animate={{ x: '100%' }}
-        transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-      />
+      {!disabled && (
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          initial={{ x: '-100%' }}
+          animate={{ x: '100%' }}
+          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+        />
+      )}
     </motion.button>
   )
 }

@@ -90,9 +90,10 @@ const MembershipTab = memo(({
                   </TronBadge>
                 ) : (
                   <TronButton
-                    variant={canUpgrade ? 'success' : 'default'}
+                    variant={canUpgrade ? 'success' : 'secondary'}
                     size="sm"
                     onClick={() => canUpgrade && !isPurchasingPower ? handlePurchasePower(power.code) : undefined}
+                    disabled={!canUpgrade || isPurchasingPower}
                     className="whitespace-nowrap ml-3"
                   >
                     {isPurchasingPower ? (
