@@ -38,6 +38,8 @@ export function generateDeviceFingerprint(): DeviceFingerprint {
   };
 
   // Create fingerprint hash
+  // deviceMemory is an experimental API, so we need type assertion
+  const nav = navigator as Navigator & { deviceMemory?: number };
   const fingerprintString = [
     fingerprint.userAgent,
     fingerprint.screenResolution,
@@ -46,7 +48,7 @@ export function generateDeviceFingerprint(): DeviceFingerprint {
     fingerprint.platform,
     canvas.toDataURL(),
     navigator.hardwareConcurrency?.toString() || '',
-    navigator.deviceMemory?.toString() || '',
+    nav.deviceMemory?.toString() || '',
   ].join('|');
 
   // Generate hash (simple hash function)

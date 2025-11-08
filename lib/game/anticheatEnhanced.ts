@@ -700,5 +700,5 @@ export const enhancedAntiCheat = new EnhancedAntiCheatSystem();
 
 // Keep original exports for backward compatibility
 export { getRandomDifficulty, getDifficultyMultiplier } from './anticheat';
-export type { ActionRecord, AntiCheatResult };
+// ActionRecord and AntiCheatResult are already exported above, no need to re-export
 
