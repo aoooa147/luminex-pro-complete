@@ -1,21 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { trackPageView, GA_TRACKING_ID } from '@/lib/utils/analytics';
 
 /**
- * GoogleAnalytics Component
+ * GoogleAnalyticsInner Component
  * 
- * Loads Google Analytics script and tracks page views.
- * 
- * Fixed: Removed duplicate script loading by:
- * - Using Next.js Script component instead of regular script tags
- * - Removing initGA() call that was creating duplicate scripts
- * - Adding proper loading state to track when GA is ready
+ * Inner component that uses useSearchParams().
+ * Must be wrapped in Suspense boundary to avoid build errors.
  */
-export function GoogleAnalytics() {
+function GoogleAnalyticsInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [gaLoaded, setGaLoaded] = useState(false);
@@ -63,5 +59,29 @@ export function GoogleAnalytics() {
         }}
       />
     </>
+  );
+}
+
+/**
+ * GoogleAnalytics Component
+ * 
+ * Loads Google Analytics script and tracks page views.
+ * 
+ * Fixed: Removed duplicate script loading by:
+ * - Using Next.js Script component instead of regular script tags
+ * - Removing initGA() call that was creating duplicate scripts
+ * - Adding proper loading state to track when GA is ready
+ * - Wrapped in Suspense boundary to fix useSearchParams() SSR issue
+ */
+export function GoogleAnalytics() {
+  // Return null if no tracking ID
+  if (!GA_TRACKING_ID) {
+    return null;
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <GoogleAnalyticsInner />
+    </Suspense>
   );
 }
