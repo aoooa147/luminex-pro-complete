@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Broadcast, X } from 'lucide-react'
+import { Radio, X } from 'lucide-react'
 
 interface BroadcastMessageProps {
   className?: string
@@ -87,7 +87,7 @@ export function BroadcastMessage({ className }: BroadcastMessageProps) {
           >
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
-                <Broadcast className="w-5 h-5 text-tron-orange" style={{ filter: 'drop-shadow(0 0 8px var(--tron-orange))' }} />
+                <Radio className="w-5 h-5 text-tron-orange" style={{ filter: 'drop-shadow(0 0 8px var(--tron-orange))' }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-orbitron text-white leading-relaxed">

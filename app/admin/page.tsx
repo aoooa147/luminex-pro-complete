@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { TronShell, TronPanel, TronButton, TronStatCard } from '@/components/tron'
 import { 
-  Shield, Settings, AlertTriangle, Broadcast, Users, 
+  Shield, Settings, AlertTriangle, Radio, Users, 
   Activity, Database, Zap, RefreshCw, Power, CheckCircle,
   TrendingUp, Server, Clock
 } from 'lucide-react'
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
           {/* Broadcast Message */}
           <TronPanel
             title="Broadcast Message"
-            icon={Broadcast}
+            icon={Radio}
             status={settings?.broadcastEnabled ? 'warning' : 'default'}
             padding="lg"
           >
