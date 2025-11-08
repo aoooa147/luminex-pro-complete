@@ -70,17 +70,31 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
 
           if (data.status === 'ok' && data.isValid) {
             if (typeof window !== 'undefined') {
+              // Set verified status
               sessionStorage.setItem('verified', 'true');
+              
+              // Set wallet address
               if (walletData.address) {
-                sessionStorage.setItem('verifiedAddress', walletData.address);
+                const address = walletData.address.toLowerCase();
+                sessionStorage.setItem('verifiedAddress', address);
+                // Also store in localStorage for persistence
+                localStorage.setItem('user_address', address);
+                console.log('✅ Wallet address saved:', address);
               }
+              
               if (data.siweMessageData?.chain_id) {
                 sessionStorage.setItem('chainId', String(data.siweMessageData.chain_id));
               }
+              
               if (walletData.name || walletData.username) {
                 sessionStorage.setItem('userName', walletData.name || walletData.username || '');
               }
+              
+              console.log('✅ Verification successful, calling onVerify callback');
             }
+            
+            // Call onVerify callback immediately
+            // The callback should read from sessionStorage
             onVerify();
           } else {
             throw new Error(data.message || 'Wallet authentication failed');

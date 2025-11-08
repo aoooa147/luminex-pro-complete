@@ -469,12 +469,39 @@ export function useWallet(verifiedAddress: string | null) {
     return null;
   }, [provider]);
 
-  // Auto-connect wallet when verified
+  // Auto-connect wallet when verified address is available
   useEffect(() => {
-    if (verifiedAddress && !isConnected) {
-      connectWallet();
+    if (verifiedAddress) {
+      console.log('🔍 Verified address available:', verifiedAddress);
+      console.log('📊 Current wallet state:', { isConnected, walletAddress: wallet?.address });
+      
+      // If we have verified address but no wallet connection, set wallet directly
+      if (!wallet?.address) {
+        console.log('✅ Setting wallet from verified address');
+        setWallet({ address: verifiedAddress });
+        setIsConnected(true);
+        
+        // Track wallet connection
+        trackWalletConnect(verifiedAddress);
+        setUserId(verifiedAddress);
+        
+        // Set up provider
+        const rpcProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
+        setProvider(rpcProvider);
+        
+        console.log('✅ Wallet set from verified address:', verifiedAddress);
+      } else if (wallet.address.toLowerCase() !== verifiedAddress.toLowerCase()) {
+        // Address mismatch - update wallet
+        console.log('⚠️ Address mismatch, updating wallet');
+        setWallet({ address: verifiedAddress });
+        setIsConnected(true);
+      } else {
+        // Wallet already connected with correct address
+        console.log('✅ Wallet already connected with correct address');
+        setIsConnected(true);
+      }
     }
-  }, [verifiedAddress, isConnected, connectWallet]);
+  }, [verifiedAddress, wallet?.address, isConnected]);
 
   // Fetch balance when address changes
   useEffect(() => {

@@ -726,7 +726,56 @@ const LuminexApp = () => {
   }
 
     // Require World App verification
-  if (!verified && isWorldApp()) return <WorldIDVerification onVerify={() => setVerified(true)} />;
+  if (!verified && isWorldApp()) {
+    return (
+      <WorldIDVerification 
+        onVerify={async () => {
+          console.log('🔄 onVerify callback called');
+          
+          // Read verified address from sessionStorage after verification
+          if (typeof window !== 'undefined') {
+            const verifiedAddr = sessionStorage.getItem('verifiedAddress') || localStorage.getItem('user_address');
+            console.log('📍 Verified address from storage:', verifiedAddr);
+            
+            if (verifiedAddr) {
+              const normalizedAddr = verifiedAddr.toLowerCase();
+              setVerifiedAddress(normalizedAddr);
+              console.log('✅ Verified address set in state:', normalizedAddr);
+            } else {
+              console.warn('⚠️ No verified address found in storage');
+            }
+            
+            const userName = sessionStorage.getItem('userName');
+            if (userName) {
+              setUserInfo({ name: userName, username: userName });
+              console.log('✅ User name set:', userName);
+            }
+          }
+          
+          // Set verified state
+          setVerified(true);
+          console.log('✅ Verified status set to true');
+          
+          // Force wallet connection after verification
+          // Wait a bit for state to update, then connect wallet
+          setTimeout(async () => {
+            console.log('🔌 Attempting to connect wallet after verification...');
+            try {
+              // Check if walletHook has connectWallet
+              if (walletHook && walletHook.connectWallet) {
+                await walletHook.connectWallet();
+                console.log('✅ Wallet connected successfully after verification');
+              } else {
+                console.warn('⚠️ connectWallet function not available in walletHook');
+              }
+            } catch (err: any) {
+              console.error('❌ Failed to connect wallet after verification:', err);
+            }
+          }, 300);
+        }}
+      />
+    );
+  }
 
   // Only World App is supported
   if (!verified && !isWorldApp()) {
