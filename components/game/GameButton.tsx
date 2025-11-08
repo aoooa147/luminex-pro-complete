@@ -13,14 +13,14 @@ interface GameButtonProps {
 }
 
 const variantClasses = {
-  primary: 'border-tron-cyan text-tron-cyan bg-tron-cyan/10 hover:bg-tron-cyan/20',
+  primary: 'border-tron-red text-tron-red bg-tron-red/10 hover:bg-tron-red/20',
   secondary: 'border-tron-blue text-tron-blue bg-tron-blue/10 hover:bg-tron-blue/20',
   danger: 'border-tron-orange text-tron-orange bg-tron-orange/10 hover:bg-tron-orange/20',
   success: 'border-tron-purple text-tron-purple bg-tron-purple/10 hover:bg-tron-purple/20',
 }
 
 const glowClasses = {
-  primary: 'shadow-neon-cyan',
+  primary: 'shadow-neon-red',
   secondary: 'shadow-neon-blue',
   danger: 'shadow-neon-orange',
   success: 'shadow-neon-purple',

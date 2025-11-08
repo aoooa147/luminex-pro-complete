@@ -153,7 +153,7 @@ export default function AdminDashboard() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className="mx-auto w-12 h-12 border-4 border-tron-cyan/50 border-t-transparent rounded-full"
+              className="mx-auto w-12 h-12 border-4 border-tron-red/50 border-t-transparent rounded-full"
             />
             <p className="mt-4 text-gray-400 font-orbitron">Loading...</p>
           </div>
@@ -169,8 +169,8 @@ export default function AdminDashboard() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Shield className="w-8 h-8 text-tron-cyan" style={{ filter: 'drop-shadow(0 0 10px var(--tron-cyan))' }} />
-              <h1 className="text-3xl font-orbitron font-bold text-tron-cyan neon-text">
+              <Shield className="w-8 h-8 text-tron-red" style={{ filter: 'drop-shadow(0 0 10px rgba(255, 26, 42, 0.8))' }} />
+              <h1 className="text-3xl font-orbitron font-bold text-tron-red neon-text">
                 ADMIN CONTROL CENTER
               </h1>
             </div>
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
                     value={maintenanceMessage}
                     onChange={(e) => setMaintenanceMessage(e.target.value)}
                     placeholder="Enter maintenance message..."
-                    className="w-full rounded-lg border border-tron-cyan/30 bg-bg-tertiary/80 p-3 text-sm text-white font-orbitron placeholder:text-gray-500 focus:border-tron-cyan focus:outline-none"
+                    className="w-full rounded-lg border border-tron-red/30 bg-bg-tertiary/80 p-3 text-sm text-white font-orbitron placeholder:text-gray-500 focus:border-tron-red focus:outline-none"
                     rows={3}
                   />
                   <TronButton

@@ -349,14 +349,14 @@ export default function ColorTapPage() {
     <div className="min-h-screen text-white p-4 pb-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold font-orbitron bg-gradient-to-r from-tron-purple via-tron-pink to-tron-purple bg-clip-text text-transparent neon-text">
+          <h1 className="text-4xl font-bold font-orbitron bg-gradient-to-r from-tron-red via-tron-red-bright to-tron-red bg-clip-text text-transparent neon-text">
             🎨 Color Tap
           </h1>
           <button
             onClick={toggleSound}
-            className="p-2 rounded-lg border border-tron-cyan/30 bg-tron-cyan/10 text-tron-cyan hover:bg-tron-cyan/20 transition-colors"
+            className="p-2 rounded-lg border border-tron-red/30 bg-tron-red/10 text-tron-red hover:bg-tron-red/20 transition-colors"
             aria-label="Toggle sound"
-            style={{ boxShadow: '0 0 10px rgba(0, 229, 255, 0.2)' }}
+            style={{ boxShadow: '0 0 10px rgba(255, 26, 42, 0.4)' }}
           >
             {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
@@ -367,7 +367,7 @@ export default function ColorTapPage() {
           <GameStatsCard label="Energy" value={energy} icon="⚡" color="yellow" />
           <GameStatsCard label="Level" value={level} icon="📊" color="purple" />
           <GameStatsCard label="Lives" value={`${lives}/3`} icon="❤️" color="red" />
-          <GameStatsCard label="Score" value={score.toLocaleString()} icon="🎯" color="cyan" />
+          <GameStatsCard label="Score" value={score.toLocaleString()} icon="🎯" color="red" />
         </div>
 
         {/* Cooldown Message */}

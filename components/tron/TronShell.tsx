@@ -12,8 +12,8 @@ interface TronShellProps {
 }
 
 const variantBackgrounds: Record<NonNullable<TronShellProps['variant']>, string> = {
-  default: 'from-[#050505] via-[rgba(8,12,24,0.96)] to-[#050505]',
-  maintenance: 'from-[#170000] via-[rgba(48,0,0,0.96)] to-[#050505]',
+  default: 'from-[#000000] via-[rgba(10,10,10,0.98)] to-[#000000]',
+  maintenance: 'from-[#1a0000] via-[rgba(48,0,0,0.96)] to-[#0a0000]',
 }
 
 export function TronShell({

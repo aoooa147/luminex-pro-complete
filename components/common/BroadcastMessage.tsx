@@ -80,14 +80,14 @@ export function BroadcastMessage({ className }: BroadcastMessageProps) {
           className={`relative z-50 ${className || ''}`}
         >
           <div
-            className="mx-4 mt-4 rounded-xl border border-tron-orange/30 bg-gradient-to-r from-tron-orange/10 via-tron-orange/5 to-tron-orange/10 backdrop-blur-xl p-4 shadow-lg"
+            className="mx-4 mt-4 rounded-xl border border-tron-red/30 bg-gradient-to-r from-tron-red/10 via-tron-red/5 to-tron-red/10 backdrop-blur-xl p-4 shadow-lg"
             style={{
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 107, 53, 0.2)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 26, 42, 0.3)',
             }}
           >
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
-                <Radio className="w-5 h-5 text-tron-orange" style={{ filter: 'drop-shadow(0 0 8px var(--tron-orange))' }} />
+                <Radio className="w-5 h-5 text-tron-red" style={{ filter: 'drop-shadow(0 0 8px rgba(255, 26, 42, 0.8))' }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-orbitron text-white leading-relaxed">
@@ -96,10 +96,10 @@ export function BroadcastMessage({ className }: BroadcastMessageProps) {
               </div>
               <button
                 onClick={handleDismiss}
-                className="flex-shrink-0 p-1 rounded-lg hover:bg-tron-orange/20 transition-colors"
+                className="flex-shrink-0 p-1 rounded-lg hover:bg-tron-red/20 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Dismiss broadcast"
               >
-                <X className="w-4 h-4 text-tron-orange" />
+                <X className="w-4 h-4 text-tron-red" />
               </button>
             </div>
           </div>

@@ -14,10 +14,10 @@ interface TronPanelProps {
 }
 
 const statusBorder: Record<NonNullable<TronPanelProps['status']>, string> = {
-  default: 'border-tron-cyan/20',
+  default: 'border-tron-red/30',
   success: 'border-[#17ffb8]/30',
   warning: 'border-[#ffd166]/30',
-  danger: 'border-[#ff1a2a]/30',
+  danger: 'border-tron-red/50',
 }
 
 const paddingMap: Record<NonNullable<TronPanelProps['padding']>, string> = {
@@ -38,7 +38,7 @@ export function TronPanel({
 }: TronPanelProps) {
   const panelClass = [
     'relative overflow-hidden rounded-[1.5rem] border backdrop-blur-xl',
-    'bg-[radial-gradient(120%_200%_at_50%_0%,rgba(0,240,255,0.12),rgba(0,0,0,0.8))]',
+    'bg-[radial-gradient(120%_200%_at_50%_0%,rgba(255,26,42,0.12),rgba(0,0,0,0.8))]',
     statusBorder[status],
     paddingMap[padding],
     className,
@@ -59,7 +59,7 @@ export function TronPanel({
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-tron-cyan/30 bg-tron-cyan/10 text-tron-cyan"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-tron-red/30 bg-tron-red/10 text-tron-red"
             >
               <Icon className="h-5 w-5" />
             </motion.span>

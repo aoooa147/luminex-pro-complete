@@ -21,7 +21,7 @@ export function TronButton({
   className?: string
 }) {
   const variants = {
-    primary: 'border-tron-cyan text-tron-cyan hover:bg-tron-cyan/20',
+    primary: 'border-tron-red text-tron-red hover:bg-tron-red/20',
     secondary: 'border-tron-blue text-tron-blue hover:bg-tron-blue/20',
     danger: 'border-tron-orange text-tron-orange hover:bg-tron-orange/20',
     success: 'border-tron-purple text-tron-purple hover:bg-tron-purple/20',
@@ -67,16 +67,17 @@ export function TronCard({
   children, 
   title,
   icon: Icon,
-  glowColor = 'cyan',
+  glowColor = 'red',
   className = '' 
 }: {
   children: React.ReactNode
   title?: string
   icon?: any
-  glowColor?: 'cyan' | 'blue' | 'orange' | 'purple'
+  glowColor?: 'red' | 'cyan' | 'blue' | 'orange' | 'purple'
   className?: string
 }) {
   const glowColors = {
+    red: 'shadow-neon-red border-tron-red/30',
     cyan: 'shadow-neon-cyan border-tron-cyan/30',
     blue: 'shadow-neon-blue border-tron-blue/30',
     orange: 'shadow-neon-orange border-tron-orange/30',
@@ -84,6 +85,7 @@ export function TronCard({
   }
 
   const textColors = {
+    red: 'text-tron-red',
     cyan: 'text-tron-cyan',
     blue: 'text-tron-blue',
     orange: 'text-tron-orange',
@@ -91,6 +93,7 @@ export function TronCard({
   }
 
   const bgColors = {
+    red: 'bg-tron-red/10 border-tron-red/30',
     cyan: 'bg-tron-cyan/10 border-tron-cyan/30',
     blue: 'bg-tron-blue/10 border-tron-blue/30',
     orange: 'bg-tron-orange/10 border-tron-orange/30',
@@ -98,6 +101,7 @@ export function TronCard({
   }
 
   const borderGradients = {
+    red: 'via-tron-red',
     cyan: 'via-tron-cyan',
     blue: 'via-tron-blue',
     orange: 'via-tron-orange',
@@ -169,7 +173,7 @@ export function TronStatCard({
   trend?: 'up' | 'down'
 }) {
   return (
-    <TronCard glowColor={trend === 'up' ? 'cyan' : 'orange'}>
+    <TronCard glowColor={trend === 'up' ? 'red' : 'orange'}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm text-gray-400 uppercase tracking-wide font-orbitron mb-2">
@@ -182,7 +186,7 @@ export function TronStatCard({
             {change && (
               <span className={`
                 text-sm font-semibold
-                ${trend === 'up' ? 'text-tron-cyan' : 'text-tron-orange'}
+                ${trend === 'up' ? 'text-tron-red' : 'text-tron-orange'}
               `}>
                 {trend === 'up' ? '+' : ''}{change}
               </span>
@@ -191,13 +195,13 @@ export function TronStatCard({
         </div>
         <div className={`
           p-3 rounded-xl
-          ${trend === 'up' ? 'bg-tron-cyan/10' : 'bg-tron-orange/10'}
-          ${trend === 'up' ? 'border-tron-cyan/30' : 'border-tron-orange/30'}
+          ${trend === 'up' ? 'bg-tron-red/10' : 'bg-tron-orange/10'}
+          ${trend === 'up' ? 'border-tron-red/30' : 'border-tron-orange/30'}
           border
         `}>
           <Icon className={`
             w-6 h-6
-            ${trend === 'up' ? 'text-tron-cyan' : 'text-tron-orange'}
+            ${trend === 'up' ? 'text-tron-red' : 'text-tron-orange'}
           `} />
         </div>
       </div>
@@ -229,25 +233,25 @@ export function TronProgressBar({
             </span>
           )}
           {showValue && (
-            <span className="text-tron-cyan font-semibold font-orbitron">
+            <span className="text-tron-red font-semibold font-orbitron">
               {value} / {max}
             </span>
           )}
         </div>
       )}
       
-      <div className="relative h-3 bg-bg-tertiary rounded-full border border-tron-cyan/30 overflow-hidden">
+      <div className="relative h-3 bg-bg-tertiary rounded-full border border-tron-red/30 overflow-hidden">
         {/* Background glow */}
-        <div className="absolute inset-0 bg-gradient-to-r from-tron-cyan/5 to-tron-blue/5" />
+        <div className="absolute inset-0 bg-gradient-to-r from-tron-red/5 to-tron-red-bright/5" />
         
         {/* Progress */}
         <motion.div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-tron-cyan to-tron-blue rounded-full"
+          className="absolute inset-y-0 left-0 bg-gradient-to-r from-tron-red to-tron-red-bright rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
           transition={{ duration: 1, ease: 'easeOut' }}
           style={{
-            boxShadow: '0 0 20px rgba(0, 229, 255, 0.5), inset 0 0 20px rgba(0, 229, 255, 0.3)',
+            boxShadow: '0 0 20px rgba(255, 26, 42, 0.6), inset 0 0 20px rgba(255, 26, 42, 0.3)',
           }}
         />
         
@@ -274,7 +278,7 @@ export function TronBadge({
   size?: 'sm' | 'md' | 'lg'
 }) {
   const variants = {
-    default: 'bg-tron-cyan/20 text-tron-cyan border-tron-cyan/30',
+    default: 'bg-tron-red/20 text-tron-red border-tron-red/30',
     success: 'bg-tron-purple/20 text-tron-purple border-tron-purple/30',
     warning: 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30',
     danger: 'bg-tron-orange/20 text-tron-orange border-tron-orange/30',
@@ -287,7 +291,7 @@ export function TronBadge({
   }
 
   const dotColors = {
-    default: 'bg-tron-cyan shadow-neon-cyan',
+    default: 'bg-tron-red shadow-neon-red',
     success: 'bg-tron-purple shadow-neon-purple',
     warning: 'bg-yellow-400',
     danger: 'bg-tron-orange shadow-neon-orange',
@@ -320,7 +324,7 @@ export function TronTabs({
   onChange: (id: string) => void
 }) {
   return (
-    <div className="flex gap-2 p-2 bg-bg-tertiary/50 rounded-xl border border-tron-cyan/20">
+    <div className="flex gap-2 p-2 bg-bg-tertiary/50 rounded-xl border border-tron-red/20">
       {tabs.map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
@@ -334,8 +338,8 @@ export function TronTabs({
               font-orbitron font-semibold uppercase tracking-wide text-sm
               transition-all duration-300
               ${isActive 
-                ? 'text-tron-cyan bg-tron-cyan/10 border-tron-cyan/50' 
-                : 'text-gray-400 hover:text-tron-cyan/70 border-transparent'
+                ? 'text-tron-red bg-tron-red/10 border-tron-red/50' 
+                : 'text-gray-400 hover:text-tron-red/70 border-transparent'
               }
             `}
             whileHover={{ scale: 1.05 }}
@@ -346,9 +350,9 @@ export function TronTabs({
             
             {isActive && (
               <motion.div
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-tron-cyan"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-tron-red"
                 layoutId="activeTab"
-                style={{ boxShadow: '0 0 10px var(--tron-cyan)' }}
+                style={{ boxShadow: '0 0 10px rgba(255, 26, 42, 0.8)' }}
               />
             )}
           </motion.button>
@@ -369,7 +373,7 @@ export function TronAlert({
   onClose?: () => void
 }) {
   const types = {
-    info: { bg: 'bg-tron-cyan/10', border: 'border-tron-cyan/30', text: 'text-tron-cyan', icon: Sparkles },
+    info: { bg: 'bg-tron-red/10', border: 'border-tron-red/30', text: 'text-tron-red', icon: Sparkles },
     success: { bg: 'bg-tron-purple/10', border: 'border-tron-purple/30', text: 'text-tron-purple', icon: Shield },
     warning: { bg: 'bg-yellow-500/10', border: 'border-yellow-400/30', text: 'text-yellow-400', icon: Zap },
     error: { bg: 'bg-tron-orange/10', border: 'border-tron-orange/30', text: 'text-tron-orange', icon: TrendingUp },
@@ -426,14 +430,14 @@ export function TronInput({
   return (
     <div className="space-y-2">
       {label && (
-        <label className="block text-sm font-orbitron text-tron-cyan uppercase tracking-wide">
+        <label className="block text-sm font-orbitron text-tron-red uppercase tracking-wide">
           {label}
         </label>
       )}
       
       <div className="relative">
         {Icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-tron-cyan/50">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-tron-red/50">
             <Icon className="w-5 h-5" />
           </div>
         )}
@@ -448,12 +452,12 @@ export function TronInput({
             ${Icon ? 'pl-12' : 'pl-4'} pr-4 py-3
             bg-bg-tertiary/80 backdrop-blur-xl
             border-2 rounded-xl
-            font-orbitron text-tron-cyan
-            placeholder:text-tron-cyan/30
+            font-orbitron text-tron-red
+            placeholder:text-tron-red/30
             outline-none transition-all duration-300
             ${error 
               ? 'border-tron-orange focus:border-tron-orange focus:shadow-neon-orange' 
-              : 'border-tron-cyan/30 focus:border-tron-cyan focus:shadow-neon-cyan'
+              : 'border-tron-red/30 focus:border-tron-red focus:shadow-neon-red'
             }
           `}
         />
@@ -461,7 +465,7 @@ export function TronInput({
         {/* Animated border */}
         <div className="absolute inset-0 rounded-xl pointer-events-none overflow-hidden">
           <motion.div
-            className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-tron-cyan to-transparent"
+            className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-tron-red to-transparent"
             animate={{ x: ['-100%', '200%'] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
           />
@@ -543,7 +547,7 @@ export function TronUIShowcase() {
 
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TronCard title="Flexible Pool" icon={Zap} glowColor="cyan">
+        <TronCard title="Flexible Pool" icon={Zap} glowColor="red">
           <div className="space-y-4">
             <TronProgressBar value={750} max={1000} label="Pool Capacity" />
             <div className="flex items-center justify-between">

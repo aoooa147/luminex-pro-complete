@@ -200,13 +200,13 @@ export default function NumberMemoryPage() {
     <div className="min-h-screen text-white p-4 pb-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold font-orbitron bg-gradient-to-r from-tron-blue via-tron-cyan to-tron-blue bg-clip-text text-transparent neon-text">
+          <h1 className="text-4xl font-bold font-orbitron bg-gradient-to-r from-tron-red via-tron-red-bright to-tron-red bg-clip-text text-transparent neon-text">
             🧠 Number Memory
           </h1>
           <button
             onClick={toggleSound}
-            className="p-2 rounded-lg border border-tron-cyan/30 bg-tron-cyan/10 text-tron-cyan hover:bg-tron-cyan/20 transition-colors"
-            style={{ boxShadow: '0 0 10px rgba(0, 229, 255, 0.2)' }}
+            className="p-2 rounded-lg border border-tron-red/30 bg-tron-red/10 text-tron-red hover:bg-tron-red/20 transition-colors"
+            style={{ boxShadow: '0 0 10px rgba(255, 26, 42, 0.4)' }}
           >
             {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
@@ -219,13 +219,13 @@ export default function NumberMemoryPage() {
         </div>
 
         {gameState === 'idle' && (
-          <TronCard glowColor="blue" className="text-center">
+          <TronCard glowColor="red" className="text-center">
             <div className="text-6xl mb-4">🧠</div>
             <h2 className="text-3xl font-bold mb-4 font-orbitron text-white">Remember the numbers!</h2>
             <p className="text-gray-300 mb-6 font-orbitron">
               Remember the numbers shown, then type them back correctly
               <br />
-              <b className="text-tron-blue">Complete {ROUNDS_TO_WIN} rounds to win!</b>
+              <b className="text-tron-red">Complete {ROUNDS_TO_WIN} rounds to win!</b>
             </p>
             <GameButton
               onClick={startGame}
@@ -296,7 +296,7 @@ export default function NumberMemoryPage() {
             <div className="text-7xl mb-4">🎉</div>
             <h2 className="text-4xl font-bold font-orbitron text-white mb-4">You Win!</h2>
             <div className="space-y-3 text-lg font-orbitron">
-              <p className="text-gray-300">🎯 Score: <b className="text-tron-blue">{score.toLocaleString()}</b></p>
+              <p className="text-gray-300">🎯 Score: <b className="text-tron-red">{score.toLocaleString()}</b></p>
               <p className="text-tron-purple font-bold">💰 Earned 15 Tokens!</p>
             </div>
             <GameButton

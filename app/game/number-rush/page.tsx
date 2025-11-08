@@ -293,13 +293,13 @@ export default function NumberRushPage() {
     <div className="min-h-screen text-white p-4 pb-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold font-orbitron bg-gradient-to-r from-tron-blue via-tron-cyan to-tron-blue bg-clip-text text-transparent neon-text">
+          <h1 className="text-4xl font-bold font-orbitron bg-gradient-to-r from-tron-red via-tron-red-bright to-tron-red bg-clip-text text-transparent neon-text">
             ⚡ Speed Reaction
           </h1>
           <button
             onClick={toggleSound}
-            className="p-2 rounded-lg border border-tron-cyan/30 bg-tron-cyan/10 text-tron-cyan hover:bg-tron-cyan/20 transition-colors"
-            style={{ boxShadow: '0 0 10px rgba(0, 229, 255, 0.2)' }}
+            className="p-2 rounded-lg border border-tron-red/30 bg-tron-red/10 text-tron-red hover:bg-tron-red/20 transition-colors"
+            style={{ boxShadow: '0 0 10px rgba(255, 26, 42, 0.4)' }}
           >
             {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
@@ -310,7 +310,7 @@ export default function NumberRushPage() {
           <GameStatsCard label="Score" value={score.toLocaleString()} icon="🎯" color="blue" />
           <GameStatsCard label="Combo" value={combo} icon="🔥" color="orange" />
           <GameStatsCard label="Lives" value={`${lives}/3`} icon="❤️" color="red" />
-          <GameStatsCard label="Avg RT" value={`${avgReactionTime}ms`} icon="⚡" color="cyan" />
+          <GameStatsCard label="Avg RT" value={`${avgReactionTime}ms`} icon="⚡" color="red" />
         </div>
 
         {/* Cooldown Message */}
@@ -323,7 +323,7 @@ export default function NumberRushPage() {
         )}
 
         {gameState === 'idle' && (
-          <TronCard glowColor="blue" className="text-center">
+          <TronCard glowColor="red" className="text-center">
             <div className="text-6xl mb-4">⚡</div>
             <h2 className="text-3xl font-bold mb-4 font-orbitron text-white">Test your speed!</h2>
             <p className="text-gray-300 mb-6 font-orbitron">

@@ -38,8 +38,8 @@ const AppHeader = memo(({
       style={{
         background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(10, 10, 15, 0.9) 100%)',
         backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(0, 229, 255, 0.3)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 229, 255, 0.1), inset 0 1px 0 rgba(0, 229, 255, 0.1)'
+        borderBottom: '1px solid rgba(255, 26, 42, 0.3)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 26, 42, 0.15), inset 0 1px 0 rgba(255, 26, 42, 0.1)'
       }}
     >
       <div className="max-w-md mx-auto px-4 py-4">
@@ -47,7 +47,7 @@ const AppHeader = memo(({
           <div className="flex items-center space-x-2">
             <img src={LOGO_URL} alt="LUX" className="w-8 h-8 rounded-full ring-2 ring-purple-400/50" />
             <div>
-              <h1 className="text-lg font-bold font-orbitron text-tron-cyan neon-text">
+              <h1 className="text-lg font-bold font-orbitron text-tron-red neon-text">
                 Luminex Staking
               </h1>
             </div>
@@ -57,21 +57,21 @@ const AppHeader = memo(({
         {/* User ID & Balance */}
         <div className="mt-2 space-y-1.5 overflow-visible">
           <div 
-            className="bg-gradient-to-r from-tron-cyan/10 via-tron-blue/10 to-tron-cyan/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between backdrop-blur-lg border border-tron-cyan/30 relative overflow-visible" 
+            className="bg-gradient-to-r from-tron-red/10 via-tron-red-bright/10 to-tron-red/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between backdrop-blur-lg border border-tron-red/30 relative overflow-visible" 
             style={{
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 229, 255, 0.2), inset 0 1px 0 rgba(0, 229, 255, 0.1)'
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 26, 42, 0.3), inset 0 1px 0 rgba(255, 26, 42, 0.1)'
             }}
           >
             <div className="flex items-center space-x-2">
               <div 
-                className="w-8 h-8 bg-gradient-to-br from-tron-cyan to-tron-blue rounded-full flex items-center justify-center" 
+                className="w-8 h-8 bg-gradient-to-br from-tron-red to-tron-red-bright rounded-full flex items-center justify-center" 
                 style={{
-                  boxShadow: '0 0 15px rgba(0, 229, 255, 0.5)'
+                  boxShadow: '0 0 15px rgba(255, 26, 42, 0.6)'
                 }}
               >
                 <span className="text-white text-xs font-bold font-orbitron">U</span>
               </div>
-              <span className="text-tron-cyan text-sm font-medium font-orbitron">
+              <span className="text-tron-red text-sm font-medium font-orbitron">
                 {(() => {
                   const userName = userInfo?.name || userInfo?.username;
                   if (userName && typeof userName === 'string') return userName;
@@ -144,17 +144,17 @@ const AppHeader = memo(({
           </div>
 
           <div 
-            className="flex items-center justify-between bg-bg-tertiary/80 rounded-lg px-2.5 py-1.5 backdrop-blur-lg border border-tron-cyan/30 relative" 
+            className="flex items-center justify-between bg-bg-tertiary/80 rounded-lg px-2.5 py-1.5 backdrop-blur-lg border border-tron-red/30 relative" 
             style={{ 
               zIndex: 0,
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 229, 255, 0.1)'
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 26, 42, 0.2)'
             }}
           >
-            <div className="flex items-center text-tron-cyan">
+            <div className="flex items-center text-tron-red">
               <div 
-                className="w-7 h-7 bg-gradient-to-br from-tron-cyan to-tron-blue rounded-lg flex items-center justify-center mr-1.5" 
+                className="w-7 h-7 bg-gradient-to-br from-tron-red to-tron-red-bright rounded-lg flex items-center justify-center mr-1.5" 
                 style={{
-                  boxShadow: '0 0 10px rgba(0, 229, 255, 0.4)'
+                  boxShadow: '0 0 10px rgba(255, 26, 42, 0.5)'
                 }}
               >
                 <Wallet className="w-3.5 h-3.5 text-white" />
@@ -163,16 +163,16 @@ const AppHeader = memo(({
             </div>
             <div className="text-right">
               {!actualAddress ? (
-                <div className="text-tron-cyan text-xs font-orbitron">Connect wallet</div>
+                <div className="text-tron-red text-xs font-orbitron">Connect wallet</div>
               ) : isLoadingBalance ? (
                 <div className="flex items-center justify-end space-x-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-tron-cyan" />
-                  <span className="text-tron-cyan text-sm font-orbitron">Loading...</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-tron-red" />
+                  <span className="text-tron-red text-sm font-orbitron">Loading...</span>
                 </div>
               ) : (
                 <>
-                  <div className="text-tron-cyan font-bold text-base font-orbitron">{formattedBalance} {TOKEN_NAME}</div>
-                  <div className="text-tron-blue font-bold text-xs font-orbitron">{formattedWldBalance} WLD</div>
+                  <div className="text-tron-red font-bold text-base font-orbitron">{formattedBalance} {TOKEN_NAME}</div>
+                  <div className="text-tron-red-bright font-bold text-xs font-orbitron">{formattedWldBalance} WLD</div>
                 </>
               )}
             </div>

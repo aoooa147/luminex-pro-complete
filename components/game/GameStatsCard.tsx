@@ -7,33 +7,33 @@ interface GameStatsCardProps {
   label: string
   value: string | number
   icon?: string
-  color?: 'cyan' | 'blue' | 'orange' | 'purple' | 'yellow' | 'red'
+  color?: 'red' | 'cyan' | 'blue' | 'orange' | 'purple' | 'yellow'
   className?: string
 }
 
 const colorClasses = {
+  red: 'text-tron-red border-tron-red/30 bg-tron-red/10',
   cyan: 'text-tron-cyan border-tron-cyan/30 bg-tron-cyan/10',
   blue: 'text-tron-blue border-tron-blue/30 bg-tron-blue/10',
   orange: 'text-tron-orange border-tron-orange/30 bg-tron-orange/10',
   purple: 'text-tron-purple border-tron-purple/30 bg-tron-purple/10',
   yellow: 'text-yellow-400 border-yellow-400/30 bg-yellow-400/10',
-  red: 'text-red-400 border-red-400/30 bg-red-400/10',
 }
 
 const glowClasses = {
+  red: 'shadow-neon-red',
   cyan: 'shadow-neon-cyan',
   blue: 'shadow-neon-blue',
   orange: 'shadow-neon-orange',
   purple: 'shadow-neon-purple',
   yellow: 'shadow-[0_0_10px_rgba(250,204,21,0.5)]',
-  red: 'shadow-[0_0_10px_rgba(248,113,113,0.5)]',
 }
 
 export function GameStatsCard({
   label,
   value,
   icon,
-  color = 'cyan',
+  color = 'red',
   className = '',
 }: GameStatsCardProps) {
   return (

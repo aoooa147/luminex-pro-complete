@@ -374,14 +374,14 @@ export default function CoinFlipPage() {
     <div className="min-h-screen text-white p-4 pb-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold font-orbitron bg-gradient-to-r from-tron-cyan via-tron-orange to-tron-cyan bg-clip-text text-transparent neon-text">
+          <h1 className="text-4xl font-bold font-orbitron bg-gradient-to-r from-tron-red via-tron-red-bright to-tron-red bg-clip-text text-transparent neon-text">
             🪙 Coin Flip Challenge
           </h1>
           <button
             onClick={toggleSound}
-            className="p-2 rounded-lg border border-tron-cyan/30 bg-tron-cyan/10 text-tron-cyan hover:bg-tron-cyan/20 transition-colors"
+            className="p-2 rounded-lg border border-tron-red/30 bg-tron-red/10 text-tron-red hover:bg-tron-red/20 transition-colors"
             aria-label="Toggle sound"
-            style={{ boxShadow: '0 0 10px rgba(0, 229, 255, 0.2)' }}
+            style={{ boxShadow: '0 0 10px rgba(255, 26, 42, 0.4)' }}
           >
             {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
