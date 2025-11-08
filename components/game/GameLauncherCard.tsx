@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import Link from 'next/link';
 import { TronCard, TronButton } from '@/components/tron';
 
@@ -50,6 +50,9 @@ const GAMES = [
 ];
 
 const GameLauncherCard = memo(() => {
+  // Memoize games list
+  const gamesList = useMemo(() => GAMES, []);
+
   return (
     <div className="space-y-3">
       <div className="text-center mb-4">
@@ -60,17 +63,24 @@ const GameLauncherCard = memo(() => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        {GAMES.map((game) => (
-          <Link key={game.id} href={game.href}>
+        {gamesList.map((game) => (
+          <Link 
+            key={game.id} 
+            href={game.href}
+            className="block"
+            style={{ transform: 'translateZ(0)' }}
+          >
             <TronCard
               glowColor={game.glowColor === 'cyan' ? 'orange' : game.glowColor === 'orange' ? 'orange' : game.glowColor}
-              className="p-4 sm:p-5 flex flex-col min-h-[160px] h-full cursor-pointer hover:scale-105 transition-transform duration-200 relative overflow-hidden"
+              className="p-4 sm:p-5 flex flex-col min-h-[160px] h-full cursor-pointer relative overflow-hidden group"
             >
-              {/* Hover glow effect */}
+              {/* Hover glow effect - CSS only for better performance */}
               <div 
-                className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none"
                 style={{
                   background: `radial-gradient(circle at center, ${game.glowColor === 'orange' ? 'rgba(255, 107, 53, 0.2)' : 'rgba(255, 26, 42, 0.2)'}, transparent 70%)`,
+                  transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: 'translateZ(0)',
                 }}
               />
               
@@ -84,7 +94,7 @@ const GameLauncherCard = memo(() => {
                   </div>
                 </div>
                 <div className="mt-auto">
-                  <div className="w-full py-2.5 px-4 rounded-lg border-2 border-tron-orange/50 bg-tron-orange/10 text-tron-orange hover:bg-tron-orange/20 transition-colors font-orbitron text-sm uppercase tracking-wider text-center font-bold">
+                  <div className="w-full py-2.5 px-4 rounded-lg border-2 border-tron-orange/50 bg-tron-orange/10 text-tron-orange group-hover:bg-tron-orange/20 font-orbitron text-sm uppercase tracking-wider text-center font-bold transition-colors duration-200">
                     PLAY NOW
                   </div>
                 </div>

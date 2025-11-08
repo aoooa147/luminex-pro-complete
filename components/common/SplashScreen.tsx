@@ -23,78 +23,108 @@ export function SplashScreen({ onComplete, message }: SplashScreenProps) {
   ];
 
   useEffect(() => {
-    // Build-up animation sequence
-    const sequence = async () => {
-      // Phase 1: Build progress (0-100%)
-      for (let i = 0; i <= 100; i += 2) {
-        await new Promise((resolve) => setTimeout(resolve, 30));
-        setBuildProgress(i);
+    // Optimized build-up animation using requestAnimationFrame
+    let animationFrame: number;
+    let startTime: number | null = null;
+    const duration = 2500; // 2.5 seconds total
+    const startProgress = () => {
+      const animate = (currentTime: number) => {
+        if (!startTime) startTime = currentTime;
+        const elapsed = currentTime - startTime;
+        const progress = Math.min((elapsed / duration) * 100, 100);
+        
+        setBuildProgress(progress);
         
         // Change message at specific progress points
-        if (i === 20) setCurrentMessage('CONNECTING TO THE GRID...');
-        if (i === 40) setCurrentMessage('LOADING CORE SYSTEMS...');
-        if (i === 60) setCurrentMessage('SYNCHRONIZING DATA...');
-        if (i === 80) setCurrentMessage('INITIALIZING...');
-        if (i === 90) {
+        if (progress >= 20 && currentMessage !== 'CONNECTING TO THE GRID...') {
+          setCurrentMessage('CONNECTING TO THE GRID...');
+        }
+        if (progress >= 40 && currentMessage !== 'LOADING CORE SYSTEMS...') {
+          setCurrentMessage('LOADING CORE SYSTEMS...');
+        }
+        if (progress >= 60 && currentMessage !== 'SYNCHRONIZING DATA...') {
+          setCurrentMessage('SYNCHRONIZING DATA...');
+        }
+        if (progress >= 80 && currentMessage !== 'INITIALIZING...') {
+          setCurrentMessage('INITIALIZING...');
+        }
+        if (progress >= 90 && !showLogo) {
           setShowLogo(true);
           setCurrentMessage('READY');
         }
-      }
-
-      // Wait a bit before completing
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      onComplete();
+        
+        if (progress < 100) {
+          animationFrame = requestAnimationFrame(animate);
+        } else {
+          // Wait a bit before completing
+          setTimeout(() => {
+            onComplete();
+          }, 300);
+        }
+      };
+      
+      animationFrame = requestAnimationFrame(animate);
     };
-
-    sequence();
-  }, [onComplete]);
+    
+    startProgress();
+    
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [onComplete, currentMessage, showLogo]);
 
   return (
     <TronShell showEnergyStream={false} className="bg-[#000000]">
       <div className="fixed inset-0 flex items-center justify-center overflow-hidden">
-        {/* Electric Cyan lines converging from edges */}
+        {/* Electric Cyan lines converging from edges - Optimized with transform scale */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Top line */}
           <div 
-            className="absolute top-0 left-1/2 h-0.5 bg-gradient-to-r from-transparent via-tron-cyan to-transparent"
+            className="absolute top-0 left-1/2 h-0.5 bg-gradient-to-r from-transparent via-tron-cyan to-transparent origin-center"
             style={{
-              width: `${100 - buildProgress}%`,
-              transform: 'translateX(-50%)',
+              width: '100%',
+              transform: `translateX(-50%) scaleX(${(100 - buildProgress) / 100})`,
               boxShadow: '0 0 20px rgba(0, 229, 255, 0.8)',
-              transition: 'width 0.3s ease-out',
+              transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              willChange: 'transform',
             }}
           />
           
           {/* Bottom line */}
           <div 
-            className="absolute bottom-0 left-1/2 h-0.5 bg-gradient-to-r from-transparent via-tron-cyan to-transparent"
+            className="absolute bottom-0 left-1/2 h-0.5 bg-gradient-to-r from-transparent via-tron-cyan to-transparent origin-center"
             style={{
-              width: `${100 - buildProgress}%`,
-              transform: 'translateX(-50%)',
+              width: '100%',
+              transform: `translateX(-50%) scaleX(${(100 - buildProgress) / 100})`,
               boxShadow: '0 0 20px rgba(0, 229, 255, 0.8)',
-              transition: 'width 0.3s ease-out',
+              transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              willChange: 'transform',
             }}
           />
           
           {/* Left line */}
           <div 
-            className="absolute left-0 top-1/2 w-0.5 bg-gradient-to-b from-transparent via-tron-cyan to-transparent"
+            className="absolute left-0 top-1/2 w-0.5 bg-gradient-to-b from-transparent via-tron-cyan to-transparent origin-center"
             style={{
-              height: `${100 - buildProgress}%`,
-              transform: 'translateY(-50%)',
+              height: '100%',
+              transform: `translateY(-50%) scaleY(${(100 - buildProgress) / 100})`,
               boxShadow: '0 0 20px rgba(0, 229, 255, 0.8)',
-              transition: 'height 0.3s ease-out',
+              transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              willChange: 'transform',
             }}
           />
           
           {/* Right line */}
           <div 
-            className="absolute right-0 top-1/2 w-0.5 bg-gradient-to-b from-transparent via-tron-cyan to-transparent"
+            className="absolute right-0 top-1/2 w-0.5 bg-gradient-to-b from-transparent via-tron-cyan to-transparent origin-center"
             style={{
-              height: `${100 - buildProgress}%`,
-              transform: 'translateY(-50%)',
+              height: '100%',
+              transform: `translateY(-50%) scaleY(${(100 - buildProgress) / 100})`,
               boxShadow: '0 0 20px rgba(0, 229, 255, 0.8)',
-              transition: 'height 0.3s ease-out',
+              transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              willChange: 'transform',
             }}
           />
         </div>
@@ -102,24 +132,27 @@ export function SplashScreen({ onComplete, message }: SplashScreenProps) {
         {/* Logo with build-up effect */}
         <div className="relative z-10 flex flex-col items-center justify-center">
           <div 
-            className={`transition-opacity duration-500 ${showLogo ? 'opacity-100' : 'opacity-0'}`}
+            className={`${showLogo ? 'opacity-100' : 'opacity-0'}`}
             style={{
               filter: showLogo ? 'drop-shadow(0 0 40px rgba(255, 26, 42, 0.8))' : 'none',
-              transform: showLogo ? 'scale(1)' : 'scale(0.8)',
-              transition: 'all 0.5s ease-out',
+              transform: `translateZ(0) scale(${showLogo ? 1 : 0.8})`,
+              transition: 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), filter 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+              willChange: 'opacity, transform',
             }}
           >
             <Logo3D size={140} interactive={false} />
           </div>
 
-          {/* Progress indicator */}
+          {/* Progress indicator - Optimized */}
           <div className="mt-8 w-64">
             <div className="h-1 bg-black/50 rounded-full overflow-hidden border border-tron-red/30">
               <div 
-                className="h-full bg-gradient-to-r from-tron-red to-tron-red-bright rounded-full transition-all duration-300"
+                className="h-full bg-gradient-to-r from-tron-red to-tron-red-bright rounded-full"
                 style={{
                   width: `${buildProgress}%`,
                   boxShadow: '0 0 10px rgba(255, 26, 42, 0.6)',
+                  transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: 'translateZ(0)',
                 }}
               />
             </div>

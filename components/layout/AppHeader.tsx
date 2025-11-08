@@ -37,9 +37,12 @@ const AppHeader = memo(({
       className="relative z-10 overflow-visible glass-tron" 
       style={{
         background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(10, 10, 15, 0.9) 100%)',
-        backdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(255, 26, 42, 0.3)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 26, 42, 0.15), inset 0 1px 0 rgba(255, 26, 42, 0.1)'
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 26, 42, 0.15), inset 0 1px 0 rgba(255, 26, 42, 0.1)',
+        transform: 'translateZ(0)',
+        contain: 'layout style',
       }}
     >
       <div className="max-w-md mx-auto px-3 sm:px-4 py-3 sm:py-4">

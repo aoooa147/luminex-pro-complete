@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import Link from 'next/link';
 import { TronCard } from '@/components/tron';
 import { LucideIcon } from 'lucide-react';
@@ -14,7 +14,7 @@ interface QuickActionCardProps {
   onClick?: () => void;
 }
 
-export function QuickActionCard({ 
+export const QuickActionCard = memo(function QuickActionCard({ 
   title, 
   description, 
   icon: Icon, 
@@ -57,12 +57,22 @@ export function QuickActionCard({
     </div>
   );
 
+  const handleClick = useCallback(() => {
+    if (onClick) {
+      onClick();
+    }
+  }, [onClick]);
+
   if (onClick) {
     return (
-      <div onClick={onClick} className="cursor-pointer">
+      <div 
+        onClick={handleClick} 
+        className="cursor-pointer"
+        style={{ transform: 'translateZ(0)' }}
+      >
         <TronCard 
           glowColor={glowColor} 
-          className="p-4 backdrop-blur-xl bg-gradient-to-br from-bg-tertiary/90 to-bg-secondary/90 hover:scale-105 transition-transform duration-200"
+          className="p-4 backdrop-blur-lg bg-gradient-to-br from-bg-tertiary/90 to-bg-secondary/90"
         >
           {cardContent}
         </TronCard>
@@ -71,13 +81,13 @@ export function QuickActionCard({
   }
 
   return (
-    <Link href={href}>
+    <Link href={href} style={{ transform: 'translateZ(0)' }}>
       <TronCard 
         glowColor={glowColor} 
-        className="p-4 backdrop-blur-xl bg-gradient-to-br from-bg-tertiary/90 to-bg-secondary/90 cursor-pointer hover:scale-105 transition-transform duration-200"
+        className="p-4 backdrop-blur-lg bg-gradient-to-br from-bg-tertiary/90 to-bg-secondary/90 cursor-pointer"
       >
         {cardContent}
       </TronCard>
     </Link>
   );
-}
+})

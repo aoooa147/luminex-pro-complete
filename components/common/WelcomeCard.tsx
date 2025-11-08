@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { TronCard } from '@/components/tron';
 import { User } from 'lucide-react';
 
@@ -9,8 +9,10 @@ interface WelcomeCardProps {
   address?: string;
 }
 
-export function WelcomeCard({ username, address }: WelcomeCardProps) {
-  const displayName = username || address?.slice(0, 6) + '...' + address?.slice(-4) || 'User';
+export const WelcomeCard = memo(function WelcomeCard({ username, address }: WelcomeCardProps) {
+  const displayName = useMemo(() => {
+    return username || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'User');
+  }, [username, address]);
 
   return (
     <TronCard glowColor="cyan" className="p-4 backdrop-blur-xl bg-gradient-to-br from-bg-tertiary/90 to-bg-secondary/90">
@@ -64,4 +66,4 @@ export function WelcomeCard({ username, address }: WelcomeCardProps) {
       `}</style>
     </TronCard>
   );
-}
+})

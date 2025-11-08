@@ -1,14 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 
 interface NetworkVisualizationProps {
   totalReferrals: number;
 }
 
-export function NetworkVisualization({ totalReferrals }: NetworkVisualizationProps) {
-  // Generate network nodes
-  const nodes = React.useMemo(() => {
+export const NetworkVisualization = memo(function NetworkVisualization({ totalReferrals }: NetworkVisualizationProps) {
+  // Generate network nodes - Optimized calculation
+  const nodes = useMemo(() => {
     const count = Math.min(totalReferrals, 20); // Limit to 20 nodes for performance
     return Array.from({ length: count }, (_, i) => {
       const angle = (i / count) * 2 * Math.PI;
@@ -17,17 +17,31 @@ export function NetworkVisualization({ totalReferrals }: NetworkVisualizationPro
         x: 50 + radius * Math.cos(angle),
         y: 50 + radius * Math.sin(angle),
         size: 3 + (i % 3),
+        id: i,
       };
     });
   }, [totalReferrals]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none opacity-20">
-      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+    <div 
+      className="absolute inset-0 pointer-events-none opacity-20"
+      style={{
+        transform: 'translateZ(0)',
+        willChange: 'opacity',
+      }}
+    >
+      <svg 
+        className="w-full h-full" 
+        viewBox="0 0 100 100" 
+        preserveAspectRatio="xMidYMid meet"
+        style={{
+          transform: 'translateZ(0)',
+        }}
+      >
         {/* Network connections */}
-        {nodes.map((node, i) => (
+        {nodes.map((node) => (
           <line
-            key={`line-${i}`}
+            key={`line-${node.id}`}
             x1="50"
             y1="50"
             x2={node.x}
@@ -38,9 +52,9 @@ export function NetworkVisualization({ totalReferrals }: NetworkVisualizationPro
         ))}
         
         {/* Network nodes */}
-        {nodes.map((node, i) => (
+        {nodes.map((node) => (
           <circle
-            key={`node-${i}`}
+            key={`node-${node.id}`}
             cx={node.x}
             cy={node.y}
             r={node.size}
@@ -64,4 +78,4 @@ export function NetworkVisualization({ totalReferrals }: NetworkVisualizationPro
       </svg>
     </div>
   );
-}
+})

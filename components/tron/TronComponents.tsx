@@ -1,10 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { memo, useCallback } from 'react'
 import { Zap, Shield, Sparkles, TrendingUp } from 'lucide-react'
 
 // 🎨 Tron Button Component
-export function TronButton({ 
+export const TronButton = memo(function TronButton({ 
   children, 
   onClick, 
   variant = 'primary',
@@ -50,10 +50,10 @@ export function TronButton({
       <span className="relative z-10">{children}</span>
     </button>
   )
-}
+})
 
 // 🎮 Tron Card Component
-export function TronCard({ 
+export const TronCard = memo(function TronCard({ 
   children, 
   title,
   icon: Icon,
@@ -105,10 +105,12 @@ export function TronCard({
         bg-gradient-to-br from-bg-tertiary/90 to-bg-secondary/90
         backdrop-blur-sm rounded-2xl p-6
         border ${glowColors[glowColor]}
-        transition-all duration-200
         ${className}
       `}
-      style={{ transform: 'translateZ(0)' }}
+      style={{ 
+        transform: 'translateZ(0)',
+        willChange: 'transform',
+      }}
     >
       {/* Top border - Static (no animation) */}
       <div className="absolute top-0 left-0 right-0 h-0.5 overflow-hidden opacity-30">
@@ -142,7 +144,7 @@ export function TronCard({
       </div>
     </div>
   )
-}
+})
 
 // ⚡ Stat Card Component
 export function TronStatCard({

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { TronCard } from '@/components/tron';
 import { Zap } from 'lucide-react';
 
@@ -11,16 +11,24 @@ interface EnergyCoreVisualizationProps {
   powerBoost: number;
 }
 
-export function EnergyCoreVisualization({
+export const EnergyCoreVisualization = memo(function EnergyCoreVisualization({
   currentPower,
   totalApy,
   baseApy,
   powerBoost,
 }: EnergyCoreVisualizationProps) {
-  // Calculate power percentage (0-100%)
-  const powerPercentage = currentPower ? totalApy : 0;
-  const maxPower = 325; // Maximum possible APY
-  const normalizedPercentage = (powerPercentage / maxPower) * 100;
+  // Calculate power percentage (0-100%) - Memoized
+  const normalizedPercentage = useMemo(() => {
+    const powerPercentage = currentPower ? totalApy : 0;
+    const maxPower = 325; // Maximum possible APY
+    return (powerPercentage / maxPower) * 100;
+  }, [currentPower, totalApy]);
+
+  // Memoize circle calculation
+  const circleCircumference = useMemo(() => 2 * Math.PI * 45, []);
+  const strokeDashoffset = useMemo(() => {
+    return circleCircumference * (1 - normalizedPercentage / 100);
+  }, [circleCircumference, normalizedPercentage]);
 
   return (
     <TronCard glowColor="red" className="p-8 text-center">
@@ -48,11 +56,12 @@ export function EnergyCoreVisualization({
               stroke="url(#gradient-red)"
               strokeWidth="8"
               strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 45}`}
-              strokeDashoffset={`${2 * Math.PI * 45 * (1 - normalizedPercentage / 100)}`}
+              strokeDasharray={circleCircumference}
+              strokeDashoffset={strokeDashoffset}
               style={{
                 filter: 'drop-shadow(0 0 20px rgba(255, 26, 42, 0.8))',
-                transition: 'stroke-dashoffset 1s ease-out',
+                transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: 'translateZ(0)',
               }}
             />
             
@@ -81,29 +90,32 @@ export function EnergyCoreVisualization({
             )}
           </div>
 
-          {/* Energy particles around the ring */}
-          {[...Array(12)].map((_, i) => {
-            const angle = (i * 30) * (Math.PI / 180);
-            const radius = 45;
-            const x = 50 + radius * Math.cos(angle);
-            const y = 50 + radius * Math.sin(angle);
-            const isActive = (i * 30) / 360 < normalizedPercentage / 100;
+          {/* Energy particles around the ring - Memoized */}
+          {useMemo(() => {
+            return [...Array(12)].map((_, i) => {
+              const angle = (i * 30) * (Math.PI / 180);
+              const radius = 45;
+              const x = 50 + radius * Math.cos(angle);
+              const y = 50 + radius * Math.sin(angle);
+              const isActive = (i * 30) / 360 < normalizedPercentage / 100;
 
-            return (
-              <div
-                key={i}
-                className="absolute w-2 h-2 rounded-full"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  backgroundColor: isActive ? '#ff1a2a' : 'rgba(255, 26, 42, 0.2)',
-                  boxShadow: isActive ? '0 0 10px rgba(255, 26, 42, 0.8)' : 'none',
-                  transition: 'all 0.3s ease-out',
-                }}
-              />
-            );
-          })}
+              return (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 rounded-full"
+                  style={{
+                    left: `${x}%`,
+                    top: `${y}%`,
+                    transform: 'translate(-50%, -50%) translateZ(0)',
+                    backgroundColor: isActive ? '#ff1a2a' : 'rgba(255, 26, 42, 0.2)',
+                    boxShadow: isActive ? '0 0 10px rgba(255, 26, 42, 0.8)' : 'none',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    willChange: 'background-color, box-shadow',
+                  }}
+                />
+              );
+            });
+          }, [normalizedPercentage])}
         </div>
 
         {/* Stats below the chart */}
@@ -136,4 +148,4 @@ export function EnergyCoreVisualization({
       </div>
     </TronCard>
   );
-}
+})

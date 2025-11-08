@@ -789,24 +789,58 @@ a {
   color: rgba(255, 26, 42, 0.5);
 }
 
-/* ⚡ Performance optimizations */
+/* ⚡ Performance Optimizations - GPU Acceleration */
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.motion-div,
-[class*="motion"],
-[class*="animate"],
-[class*="neon"] {
+/* GPU acceleration for smooth animations */
+.neon-card,
+.neon-button,
+[class*="neon"],
+[class*="tron"] {
   transform: translateZ(0);
+  will-change: transform, opacity;
   backface-visibility: hidden;
   perspective: 1000px;
 }
 
-.backdrop-blur-xl,
-.backdrop-blur-2xl {
-  will-change: auto;
+/* Optimize transitions - use transform instead of layout properties */
+.neon-card,
+.neon-button,
+button,
+a {
+  transition-property: transform, opacity, border-color, background-color;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth hover effects */
+.neon-card:hover,
+.neon-button:hover {
+  transform: translateZ(0) scale(1.02);
+}
+
+/* Contain layout for better performance */
+.neon-card {
+  contain: layout style paint;
+}
+
+/* Optimize backdrop blur */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.backdrop-blur-lg {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.backdrop-blur-xl {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .blur-xl,
@@ -1060,21 +1094,7 @@ a,
   display: none !important;
 }
 
-/* Reduce blur effects for performance */
-.backdrop-blur-xl {
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-}
-
-.backdrop-blur-sm {
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-}
-
-.backdrop-blur-lg {
-  backdrop-filter: blur(6px) !important;
-  -webkit-backdrop-filter: blur(6px) !important;
-}
+/* Backdrop blur already optimized above - removed duplicates */
 
 /* 🚀 Lazy Loading for Images */
 img {

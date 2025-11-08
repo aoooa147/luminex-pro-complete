@@ -19,9 +19,12 @@ const BottomNav = memo(({
       className="fixed bottom-0 left-0 right-0 glass-tron border-t border-tron-red/30 z-40 safe-area-bottom" 
       style={{
         background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(10, 10, 15, 0.95) 100%)',
-        backdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 26, 42, 0.15)',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))'
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))',
+        transform: 'translateZ(0)',
+        contain: 'layout style',
       }}
     >
       <div className="max-w-md mx-auto px-4 py-3 flex justify-around">
