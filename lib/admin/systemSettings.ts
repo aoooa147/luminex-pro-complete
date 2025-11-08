@@ -90,7 +90,6 @@ export async function updateSystemSettings(
           updatedAt: new Date(),
         },
         create: {
-          id: 'main',
           ...defaultSettings,
           ...updates,
           updatedBy: updatedBy || null,
