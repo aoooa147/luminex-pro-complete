@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
+import * as Sentry from '@sentry/nextjs';
 
 interface Props {
   children: React.ReactNode;
@@ -23,10 +24,25 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Use logger if available, otherwise fallback to console
+    // Log to console
     if (typeof window !== 'undefined') {
-      // Client-side: log to console for now (logger is server-side only)
       console.error('ErrorBoundary caught:', error, errorInfo);
+    }
+    
+    // Capture to Sentry
+    try {
+      Sentry.captureException(error, {
+        contexts: {
+          react: {
+            componentStack: errorInfo.componentStack,
+          },
+        },
+        tags: {
+          errorBoundary: true,
+        },
+      });
+    } catch (e) {
+      // Sentry not available, ignore
     }
   }
 

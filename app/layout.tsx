@@ -4,6 +4,12 @@ import { Inter } from 'next/font/google';
 import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import BrandStyle from '@/components/BrandStyle';
+import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
+
+// Initialize Sentry on the client side
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  require('../sentry.client.config');
+}
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -61,6 +67,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://i.postimg.cc" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
+        <GoogleAnalytics />
         <ErrorBoundary>
           <MiniKitProvider>
             <BrandStyle />

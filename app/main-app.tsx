@@ -12,6 +12,13 @@ import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION, WAL
 import { POWERS, BASE_APY, getPowerByCode, getPowerBoost, type PowerCode } from '@/lib/utils/powerConfig';
 import { useMiniKit as useMiniKitVerify } from '@/hooks/useMiniKit';
 import { registerServiceWorker, improveTouchInteractions } from '@/lib/utils/pwa';
+// New custom hooks
+import { useWallet } from '@/hooks/useWallet';
+import { useStaking } from '@/hooks/useStaking';
+import { usePower } from '@/hooks/usePower';
+import { useReferral } from '@/hooks/useReferral';
+import { useLanguage } from '@/hooks/useLanguage';
+import { Toast, useToast } from '@/components/common/Toast';
 const MiniKitPanel = dynamic(() => import('@/components/world/MiniKitPanel'), { ssr: false });
 const GameLauncherCard = dynamic(() => import('@/components/game/GameLauncherCard'), { ssr: false });
 import { 
@@ -101,7 +108,8 @@ const STAKING_ABI = [
   "function claimRewards(uint8 poolId) external",
 ];
 
-// Language translations
+// Language translations - moved to lib/utils/translations.ts
+// Import from translations.ts via useLanguage hook
 const translations: Record<string, Record<string, string>> = {
   en: {
     // Header
@@ -435,391 +443,8 @@ const MEMBERSHIP_TIERS = MEMBERSHIP_TIERS_FROM_CONSTANTS.map((tier) => ({
   sparkle: MEMBERSHIP_SPARKLE[tier.id],
 }));
 
-const useWorldID = () => {
-  const [isVerified, setIsVerified] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [userAddress, setUserAddress] = useState<string | null>(null);
-
-  const verifyProof = async () => {
-    // World ID verification is handled by IDKitWidget
-    // This function is not used but kept for compatibility
-    setIsVerifying(true);
-    setIsVerified(false);
-    setIsVerifying(false);
-  };
-
-  return { isVerified, isVerifying, userAddress, verifyProof };
-};
-
-const useMiniKit = () => {
-  const [wallet, setWallet] = useState<any>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [provider, setProvider] = useState<ethers.Provider | null>(null);
-  const [userInfo, setUserInfo] = useState<{ name?: string; username?: string } | null>(null);
-
-  const connectWallet = async () => {
-    try {
-      // Check if running in World App with MiniKit
-      if (typeof window !== 'undefined' && (window as any).MiniKit) {
-        const MiniKit = (window as any).MiniKit;
-        
-        // Use MiniKit.commandsAsync.walletAuth (new API)
-        if (MiniKit.commandsAsync?.walletAuth) {
-          const nonce = crypto.randomUUID().replace(/-/g, '');
-          const result = await MiniKit.commandsAsync.walletAuth({ nonce });
-          const walletData = result.finalPayload;
-          
-          
-        if (walletData?.address) {
-            setWallet({ address: walletData.address });
-    setIsConnected(true);
-            
-            // Try to get username from MiniKit.user.username first
-            let foundUsername: string | null = null;
-            try {
-              if (MiniKit.user?.username) {
-                foundUsername = MiniKit.user.username;
-        } else {
-              }
-            } catch (e: any) {
-            }
-            
-            // If not found, try getUserByAddress
-            if (!foundUsername) {
-              try {
-                if (MiniKit.getUserByAddress) {
-                  const worldIdUser = await MiniKit.getUserByAddress(walletData.address);
-                  if (worldIdUser?.username) {
-                    foundUsername = worldIdUser.username;
-              } else {
-                  }
-              } else {
-                }
-              } catch (e: any) {
-              }
-            }
-            
-            // Try to extract user info from walletData if available
-            if (walletData?.name || walletData?.username) {
-              setUserInfo({ 
-                name: walletData.name || foundUsername, 
-                username: walletData.username || foundUsername
-              });
-            } else if (foundUsername) {
-              setUserInfo({ name: foundUsername, username: foundUsername });
-          } else {
-              setUserInfo(null);
-            }
-            
-            // Always use Worldchain for World App MiniKit
-            
-            // Create provider for reading blockchain data from Worldchain
-            const rpcProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
-            setProvider(rpcProvider);
-            
-            // Wallet connected successfully
-          } else {
-            // MiniKit walletAuth returned no address
-        }
-      } else {
-          // MiniKit.commandsAsync.walletAuth not available
-        }
-      } else {
-        // Only World App is supported
-        // MiniKit is not available
-      }
-    } catch (error) {
-      // Error connecting wallet - silent error handling
-    }
-  };
-
-  const requestPayment = async (params: { amount: string; currency: string; description: string }) => {
-    try {
-            // Ensure amount is a valid string first
-      const amountStr = String(params.amount || '0').trim();
-      
-      const amount = parseFloat(amountStr);
-
-      if (!amount || amount <= 0 || isNaN(amount)) {
-        return { success: false, error: 'Invalid amount' };
-      }
-
-      // Preserve the original amount string format (don't use toString() which may lose precision)
-      // This ensures "1" stays as "1", "5" stays as "5", etc.
-      const validatedAmountStr = amountStr; // Use original string, already validated above
-
-      // Check if running in World App with MiniKit
-      const hasMiniKit = typeof window !== 'undefined' && (window as any).MiniKit?.commandsAsync?.pay;
-      
-      if (hasMiniKit) {
-        // Use MiniKit pay API for World App
-        try {
-          // Generate payment reference - use validatedAmountStr to preserve exact format
-          const referenceResponse = await fetch('/api/initiate-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: validatedAmountStr, symbol: params.currency || 'WLD' })
-          });
-          
-          const referenceData = await referenceResponse.json();
-          if (!referenceData.id) {
-            return { success: false, error: 'Failed to generate payment reference' };
-          }
-          
-          const referenceId = referenceData.id;
-
-          // Validate referenceId
-          if (!referenceId || typeof referenceId !== 'string' || referenceId.length < 8) {
-            return { success: false, error: 'Invalid payment reference ID' };
-          }
-
-          // Validate TREASURY_ADDRESS
-          const treasuryAddr = String(TREASURY_ADDRESS);
-          if (!treasuryAddr || !treasuryAddr.startsWith('0x') || treasuryAddr.length !== 42) {
-            return { success: false, error: 'Invalid treasury address configuration' };
-      }
-      
-          // Check for zero address (runtime check)
-          const zeroAddress = '0x0000000000000000000000000000000000000000';
-          if (treasuryAddr.toLowerCase() === zeroAddress.toLowerCase()) {
-            return { success: false, error: 'Treasury address not configured. Please set NEXT_PUBLIC_TREASURY_ADDRESS in environment variables.' };
-          }
-
-                    // Call MiniKit pay API directly (cannot use hooks inside functions)
-          // Note: MiniKit is already imported at the top of the file
-          if (!MiniKit?.isInstalled() || !MiniKit?.commandsAsync?.pay) {
-            return { success: false, error: 'MiniKit pay API not available' };
-          }
-
-          const tokenType = (params.currency || 'WLD').toUpperCase();
-
-                    // Validate tokenType
-          if (tokenType !== 'WLD' && tokenType !== 'USDC') {
-            return { success: false, error: `Unsupported token: ${tokenType}. Only WLD and USDC are supported.` };
-      }
-
-          // Use validatedAmountStr (original string format) to preserve exact format
-          const finalAmountStr = validatedAmountStr;
-
-          if (!finalAmountStr || isNaN(parseFloat(finalAmountStr)) || parseFloat(finalAmountStr) <= 0) {
-            return { success: false, error: 'Invalid amount format' };
-          }
-
-          // Convert amount to decimals using tokenToDecimals() as per MiniKit documentation
-          // WLD has 18 decimals, USDC has 6 decimals
-          // Example: tokenToDecimals(1, Tokens.WLD) = 1000000000000000000 (1 * 10^18)
-          const tokenSymbol = tokenType === 'WLD' ? Tokens.WLD : Tokens.USDC;
-          const amountInDecimals = tokenToDecimals(parseFloat(finalAmountStr), tokenSymbol);
-          const tokenAmountStr = amountInDecimals.toString();
-
-          // MiniKit v1.9.8+ requires tokens as TokensPayload array with symbol and token_amount
-          // token_amount MUST be in smallest unit (decimals) as per documentation
-          const payPayload = {
-            reference: referenceId,
-            to: treasuryAddr, // Use validated address
-            tokens: [{
-              symbol: tokenSymbol, // Tokens.WLD or Tokens.USDC (enum, not string)
-              token_amount: tokenAmountStr // Amount in decimals (e.g., "1000000000000000000" for 1 WLD)
-            }],
-            description: params.description || `Payment of ${finalAmountStr} ${tokenType}`, // Required in v1.9.8+
-          };
-
-          // Call MiniKit pay API - v1.9.8+ requires TokensPayload format     
-            let payResult;
-            try {
-              payResult = await MiniKit.commandsAsync.pay(payPayload);
-          } catch (payApiError: any) {
-            // MiniKit pay API error - silent error handling
-            
-            // Detect user cancellation from SDK error
-            const msg = String(payApiError?.message || '').toLowerCase();
-            const desc = String(payApiError?.description || '').toLowerCase();
-            const code = String(payApiError?.code || payApiError?.error_code || '').toLowerCase();
-            
-            // Case: User cancelled/rejected/closed the payment window
-            if (
-              code.includes('user_rejected') || 
-              code.includes('cancelled') || 
-              code.includes('cancel') ||
-              msg.includes('cancel') || 
-              msg.includes('rejected') ||
-              msg.includes('user') ||
-              desc.includes('cancel') ||
-              desc.includes('rejected')
-            ) {
-              return {
-                success: false,
-                error: 'user_cancelled',
-                userCancelled: true
-              };
-            }
-            
-            return {
-              success: false,
-              error: payApiError?.message || payApiError?.description || 'Payment failed: MiniKit API error'                                                    
-            };
-          }
-
-          const finalPayload = payResult?.finalPayload;
-
-          // Check if finalPayload exists
-          if (!finalPayload) {
-            return { success: false, error: 'Payment failed: No transaction data received' };
-          }
-
-          // Check if finalPayload has error status or no transaction_id (user cancelled)
-          const payloadAny = finalPayload as any;
-          if (payloadAny?.status === 'error' || !payloadAny?.transaction_id) {
-            
-            // Check if it's user cancellation
-            const msg = String(payloadAny?.description || payloadAny?.error_code || '').toLowerCase();
-            if (
-              msg.includes('cancel') || 
-              msg.includes('rejected') ||
-              msg.includes('user') ||
-              !payloadAny?.transaction_id
-            ) {
-              return {
-                success: false,
-                error: 'user_cancelled',
-                userCancelled: true
-              };
-            }
-            
-            return {
-              success: false,
-              error: payloadAny.description || payloadAny.error_code || 'Payment failed: MiniKit returned error'                                                
-            };
-          }
-
-          // Send finalPayload to confirm-payment API to get transaction details
-          // This is the same pattern as MiniKitPanel.tsx
-          try {
-            const confirmResponse = await fetch('/api/confirm-payment', {       
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ payload: finalPayload })
-            });
-            const confirmData = await confirmResponse.json();
-      
-            // Check if confirm-payment returned error
-            if (!confirmData.success) {
-              return {
-                success: false,
-                error: confirmData.error || 'Payment confirmation failed'       
-              };
-            }
-
-            // Extract transaction_id from confirm-payment response
-            const transactionId = confirmData?.transaction?.transaction_id;     
-
-            if (!transactionId) {
-              
-              // Check if it's user cancellation
-              if (confirmData?.code === 'user_cancelled' || confirmData?.error?.includes('missing transaction_id')) {
-                return { 
-                  success: false, 
-                  error: 'user_cancelled',
-                  userCancelled: true
-                };
-              }
-              
-              return { success: false, error: 'Payment failed: No transaction ID received' };                                                                   
-            }
-
-            // Poll for transaction confirmation
-            let attempts = 0;
-            const maxAttempts = 20;
-
-            while (attempts < maxAttempts) {
-              const statusResponse = await fetch('/api/confirm-payment', {        
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  payload: {
-                    transaction_id: transactionId,
-                    reference: referenceId
-                  }
-                })
-        });
-
-              const statusData = await statusResponse.json();
-
-              if (statusData.success && statusData.transaction) {
-                const status = statusData.transaction.transaction_status || statusData.transaction.status;
-
-                if (status === 'confirmed' || status === 'mined') {
-                  const txHash = statusData.transaction.transaction_hash || statusData.transaction?.transaction_hash || confirmData?.transaction?.transaction_hash;
-        return { 
-          success: true, 
-          transactionHash: txHash,
-                    transaction: statusData.transaction
-        };
-                }
-
-                if (status === 'failed') {
-                  return { success: false, error: 'Transaction failed on blockchain' };                                                                           
-                }
-              }
-
-              // Wait before next attempt
-              await new Promise(resolve => setTimeout(resolve, 1500));
-              attempts++;
-            }
-
-              // If polling timed out, return the transaction_id anyway (transaction might be pending)
-              const txHash = confirmData?.transaction?.transaction_hash || transactionId;
-  return {
-          success: true, 
-                transactionHash: txHash || transactionId,
-                transaction: confirmData?.transaction || { transaction_id: transactionId, status: 'pending' }                                                       
-              };
-            } catch (confirmError: any) {
-              return { success: false, error: 'Payment failed: Could not confirm transaction' };
-            }
-          } catch (payError: any) {
-          return { success: false, error: payError.message || 'Payment failed' };
-        }
-      } else {
-        // Only World App is supported
-        return { success: false, error: 'Payment is only available in World App. Please open this app in World App.' };
-      }
-    } catch (error: any) {
-      return { success: false, error: error.message || 'Payment failed' };
-    }
-  };
-
-  // Get signer for writing transactions
-  const getSigner = async () => {
-    if (typeof window !== 'undefined' && (window as any).MiniKit?.commandsAsync?.sendTransaction) {
-      // Return a custom signer for MiniKit
-  return {
-        sendTransaction: async (tx: any) => {
-          return await (window as any).MiniKit!.commandsAsync!.sendTransaction({
-            to: tx.to,
-            data: tx.data || '0x',
-            value: tx.value?.toString() || '0'
-          });
-        }
-      };
-    } else if (typeof window !== 'undefined' && (window as any).ethereum && provider) {
-      return await (provider as ethers.BrowserProvider).getSigner();
-    }
-    return null;
-  };
-
-  return { wallet, isConnected, connectWallet, requestPayment, provider, userInfo, setUserInfo, getSigner };
-};
-
-// Optimized formatNumber function with validation
-const formatNumber = (num: number, decimals = 2) => {
-  // Validate input for better performance
-  if (isNaN(num) || !isFinite(num)) return '0.00';
-  return num.toLocaleString('en-US', { 
-    minimumFractionDigits: decimals, 
-    maximumFractionDigits: decimals 
-  });
-};
+// useWorldID and useMiniKit have been moved to hooks/useWallet.ts
+// Use useWallet hook instead
 
 const isWorldApp = () => {
   if (typeof window === 'undefined') return false;
@@ -837,61 +462,92 @@ const LuminexApp = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [verified, setVerified] = useState(false);
   const [verifiedAddress, setVerifiedAddress] = useState<string | null>(null);
-  const { userAddress } = useWorldID();
-  const { wallet, isConnected, connectWallet, requestPayment, provider, userInfo, setUserInfo, getSigner } = useMiniKit();
   const [activeTab, setActiveTab] = useState<'staking' | 'membership' | 'referral' | 'game'>('staking');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedPool, setSelectedPool] = useState(0);
   const [stakeAmount, setStakeAmount] = useState('');
   const [showStakeModal, setShowStakeModal] = useState(false);
-  const [isStaking, setIsStaking] = useState(false);
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [isClaimingInterest, setIsClaimingInterest] = useState(false);
   const [isShowInput, setIsShowInput] = useState(false);
-
-  const [balance, setBalance] = useState(0);
-  const [wldBalance, setWldBalance] = useState(0);
-  const [stakedAmount, setStakedAmount] = useState(0);
-  const [pendingRewards, setPendingRewards] = useState(0);
-  const [currentPower, setCurrentPower] = useState<{ code: PowerCode; name: string; totalAPY: number } | null>(null);
-  const [isPurchasingPower, setIsPurchasingPower] = useState(false);
-  const [timeElapsed, setTimeElapsed] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [referralCode, setReferralCode] = useState('');
-  const [totalReferrals, setTotalReferrals] = useState(0);
-  const [totalEarnings, setTotalEarnings] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: '', type: null });
-  const [language, setLanguage] = useState('en');
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
-  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
-  // Memoize translation function to avoid recreating on every render
-  const t = useMemo(() => {
-    return (key: string, params?: Record<string, string | number>) => {
-      let text = translations[language]?.[key] || translations['en'][key] || key;
-      if (params) {
-        Object.keys(params).forEach(param => {
-          text = text.replace(`{${param}}`, String(params[param]));
-        });
-      }
-      return text;
-    };
-  }, [language]);
+  // Use custom hooks
+  const walletHook = useWallet(verifiedAddress);
+  const { toast, showToast } = useToast();
+  const languageHook = useLanguage();
+  
+  // Extract values from hooks
+  const {
+    actualAddress,
+    provider,
+    userInfo,
+    setUserInfo,
+    balance,
+    wldBalance,
+    isLoadingBalance,
+    formattedBalance,
+    formattedWldBalance,
+    fetchBalance: walletFetchBalance,
+  } = walletHook;
+  
+  const { language, showLanguageMenu, setShowLanguageMenu, setLanguage: setLanguageHook, t, activeLanguage } = languageHook;
 
-  // Memoize active language metadata
-  const activeLanguage = useMemo(() => {
-    return LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
-  }, [language]);
-
-  // Get the actual address to use (prioritize wallet, then verified address)
-  const actualAddress = useMemo(
-    () => {
-      return wallet?.address || verifiedAddress || userAddress || null;
-    },
-    [wallet?.address, verifiedAddress, userAddress]
+  // Use staking hook
+  const stakingHook = useStaking(
+    actualAddress,
+    provider,
+    selectedPool,
+    (message) => showToast(message, 'success'),
+    (message) => showToast(message, 'error')
   );
+
+  const {
+    stakedAmount,
+    pendingRewards,
+    timeElapsed,
+    isStaking,
+    isClaiming,
+    isWithdrawing,
+    isClaimingInterest,
+    formattedStakedAmount,
+    formattedPendingRewards,
+    handleStake: handleStakeHook,
+    handleClaimRewards,
+    handleWithdrawBalance,
+    handleClaimInterest,
+    fetchStakingData,
+  } = stakingHook;
+
+  // Use power hook
+  const powerHook = usePower(
+    actualAddress,
+    (message) => showToast(message, 'success'),
+    (message) => showToast(message, 'error'),
+    () => walletFetchBalance()
+  );
+
+  const {
+    currentPower,
+    isPurchasingPower,
+    handlePurchasePower,
+    fetchPowerStatus,
+  } = powerHook;
+
+  // Use referral hook
+  const referralHook = useReferral(
+    actualAddress,
+    verified,
+    language,
+    (message) => showToast(message, 'success')
+  );
+
+  const {
+    referralCode,
+    safeReferralCode,
+    safeTotalReferrals,
+    safeTotalEarnings,
+    copied,
+    setCopied,
+  } = referralHook;
 
   // Check if user is admin
   useEffect(() => {
@@ -903,231 +559,19 @@ const LuminexApp = () => {
     }
   }, [actualAddress]);
 
-  // Refs to track fetch operations (avoids dependency loop)
-  const balanceFetchInProgress = React.useRef(false);
-  const stakingDataFetchInProgress = React.useRef(false);
-
-  // Memoize formatted numbers to avoid recalculation on every render
-  // Ensure all values are numbers and valid before formatting
-  const formattedBalance = useMemo(() => {
-    const val = typeof balance === 'number' && !isNaN(balance) ? balance : 0;
-    return formatNumber(val, 2);
-  }, [balance]);
-  
-  const formattedWldBalance = useMemo(() => {
-    const val = typeof wldBalance === 'number' && !isNaN(wldBalance) ? wldBalance : 0;
-    return formatNumber(val, 4); // Use 4 decimal places for WLD
-  }, [wldBalance]);
-  
-  const formattedStakedAmount = useMemo(() => {
-    const val = typeof stakedAmount === 'number' && !isNaN(stakedAmount) ? stakedAmount : 0;
-    return formatNumber(val, 2);
-  }, [stakedAmount]);
-  
-  const formattedPendingRewards = useMemo(() => {
-    const val = typeof pendingRewards === 'number' && !isNaN(pendingRewards) ? pendingRewards : 0;
-    return formatNumber(val, 8);
-  }, [pendingRewards]);
-  
-  // Safe referral code - ensure it's always a string
-  const safeReferralCode = useMemo(() => {
-    return typeof referralCode === 'string' && referralCode.length > 0 ? referralCode : 'LUX000000';
-  }, [referralCode]);
-  
-  // Safe totals - ensure they're always numbers
-  const safeTotalReferrals = useMemo(() => {
-    return typeof totalReferrals === 'number' && !isNaN(totalReferrals) ? totalReferrals : 0;
-  }, [totalReferrals]);
-  
-  const safeTotalEarnings = useMemo(() => {
-    return typeof totalEarnings === 'number' && !isNaN(totalEarnings) ? totalEarnings : 0;
-  }, [totalEarnings]);
-
-  // Fetch WLD balance from World App (Worldchain only)
-  const fetchBalance = useCallback(async () => {
-    const addressToUse = actualAddress;
-    
-    if (!addressToUse) {
-      setBalance(0);
-      setWldBalance(0);
+  // Wrapper for handleStake to handle modal state
+  const handleStake = useCallback(async () => {
+    if (!stakeAmount) {
+      setIsShowInput(true);
       return;
     }
-    
-    // Prevent concurrent calls using ref
-    if (balanceFetchInProgress.current) {
-      return;
+    await handleStakeHook(stakeAmount, selectedPool, balance);
+    if (stakeAmount) {
+      setShowStakeModal(false);
+      setIsShowInput(false);
+      setStakeAmount('');
     }
-
-    try {
-      balanceFetchInProgress.current = true;
-      setIsLoadingBalance(true);
-      
-      // Only World App is supported
-      const hasMiniKit = typeof window !== 'undefined' && (window as any).MiniKit;
-      
-      if (!hasMiniKit) {
-        setWldBalance(0);
-        setBalance(0);
-        return;
-      }
-      
-      {
-        // For World App: fetch real balance using server-side API
-        try {
-          const response = await fetch('/api/wld-balance', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ address: addressToUse }),
-            cache: 'no-store' // Disable fetch caching for fresh balance data
-          });
-      
-          const data = await response.json();
-          
-          if (data.success) {
-            // Normalize the API response (handles both old and new formats)
-            const balance = data.balance ?? data.formatted ?? 0;
-            setWldBalance(balance);
-            setBalance(0); // LUX balance not used, set to 0
-          } else {
-            // Fallback to direct RPC call
-            const worldchainProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
-            const wldContract = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, worldchainProvider);
-        const wldBalanceBN = await wldContract.balanceOf(addressToUse);
-            const decimals = await wldContract.decimals().catch(() => 18);
-            const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, decimals));
-        setWldBalance(wldBalanceFormatted);
-            setBalance(0);
-          }
-        } catch (apiError: any) {
-          try {
-            // Fallback to direct RPC call
-            const worldchainProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
-            const wldContract = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, worldchainProvider);
-        const wldBalanceBN = await wldContract.balanceOf(addressToUse);
-            const decimals = await wldContract.decimals().catch(() => 18);
-            const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, decimals));
-        setWldBalance(wldBalanceFormatted);
-            setBalance(0);
-          } catch (fallbackError: any) {
-        setWldBalance(0);
-            setBalance(0);
-          }
-        }
-      }
-      
-      setIsLoadingBalance(false);
-      balanceFetchInProgress.current = false;
-    } catch (error: any) {
-      // Error fetching WLD balance - silent error handling
-      setWldBalance(0);
-      setBalance(0);
-      setIsLoadingBalance(false);
-      balanceFetchInProgress.current = false;
-    }
-  }, [actualAddress]); // Removed provider and isLoadingBalance from deps
-
-  // Fetch staking data from blockchain
-  const fetchStakingData = useCallback(async () => {
-    const addressToUse = actualAddress;
-    
-    if (!provider || !addressToUse || !STAKING_CONTRACT_ADDRESS) {
-      // Reset to 0 if requirements not met (not mock data)
-      if (!STAKING_CONTRACT_ADDRESS) {
-        // STAKING_CONTRACT_ADDRESS is not configured
-      }
-      setStakedAmount(0);
-      setPendingRewards(0);
-      setTotalReferrals(0);
-      setTotalEarnings(0);
-      return;
-    }
-
-    // Prevent concurrent calls using ref
-    if (stakingDataFetchInProgress.current) {
-      return;
-    }
-
-    try {
-      stakingDataFetchInProgress.current = true;
-      
-      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider);
-      
-      // Get total staked amount across all pools
-      const totalStaked = await stakingContract.totalStakedByUser(addressToUse);
-      const stakedFormatted = parseFloat(ethers.formatUnits(totalStaked, 18));
-      setStakedAmount(stakedFormatted);
-      
-      // Get pending rewards from current selected pool
-      const pendingRewardsBN = await stakingContract.getPendingRewards(addressToUse, selectedPool);
-      const rewardsFormatted = parseFloat(ethers.formatUnits(pendingRewardsBN, 18));
-      setPendingRewards(rewardsFormatted);
-      
-      // Get stake info to calculate time elapsed
-      try {
-        const stakeInfo = await stakingContract.getUserStakeInfo(addressToUse, selectedPool);
-        if (stakeInfo.startTime && stakeInfo.startTime > 0n) {
-          const startTime = Number(stakeInfo.startTime);
-          const currentTime = Math.floor(Date.now() / 1000);
-          const elapsed = currentTime - startTime;
-          
-          const days = Math.floor(elapsed / 86400);
-          const hours = Math.floor((elapsed % 86400) / 3600);
-          const minutes = Math.floor((elapsed % 3600) / 60);
-          const seconds = elapsed % 60;
-          
-          setTimeElapsed({ days, hours, minutes, seconds });
-        }
-      } catch (error) {
-        // Could not fetch stake start time - silent error handling
-      }
-      
-      // Note: Referral stats are now fetched from API instead of blockchain
-      // The blockchain referralCount may differ from API stats
-      // We keep the API fetch in a separate useEffect for better separation of concerns
-      
-      stakingDataFetchInProgress.current = false;
-    } catch (error) {
-      // Error fetching staking data - silent error handling
-      stakingDataFetchInProgress.current = false;
-      // If contract doesn't exist or function fails, keep values at 0
-    }
-  }, [provider, actualAddress, selectedPool]);
-
-  // Debounce function for fetch operations (define before use)
-  const debounce = useCallback((fn: Function, delay: number) => {
-    let timeoutId: NodeJS.Timeout;
-    return (...args: any[]) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => fn(...args), delay);
-    };
-  }, []);
-
-  // Debounced fetch staking data (avoid rapid consecutive calls)
-  const debouncedFetchStakingData = useMemo(
-    () => debounce(fetchStakingData, 1000),
-    [fetchStakingData, debounce]
-  );
-
-  // Debounced fetch balance (avoid rapid consecutive calls)
-  const debouncedFetchBalance = useMemo(
-    () => debounce(fetchBalance, 1000),
-    [fetchBalance, debounce]
-  );
-
-  // Fetch staking data when address or pool changes
-  useEffect(() => {
-    if (!actualAddress || !provider || !STAKING_CONTRACT_ADDRESS) return;
-    
-    // Initial fetch immediately
-    fetchStakingData();
-    
-    // Refresh staking data every 30 seconds (use debounced version)
-    const interval = setInterval(() => {
-      debouncedFetchStakingData();
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [actualAddress, provider, selectedPool, fetchStakingData, debouncedFetchStakingData]);
+  }, [stakeAmount, selectedPool, balance, handleStakeHook]);
 
   useEffect(() => {
     // Get verified status and address from sessionStorage
@@ -1144,614 +588,19 @@ const LuminexApp = () => {
           setVerified(true);
         }
         
-      const verifiedAddr = sessionStorage.getItem('verifiedAddress');
-      if (verifiedAddr) {
-        setVerifiedAddress(verifiedAddr);
-      }
-      } else {
-        // Only World App is supported
-        // Not running in World App
-        // Don't set verified address or verified status - require World App
+        const verifiedAddr = sessionStorage.getItem('verifiedAddress');
+        if (verifiedAddr) {
+          setVerifiedAddress(verifiedAddr);
+        }
       }
       
       const userName = sessionStorage.getItem('userName');
       if (userName) {
         setUserInfo({ name: userName, username: userName });
-    }
-    
-      // Load saved language preference from localStorage
-      const savedLanguage = localStorage.getItem('preferredLanguage');
-      if (savedLanguage && translations[savedLanguage]) {
-        setLanguage(savedLanguage);
-      } else {
-    // Detect user's preferred language from browser
-    const browserLang = navigator.language.slice(0, 2);
-    if (translations[browserLang]) {
-      setLanguage(browserLang);
-        }
       }
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setUserInfo]);
 
-  // Auto-connect wallet after verification (call walletAuth every time)
-  useEffect(() => {
-    if (verified) {
-      connectWallet();
-    }
-  }, [verified]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Fetch power status from API
-  const fetchPowerStatus = useCallback(async () => {
-    if (!actualAddress) {
-      setCurrentPower(null);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/power/active?userId=${actualAddress}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store'
-      });
-
-      const data = await response.json();
-      
-      if (data.success && data.power) {
-        setCurrentPower({
-          code: data.power.code,
-          name: data.power.name,
-          totalAPY: data.power.totalAPY,
-        });
-      } else {
-        setCurrentPower(null);
-      }
-    } catch (error: any) {
-      // Error fetching power status - silent error handling
-      setCurrentPower(null);
-    }
-  }, [actualAddress]);
-
-  // Fetch referral stats from API
-  const fetchReferralStats = useCallback(async () => {
-    if (!actualAddress) {
-      setTotalReferrals(0);
-      setTotalEarnings(0);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/referral/stats?address=${actualAddress}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store'
-      });
-
-      const data = await response.json();
-      
-      if (data.success && data.stats) {
-        setTotalReferrals(data.stats.totalReferrals || 0);
-        setTotalEarnings(data.stats.totalEarnings || 0);
-      } else {
-        // If no stats found, set to 0
-        setTotalReferrals(0);
-        setTotalEarnings(0);
-      }
-    } catch (error) {
-      // Error fetching referral stats - silent error handling
-      setTotalReferrals(0);
-      setTotalEarnings(0);
-    }
-  }, [actualAddress]);
-
-  // Process referral code if user came from referral link
-  const processReferralCode = useCallback(async (code: string) => {
-    if (!actualAddress || !code) return;
-
-    try {
-      const response = await fetch('/api/process-referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          newUserId: actualAddress,
-          referrerCode: code
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        showToast(`${translations[language].membershipActivated?.replace('{tier}', '5 LUX') || 'You received 5 LUX for using referral code!'}`, 'success');
-        // Refresh stats
-        fetchReferralStats();
-      }
-      // Don't show error for already_referred - it's expected
-    } catch (error) {
-      // Error processing referral - silent error handling
-    }
-  }, [actualAddress, language]);
-
-  // Check for referral code in URL or localStorage when user connects wallet
-  useEffect(() => {
-    if (actualAddress && verified) {
-      // Check URL params
-      const urlParams = new URLSearchParams(window.location.search);
-      const refCode = urlParams.get('ref');
-      
-      // Check localStorage (from invite page)
-      const storedCode = localStorage.getItem('luminex_referral_code');
-      
-      const referralCodeToProcess = refCode || storedCode;
-      
-      if (referralCodeToProcess) {
-        processReferralCode(referralCodeToProcess);
-        // Clear stored code
-        if (storedCode) {
-          localStorage.removeItem('luminex_referral_code');
-        }
-      }
-    }
-  }, [actualAddress, verified, processReferralCode]);
-
-  // Set referral code from wallet address
-  useEffect(() => {
-    if (actualAddress && !referralCode) {
-      setReferralCode(`LUX${actualAddress.slice(2, 8).toUpperCase()}`);
-    }
-  }, [actualAddress, referralCode]);
-
-  // Fetch referral stats when address is available
-  useEffect(() => {
-    if (actualAddress) {
-      fetchReferralStats();
-    }
-  }, [actualAddress, fetchReferralStats]);
-
-  // Fetch power status when address is available
-  useEffect(() => {
-    if (actualAddress) {
-      fetchPowerStatus();
-    }
-  }, [actualAddress, fetchPowerStatus]);
-
-  // Fetch balance when address is available
-  useEffect(() => {
-    if (!actualAddress) return;
-    
-    // Initial fetch immediately
-    fetchBalance();
-    
-    // Refresh balance every 30 seconds (use debounced version to prevent rapid calls)
-    const interval = setInterval(() => {
-      debouncedFetchBalance();
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [actualAddress, fetchBalance, debouncedFetchBalance]);
-
-  // Close language menu when clicking outside
-  useEffect(() => {
-    if (!showLanguageMenu) return;
-    
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (!target.closest('.language-menu')) {
-        setShowLanguageMenu(false);
-      }
-    };
-    
-    // Add event listener after a small delay to avoid immediate closing
-    setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
-    }, 100);
-    
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [showLanguageMenu]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (stakedAmount > 0) {
-        setTimeElapsed(prev => {
-          let { seconds, minutes, hours, days } = prev;
-          seconds++;
-          if (seconds >= 60) { seconds = 0; minutes++; }
-          if (minutes >= 60) { minutes = 0; hours++; }
-          if (hours >= 24) { hours = 0; days++; }
-          return { days, hours, minutes, seconds };
-        });
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [stakedAmount]);
-
-  // Memoize showToast to avoid recreating on every render
-  const showToast = useCallback((message: string, type: 'success' | 'error') => {
-    setToast({ message, type });
-    setTimeout(() => setToast({ message: '', type: null }), 3000);
-  }, []);
-
-  // Helper function to send contract transaction via MiniKit
-  const sendContractTransaction = async (
-    to: string,
-    data: string,
-    description: string
-  ): Promise<string> => {
-    if (typeof window === 'undefined' || !(window as any).MiniKit) {
-      throw new Error('MiniKit is not available. Please open this app in World App.');
-    }
-
-    const MiniKit = (window as any).MiniKit;
-    if (!MiniKit.commandsAsync?.sendTransaction) {
-      throw new Error('MiniKit sendTransaction is not available. Please update World App.');
-    }
-
-    try {
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        to: to as `0x${string}`,
-        data: data as `0x${string}`,
-        value: '0x0',
-      });
-
-      if (!finalPayload?.transaction_id) {
-        throw new Error('Transaction failed: No transaction ID returned');
-      }
-
-      return finalPayload.transaction_id;
-    } catch (error: any) {
-      if (error?.message?.includes('user_cancelled') || error?.message?.includes('cancel')) {
-        throw new Error('Transaction cancelled by user');
-      }
-      throw new Error(error?.message || 'Transaction failed');
-    }
-  };
-
-  const handleStake = async () => {
-    if (!stakeAmount) {
-      setIsShowInput(true);
-      return;
-    }
-    if (!verified || !stakeAmount || !actualAddress) {
-      showToast('Please connect wallet first', 'error');
-      return;
-    }
-    if (Number(stakeAmount) > balance) {
-      showToast('Insufficient balance', 'error');
-      return;
-    }
-    if (!STAKING_CONTRACT_ADDRESS || !provider) {
-      showToast('Staking contract not configured', 'error');
-      return;
-    }
-    
-    setIsStaking(true);
-    try {
-      const amount = Number(stakeAmount);
-      const amountWei = ethers.parseUnits(amount.toString(), 18);
-      const lockPeriod = POOLS_FROM_CONSTANTS[selectedPool].lockDays * 24 * 60 * 60; // Convert days to seconds
-
-      // Check if MiniKit is available
-      const MiniKit = (window as any).MiniKit;
-      if (!MiniKit || !MiniKit.isInstalled()) {
-        throw new Error('Please use World App to stake tokens');
-      }
-
-      // Get provider for reading contract data
-      if (!provider) {
-        throw new Error('Provider not available');
-      }
-
-      // Get token contract interface for encoding
-      const tokenContractInterface = new ethers.Interface(ERC20_ABI);
-      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
-
-      // Check and approve if needed (read-only call)
-      const tokenContractRead = new ethers.Contract(LUX_TOKEN_ADDRESS, ERC20_ABI, provider);
-      const allowance = await tokenContractRead.allowance(actualAddress, STAKING_CONTRACT_ADDRESS);
-      
-      if (allowance < amountWei) {
-        // Encode approve function call
-        const approveData = tokenContractInterface.encodeFunctionData('approve', [STAKING_CONTRACT_ADDRESS, amountWei]);
-        
-        // Send transaction via MiniKit
-        const approveResult = await MiniKit.commandsAsync.sendTransaction({
-          to: LUX_TOKEN_ADDRESS,
-          data: approveData,
-          value: '0'
-        });
-        
-        if (!approveResult?.finalPayload?.transaction_id) {
-          throw new Error('Token approval failed');
-        }
-      }
-
-      // Encode stake function call
-      const stakeData = stakingContractInterface.encodeFunctionData('stake', [selectedPool, amountWei, lockPeriod]);
-      
-      // Stake tokens via MiniKit
-      const stakeResult = await MiniKit.commandsAsync.sendTransaction({
-        to: STAKING_CONTRACT_ADDRESS,
-        data: stakeData,
-        value: '0'
-      });
-
-      if (!stakeResult?.finalPayload?.transaction_id) {
-        throw new Error('Staking transaction failed');
-      }
-
-      // Wait a bit for transaction to be mined (MiniKit transactions are async)
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Refresh data after successful transaction
-      await Promise.all([
-        fetchBalance().catch(() => {}),
-        fetchStakingData().catch(() => {})
-      ]);
-
-      setIsStaking(false);
-      setShowStakeModal(false);
-      setIsShowInput(false);
-      showToast(`Successfully staked ${amount} ${TOKEN_NAME}!`, 'success');
-    setStakeAmount('');
-    } catch (error: any) {
-    setIsStaking(false);
-      showToast(error?.message || 'Staking failed', 'error');
-    }
-  };
-
-  const handleClaimRewards = async () => {
-    if (pendingRewards === 0) {
-      showToast('No rewards to claim', 'error');
-      return;
-    }
-    if (!actualAddress || !STAKING_CONTRACT_ADDRESS || !provider) {
-      showToast('Please connect wallet first', 'error');
-      return;
-    }
-
-    setIsClaiming(true);
-    try {
-      // Check if MiniKit is available
-      const MiniKit = (window as any).MiniKit;
-      if (!MiniKit || !MiniKit.isInstalled()) {
-        throw new Error('Please use World App to claim rewards');
-      }
-
-      // Get staking contract interface for encoding
-      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
-
-      // Encode claimRewards function call
-      const claimData = stakingContractInterface.encodeFunctionData('claimRewards', [selectedPool]);
-
-      const claimResult = await MiniKit.commandsAsync.sendTransaction({
-        to: STAKING_CONTRACT_ADDRESS,
-        data: claimData,
-        value: '0'
-      });
-
-      if (!claimResult?.finalPayload?.transaction_id) {
-        throw new Error('Claim rewards transaction failed');
-      }
-
-      // Wait a bit for transaction to be mined
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Refresh data after successful transaction
-      await Promise.all([
-        fetchBalance().catch(() => {}),
-        fetchStakingData().catch(() => {})
-      ]);
-
-    setIsClaiming(false);
-      const rewardsValue = typeof pendingRewards === 'number' && !isNaN(pendingRewards) ? pendingRewards : 0;
-      showToast(`Claimed ${rewardsValue.toFixed(2)} ${TOKEN_NAME} rewards!`, 'success');
-    } catch (error: any) {
-      setIsClaiming(false);
-      showToast(error?.message || 'Claim failed', 'error');
-    }
-  };
-
-  const handleWithdrawBalance = async () => {
-    if (stakedAmount === 0) {
-      showToast('No balance to withdraw', 'error');
-      return;
-    }
-    if (!actualAddress || !STAKING_CONTRACT_ADDRESS || !provider) {
-      showToast('Please connect wallet first', 'error');
-      return;
-    }
-
-    setIsWithdrawing(true);
-    try {
-      // Check if MiniKit is available
-      const MiniKit = (window as any).MiniKit;
-      if (!MiniKit || !MiniKit.isInstalled()) {
-        throw new Error('Please use World App to withdraw balance');
-      }
-
-      // Get provider for reading contract data
-      if (!provider) {
-        throw new Error('Provider not available');
-      }
-
-      // Get staking contract for reading and encoding
-      const stakingContractRead = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider);
-      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
-      
-      // Get user stake info to determine withdrawal amount
-      const stakeInfo = await stakingContractRead.getUserStakeInfo(actualAddress, selectedPool);
-      const amountWei = stakeInfo.amount; // Withdraw all staked amount
-
-      if (amountWei === 0n) {
-        throw new Error('No staked balance to withdraw');
-      }
-
-      // Encode withdraw function call
-      const withdrawData = stakingContractInterface.encodeFunctionData('withdraw', [selectedPool, amountWei]);
-
-      const withdrawResult = await MiniKit.commandsAsync.sendTransaction({
-        to: STAKING_CONTRACT_ADDRESS,
-        data: withdrawData,
-        value: '0'
-      });
-
-      if (!withdrawResult?.finalPayload?.transaction_id) {
-        throw new Error('Withdrawal transaction failed');
-      }
-
-      // Wait a bit for transaction to be mined
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Refresh data after successful transaction
-      await Promise.all([
-        fetchBalance().catch(() => {}),
-        fetchStakingData().catch(() => {})
-      ]);
-
-      setIsWithdrawing(false);
-      showToast(`Withdrew ${ethers.formatUnits(amountWei, 18)} ${TOKEN_NAME}!`, 'success');
-    } catch (error: any) {
-      setIsWithdrawing(false);
-      showToast(error?.message || 'Withdrawal failed', 'error');
-    }
-  };
-
-  // Memoize handleClaimInterest
-  const handleClaimInterest = useCallback(async () => {
-    // Claim interest uses the same claimRewards function
-    await handleClaimRewards();
-  }, [handleClaimRewards]);
-
-
-
-    const handlePurchasePower = async (targetCode: PowerCode) => {
-    if (!actualAddress) {
-      showToast('Please connect wallet first', 'error');
-      return;
-    }
-
-    setIsPurchasingPower(true);
-    try {
-      // Step 1: Initialize power purchase
-      const initResponse = await fetch('/api/power/init', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetCode,
-          userId: actualAddress,
-        }),
-      });
-
-      const initData = await initResponse.json();
-
-      if (!initData.success) {
-        // Map error codes to user-friendly messages
-        const errorMessages: Record<string, string> = {
-          'insufficient_balance': 'Insufficient WLD balance',
-          'invalid_reference': 'Invalid reference. Please try again.',
-          'verification_failed': 'Transaction verification failed',
-        };
-        const errorMsg = errorMessages[initData.error] || initData.error || 'Failed to initialize power purchase';
-        showToast(errorMsg, 'error');
-        return;
-      }
-
-      const { reference, amountWLD, to, target } = initData;
-
-      // Step 2: Pay with MiniKit
-      if (!MiniKit.isInstalled()) {
-        showToast('World App is required', 'error');
-        return;
-      }
-
-      try {
-        // Convert amount to decimals for MiniKit
-        const tokenSymbol = Tokens.WLD;
-        const amountInDecimals = tokenToDecimals(parseFloat(amountWLD), tokenSymbol);
-        const tokenAmountStr = amountInDecimals.toString();
-
-        const payPayload = {
-          reference,
-          to: to as `0x${string}`,
-          tokens: [{
-            symbol: tokenSymbol,
-            token_amount: tokenAmountStr,
-          }],
-          description: `Purchase ${target.name} Power License`,
-        };
-
-        const { finalPayload } = await MiniKit.commandsAsync.pay(payPayload as any);
-
-        // Check if user cancelled - finalPayload might not have transaction_id if cancelled
-        const payloadAny = finalPayload as any;
-        if (!payloadAny?.transaction_id) {
-          // User cancelled
-          setIsPurchasingPower(false);
-          return;
-        }
-
-        // Step 3: Confirm power purchase
-        const confirmResponse = await fetch('/api/power/confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            payload: finalPayload,
-          }),
-        });
-
-        const confirmData = await confirmResponse.json();
-
-        if (confirmData.success && confirmData.power) {
-          // Update local state
-          setCurrentPower({
-            code: confirmData.power.code,
-            name: confirmData.power.name,
-            totalAPY: confirmData.power.totalAPY,
-          });
-
-          // Refresh balance and power status
-        await fetchBalance();
-          await fetchPowerStatus();
-        
-          showToast(`Activated ${confirmData.power.name.toUpperCase()} Power!`, 'success');
-      } else {
-          // Map error codes
-          const errorMessages: Record<string, string> = {
-            'user_cancelled': 'ยกเลิกการชำระเงิน',
-            'insufficient_balance': 'ยอด WLD ไม่พอ',
-            'invalid_reference': 'รหัสอ้างอิงหมดอายุ/ไม่ถูกต้อง',
-            'verification_failed': 'ยืนยันธุรกรรมไม่สำเร็จ',
-            'draft_already_used': 'Transaction already processed',
-          };
-          const errorMsg = errorMessages[confirmData.error] || confirmData.error || 'ชำระเงินล้มเหลว';
-          showToast(errorMsg, 'error');
-        }
-      } catch (payError: any) {
-        // Detect user cancellation
-        const msg = String(payError?.message || '').toLowerCase();
-        const code = String(payError?.code || payError?.error_code || '').toLowerCase();
-        
-        if (
-          code.includes('user_rejected') ||
-          code.includes('cancelled') ||
-          code.includes('cancel') ||
-          msg.includes('cancel') ||
-          msg.includes('rejected') ||
-          msg.includes('user')
-        ) {
-          // User cancelled - don't show error
-          setIsPurchasingPower(false);
-          return;
-        }
-
-        showToast(payError?.message || 'Payment failed', 'error');
-      }
-    } catch (error: any) {
-      showToast(error.message || 'Failed to purchase power', 'error');
-    } finally {
-      setIsPurchasingPower(false);
-    }
-  };
 
   // Initial loading screen - show before verification
   useEffect(() => {
@@ -1953,7 +802,7 @@ const LuminexApp = () => {
         language={language}
         showLanguageMenu={showLanguageMenu}
         setShowLanguageMenu={setShowLanguageMenu}
-        setLanguage={setLanguage}
+        setLanguage={setLanguageHook}
         t={t}
       />
 
@@ -2036,31 +885,7 @@ const LuminexApp = () => {
       />
 
       {/* Toast Notification */}
-      <AnimatePresence>
-        {toast.type && (
-          <motion.div
-            initial={{ opacity: 0, y: 100, x: '-50%' }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className={`fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full px-4`}
-          >
-            <div className={`rounded-2xl p-4 shadow-2xl backdrop-blur-xl border-2 ${
-              toast.type === 'success'
-                ? 'bg-gradient-to-r from-green-500/90 to-emerald-500/90 border-green-400/50'
-                : 'bg-gradient-to-r from-red-600/90 to-red-800/90 border-red-500/50'
-            }`}>
-              <div className="flex items-center space-x-3">
-                {toast.type === 'success' ? (
-                  <Check className="w-6 h-6 text-white" />
-                ) : (
-                  <AlertTriangle className="w-6 h-6 text-white" />
-                )}
-                <span className="text-white font-semibold flex-1">{toast.message}</span>
-          </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Toast toast={toast} />
 
       {/* QR Code Modal */}
       <QRModal

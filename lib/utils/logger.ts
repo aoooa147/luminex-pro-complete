@@ -1,6 +1,7 @@
 /**
  * Logger Utility
  * Replaces console.log with structured logging
+ * Integrates with Sentry for error tracking
  */
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -40,6 +41,65 @@ class Logger {
     return `${emoji} ${prefix} ${message}`;
   }
 
+  private captureToSentry(level: LogLevel, message: string, error?: any, context?: string) {
+    // Only capture errors and warnings to Sentry
+    if (level !== 'error' && level !== 'warn') {
+      return;
+    }
+
+    try {
+      // Dynamic import to avoid issues in environments without Sentry
+      if (typeof window !== 'undefined') {
+        // Client-side
+        import('@sentry/nextjs').then((Sentry) => {
+          if (error instanceof Error) {
+            Sentry.captureException(error, {
+              tags: { context: context || 'unknown' },
+              extra: { message },
+            });
+          } else if (level === 'error') {
+            Sentry.captureMessage(message, {
+              level: 'error',
+              tags: { context: context || 'unknown' },
+              extra: { error },
+            });
+          } else {
+            Sentry.captureMessage(message, {
+              level: 'warning',
+              tags: { context: context || 'unknown' },
+              extra: { error },
+            });
+          }
+        }).catch(() => {
+          // Sentry not available, ignore
+        });
+      } else {
+        // Server-side
+        const Sentry = require('@sentry/nextjs');
+        if (error instanceof Error) {
+          Sentry.captureException(error, {
+            tags: { context: context || 'unknown' },
+            extra: { message },
+          });
+        } else if (level === 'error') {
+          Sentry.captureMessage(message, {
+            level: 'error',
+            tags: { context: context || 'unknown' },
+            extra: { error },
+          });
+        } else {
+          Sentry.captureMessage(message, {
+            level: 'warning',
+            tags: { context: context || 'unknown' },
+            extra: { error },
+          });
+        }
+      }
+    } catch (e) {
+      // Sentry not available or failed to initialize, ignore
+    }
+  }
+
   debug(message: string, data?: any, context?: string) {
     if (this.shouldLog('debug')) {
       if (this.isDevelopment) {
@@ -57,6 +117,7 @@ class Logger {
   warn(message: string, data?: any, context?: string) {
     if (this.shouldLog('warn')) {
       console.warn(this.formatMessage('warn', message, data, context));
+      this.captureToSentry('warn', message, data, context);
     }
   }
 
@@ -66,6 +127,7 @@ class Logger {
         ? { errorMessage: error.message, stack: error.stack, name: error.name, ...(error as any) }
         : error;
       console.error(this.formatMessage('error', message, errorData, context));
+      this.captureToSentry('error', message, error, context);
     }
   }
 

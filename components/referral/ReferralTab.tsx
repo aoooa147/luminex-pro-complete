@@ -4,6 +4,7 @@ import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { UserPlus, Coins, Share2, Copy, Check, QrCode } from 'lucide-react';
 import { TOKEN_NAME } from '@/lib/utils/constants';
+import { trackReferral } from '@/lib/utils/analytics';
 
 interface ReferralTabProps {
   safeTotalReferrals: number;
@@ -122,6 +123,8 @@ const ReferralTab = memo(({
                   navigator.clipboard.writeText(referralCode);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
+                  // Track referral code copy
+                  trackReferral('code_shared', safeReferralCode);
                 }}
                 aria-label={copied ? 'Referral code copied' : 'Copy referral code'}
                 className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg flex items-center justify-center"
@@ -155,10 +158,14 @@ const ReferralTab = memo(({
                     text: `Use my referral code ${safeReferralCode} and get 50 LUX!`,
                     url: inviteLink,
                   });
+                  // Track referral link share
+                  trackReferral('code_shared', safeReferralCode);
                 } else {
                   await navigator.clipboard.writeText(inviteLink);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
+                  // Track referral link copy
+                  trackReferral('code_shared', safeReferralCode);
                 }
               } catch (error) {
                 // Error sharing - silent error handling

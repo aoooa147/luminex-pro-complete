@@ -1,3 +1,6 @@
+// Injected content via Sentry wizard below
+const { withSentryConfig } = require("@sentry/nextjs");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -27,4 +30,31 @@ const nextConfig = {
     return config;
   },
 };
-module.exports = nextConfig;
+
+// Sentry configuration
+const sentryWebpackPluginOptions = {
+  // For all available options, see:
+  // https://github.com/getsentry/sentry-webpack-plugin#options
+  
+  // Suppresses source map uploading logs during build
+  silent: true,
+  
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  
+  // Only upload source maps in production
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableClientWebpackPlugin: process.env.NODE_ENV === 'development',
+  disableServerWebpackPlugin: process.env.NODE_ENV === 'development',
+  
+  // Automatically annotate React components to show component data in Sentry
+  reactComponentAnnotation: {
+    enabled: true,
+  },
+};
+
+// Make sure adding Sentry options is the last code to run before exporting
+module.exports = process.env.NEXT_PUBLIC_SENTRY_DSN 
+  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
+  : nextConfig;

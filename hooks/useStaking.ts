@@ -1,0 +1,368 @@
+/**
+ * Custom hook for staking operations
+ * Handles staking, claiming rewards, withdrawing, and fetching staking data
+ */
+
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { ethers } from 'ethers';
+import { STAKING_CONTRACT_ADDRESS, LUX_TOKEN_ADDRESS, POOLS } from '@/lib/utils/constants';
+import { trackStaking } from '@/lib/utils/analytics';
+
+// Staking Contract ABI
+const STAKING_ABI = [
+  "function getUserStakeInfo(address user, uint8 poolId) external view returns (uint256 amount, uint256 lockPeriod, uint256 unlockTime, uint256 pendingRewards, bool isLP)",
+  "function getPendingRewards(address user, uint8 poolId) external view returns (uint256)",
+  "function totalStakedByUser(address user) external view returns (uint256)",
+  "function stake(uint8 poolId, uint256 amount, uint256 lockPeriod) external",
+  "function withdraw(uint8 poolId, uint256 amount) external",
+  "function claimRewards(uint8 poolId) external",
+];
+
+// ERC20 ABI for approvals
+const ERC20_ABI = [
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+];
+
+export interface StakingState {
+  stakedAmount: number;
+  pendingRewards: number;
+  timeElapsed: { days: number; hours: number; minutes: number; seconds: number };
+  isStaking: boolean;
+  isClaiming: boolean;
+  isWithdrawing: boolean;
+  isClaimingInterest: boolean;
+}
+
+export interface StakingActions {
+  handleStake: (amount: string, selectedPool: number, balance: number) => Promise<void>;
+  handleClaimRewards: () => Promise<void>;
+  handleWithdrawBalance: () => Promise<void>;
+  handleClaimInterest: () => Promise<void>;
+  fetchStakingData: () => Promise<void>;
+}
+
+export function useStaking(
+  actualAddress: string | null,
+  provider: ethers.Provider | null,
+  selectedPool: number,
+  onSuccess?: (message: string) => void,
+  onError?: (message: string) => void
+) {
+  const [stakedAmount, setStakedAmount] = useState(0);
+  const [pendingRewards, setPendingRewards] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [isStaking, setIsStaking] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isClaimingInterest, setIsClaimingInterest] = useState(false);
+  
+  const stakingDataFetchInProgress = useRef(false);
+
+  const fetchStakingData = useCallback(async () => {
+    if (!provider || !actualAddress || !STAKING_CONTRACT_ADDRESS) {
+      setStakedAmount(0);
+      setPendingRewards(0);
+      return;
+    }
+
+    if (stakingDataFetchInProgress.current) {
+      return;
+    }
+
+    try {
+      stakingDataFetchInProgress.current = true;
+      
+      const stakingContract = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider);
+      
+      const totalStaked = await stakingContract.totalStakedByUser(actualAddress);
+      const stakedFormatted = parseFloat(ethers.formatUnits(totalStaked, 18));
+      setStakedAmount(stakedFormatted);
+      
+      const pendingRewardsBN = await stakingContract.getPendingRewards(actualAddress, selectedPool);
+      const rewardsFormatted = parseFloat(ethers.formatUnits(pendingRewardsBN, 18));
+      setPendingRewards(rewardsFormatted);
+      
+      try {
+        const stakeInfo = await stakingContract.getUserStakeInfo(actualAddress, selectedPool);
+        if (stakeInfo.startTime && stakeInfo.startTime > 0n) {
+          const startTime = Number(stakeInfo.startTime);
+          const currentTime = Math.floor(Date.now() / 1000);
+          const elapsed = currentTime - startTime;
+          
+          const days = Math.floor(elapsed / 86400);
+          const hours = Math.floor((elapsed % 86400) / 3600);
+          const minutes = Math.floor((elapsed % 3600) / 60);
+          const seconds = elapsed % 60;
+          
+          setTimeElapsed({ days, hours, minutes, seconds });
+        }
+      } catch (error) {
+        // Could not fetch stake start time - silent error handling
+      }
+      
+      stakingDataFetchInProgress.current = false;
+    } catch (error) {
+      stakingDataFetchInProgress.current = false;
+    }
+  }, [provider, actualAddress, selectedPool]);
+
+  const handleStake = useCallback(async (amount: string, selectedPool: number, balance: number) => {
+    if (!amount) {
+      onError?.('Please enter an amount');
+      return;
+    }
+    if (!actualAddress) {
+      onError?.('Please connect wallet first');
+      return;
+    }
+    if (Number(amount) > balance) {
+      onError?.('Insufficient balance');
+      return;
+    }
+    if (!STAKING_CONTRACT_ADDRESS || !provider) {
+      onError?.('Staking contract not configured');
+      return;
+    }
+    
+    setIsStaking(true);
+    try {
+      const amountNum = Number(amount);
+      const amountWei = ethers.parseUnits(amountNum.toString(), 18);
+      const lockPeriod = POOLS[selectedPool].lockDays * 24 * 60 * 60;
+
+      const MiniKit = (window as any).MiniKit;
+      if (!MiniKit || !MiniKit.isInstalled()) {
+        throw new Error('Please use World App to stake tokens');
+      }
+
+      if (!provider) {
+        throw new Error('Provider not available');
+      }
+
+      const tokenContractInterface = new ethers.Interface(ERC20_ABI);
+      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
+
+      const tokenContractRead = new ethers.Contract(LUX_TOKEN_ADDRESS, ERC20_ABI, provider);
+      const allowance = await tokenContractRead.allowance(actualAddress, STAKING_CONTRACT_ADDRESS);
+      
+      if (allowance < amountWei) {
+        const approveData = tokenContractInterface.encodeFunctionData('approve', [STAKING_CONTRACT_ADDRESS, amountWei]);
+        
+        const approveResult = await MiniKit.commandsAsync.sendTransaction({
+          to: LUX_TOKEN_ADDRESS,
+          data: approveData,
+          value: '0'
+        });
+        
+        if (!approveResult?.finalPayload?.transaction_id) {
+          throw new Error('Token approval failed');
+        }
+      }
+
+      const stakeData = stakingContractInterface.encodeFunctionData('stake', [selectedPool, amountWei, lockPeriod]);
+      
+      const stakeResult = await MiniKit.commandsAsync.sendTransaction({
+        to: STAKING_CONTRACT_ADDRESS,
+        data: stakeData,
+        value: '0'
+      });
+
+      if (!stakeResult?.finalPayload?.transaction_id) {
+        throw new Error('Staking transaction failed');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      await Promise.all([
+        fetchStakingData().catch(() => {})
+      ]);
+
+      setIsStaking(false);
+      onSuccess?.(`Successfully staked ${amountNum} LUX!`);
+      // Track analytics
+      trackStaking('stake', amountNum, selectedPool);
+    } catch (error: any) {
+      setIsStaking(false);
+      onError?.(error?.message || 'Staking failed');
+    }
+  }, [actualAddress, provider, selectedPool, fetchStakingData, onSuccess, onError]);
+
+  const handleClaimRewards = useCallback(async () => {
+    if (pendingRewards === 0) {
+      onError?.('No rewards to claim');
+      return;
+    }
+    if (!actualAddress || !STAKING_CONTRACT_ADDRESS || !provider) {
+      onError?.('Please connect wallet first');
+      return;
+    }
+
+    setIsClaiming(true);
+    try {
+      const MiniKit = (window as any).MiniKit;
+      if (!MiniKit || !MiniKit.isInstalled()) {
+        throw new Error('Please use World App to claim rewards');
+      }
+
+      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
+      const claimData = stakingContractInterface.encodeFunctionData('claimRewards', [selectedPool]);
+
+      const claimResult = await MiniKit.commandsAsync.sendTransaction({
+        to: STAKING_CONTRACT_ADDRESS,
+        data: claimData,
+        value: '0'
+      });
+
+      if (!claimResult?.finalPayload?.transaction_id) {
+        throw new Error('Claim rewards transaction failed');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      await Promise.all([
+        fetchStakingData().catch(() => {})
+      ]);
+
+      setIsClaiming(false);
+      const rewardsValue = typeof pendingRewards === 'number' && !isNaN(pendingRewards) ? pendingRewards : 0;
+      onSuccess?.(`Claimed ${rewardsValue.toFixed(2)} LUX rewards!`);
+      // Track analytics
+      trackStaking('claim', rewardsValue, selectedPool);
+    } catch (error: any) {
+      setIsClaiming(false);
+      onError?.(error?.message || 'Claim failed');
+    }
+  }, [pendingRewards, actualAddress, provider, selectedPool, fetchStakingData, onSuccess, onError]);
+
+  const handleWithdrawBalance = useCallback(async () => {
+    if (stakedAmount === 0) {
+      onError?.('No balance to withdraw');
+      return;
+    }
+    if (!actualAddress || !STAKING_CONTRACT_ADDRESS || !provider) {
+      onError?.('Please connect wallet first');
+      return;
+    }
+
+    setIsWithdrawing(true);
+    try {
+      const MiniKit = (window as any).MiniKit;
+      if (!MiniKit || !MiniKit.isInstalled()) {
+        throw new Error('Please use World App to withdraw balance');
+      }
+
+      if (!provider) {
+        throw new Error('Provider not available');
+      }
+
+      const stakingContractRead = new ethers.Contract(STAKING_CONTRACT_ADDRESS, STAKING_ABI, provider);
+      const stakingContractInterface = new ethers.Interface(STAKING_ABI);
+      
+      const stakeInfo = await stakingContractRead.getUserStakeInfo(actualAddress, selectedPool);
+      const amountWei = stakeInfo.amount;
+
+      if (amountWei === 0n) {
+        throw new Error('No staked balance to withdraw');
+      }
+
+      const withdrawData = stakingContractInterface.encodeFunctionData('withdraw', [selectedPool, amountWei]);
+
+      const withdrawResult = await MiniKit.commandsAsync.sendTransaction({
+        to: STAKING_CONTRACT_ADDRESS,
+        data: withdrawData,
+        value: '0'
+      });
+
+      if (!withdrawResult?.finalPayload?.transaction_id) {
+        throw new Error('Withdrawal transaction failed');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      await Promise.all([
+        fetchStakingData().catch(() => {})
+      ]);
+
+      setIsWithdrawing(false);
+      const withdrawnAmount = parseFloat(ethers.formatUnits(amountWei, 18));
+      onSuccess?.(`Withdrew ${withdrawnAmount} LUX!`);
+      // Track analytics
+      trackStaking('withdraw', withdrawnAmount, selectedPool);
+    } catch (error: any) {
+      setIsWithdrawing(false);
+      onError?.(error?.message || 'Withdrawal failed');
+    }
+  }, [stakedAmount, actualAddress, provider, selectedPool, fetchStakingData, onSuccess, onError]);
+
+  const handleClaimInterest = useCallback(async () => {
+    setIsClaimingInterest(true);
+    await handleClaimRewards();
+    setIsClaimingInterest(false);
+  }, [handleClaimRewards]);
+
+  // Fetch staking data when address or pool changes
+  useEffect(() => {
+    if (!actualAddress || !provider || !STAKING_CONTRACT_ADDRESS) return;
+    
+    fetchStakingData();
+    
+    const interval = setInterval(() => {
+      fetchStakingData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [actualAddress, provider, selectedPool, fetchStakingData]);
+
+  // Update time elapsed every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (stakedAmount > 0) {
+        setTimeElapsed(prev => {
+          let { seconds, minutes, hours, days } = prev;
+          seconds++;
+          if (seconds >= 60) { seconds = 0; minutes++; }
+          if (minutes >= 60) { minutes = 0; hours++; }
+          if (hours >= 24) { hours = 0; days++; }
+          return { days, hours, minutes, seconds };
+        });
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [stakedAmount]);
+
+  // Memoize formatted values
+  const formattedStakedAmount = useMemo(() => {
+    const val = typeof stakedAmount === 'number' && !isNaN(stakedAmount) ? stakedAmount : 0;
+    return val.toLocaleString('en-US', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    });
+  }, [stakedAmount]);
+  
+  const formattedPendingRewards = useMemo(() => {
+    const val = typeof pendingRewards === 'number' && !isNaN(pendingRewards) ? pendingRewards : 0;
+    return val.toLocaleString('en-US', { 
+      minimumFractionDigits: 8, 
+      maximumFractionDigits: 8 
+    });
+  }, [pendingRewards]);
+
+  return {
+    stakedAmount,
+    pendingRewards,
+    timeElapsed,
+    isStaking,
+    isClaiming,
+    isWithdrawing,
+    isClaimingInterest,
+    formattedStakedAmount,
+    formattedPendingRewards,
+    handleStake,
+    handleClaimRewards,
+    handleWithdrawBalance,
+    handleClaimInterest,
+    fetchStakingData,
+  };
+}
+
