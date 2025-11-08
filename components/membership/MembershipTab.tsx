@@ -4,6 +4,7 @@ import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Loader2 } from 'lucide-react';
 import { POWERS, BASE_APY, getPowerByCode, type PowerCode } from '@/lib/utils/powerConfig';
+import { TronCard, TronButton, TronBadge } from '@/components/tron';
 
 interface MembershipTabProps {
   currentPower: { code: PowerCode; name: string; totalAPY: number } | null;
@@ -30,15 +31,14 @@ const MembershipTab = memo(({
       {/* Header */}
       <div className="flex items-center justify-between mb-3 px-2">
         <div className="flex items-center space-x-2">
-          <Zap className="w-5 h-5 text-yellow-400" />
-          <span className="text-yellow-400 font-bold text-sm">POWER LICENSES</span>
+          <Zap className="w-5 h-5 text-tron-cyan" style={{ filter: 'drop-shadow(0 0 5px var(--tron-cyan))' }} />
+          <span className="text-tron-cyan font-bold text-sm font-orbitron uppercase tracking-wider neon-text">POWER LICENSES</span>
         </div>
         {currentPower && (
-          <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-yellow-500/20 rounded-lg border border-yellow-400/30">
-            <span className="text-base">⚡</span>
-            <span className="text-white font-bold text-xs">{currentPower.name}</span>
-            <span className="text-yellow-300 font-bold text-xs">{totalApy}%</span>
-          </div>
+          <TronBadge variant="success" size="md">
+            <span className="text-base mr-1">⚡</span>
+            {currentPower.name} {totalApy}%
+          </TronBadge>
         )}
       </div>
 
@@ -49,62 +49,63 @@ const MembershipTab = memo(({
           const canUpgrade = !currentPower || (getPowerByCode(currentPower.code) && parseFloat(getPowerByCode(currentPower.code)!.priceWLD) < parseFloat(power.priceWLD));
           const isLower = currentPower && parseFloat(getPowerByCode(currentPower.code)!.priceWLD) > parseFloat(power.priceWLD);
 
+          // Map power codes to glow colors
+          const glowColors: Record<string, 'cyan' | 'blue' | 'purple' | 'orange'> = {
+            'spark': 'cyan',
+            'nova': 'blue',
+            'quasar': 'purple',
+            'supernova': 'orange',
+            'singularity': 'orange',
+          };
+          const glowColor = glowColors[power.code] || 'cyan';
+
           return (
-            <motion.div
+            <TronCard 
               key={power.code}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className={`flex items-center justify-between p-4 rounded-xl border ${
-                isOwned ? 'border-yellow-400 bg-yellow-500/10' : 'border-white/10 bg-black/20'
-              }`}
+              glowColor={glowColor}
+              className={`p-4 ${isOwned ? 'ring-2 ring-tron-cyan' : ''}`}
             >
-              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                <span className="text-lg">⚡</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="text-white font-bold text-base">{power.name}</span>
-                    <span className="text-yellow-300 font-bold text-sm">{power.totalAPY}% APY</span>
-                  </div>
-                  <div className="text-white/70 text-xs">
-                    +{power.totalAPY - BASE_APY}% Power Boost
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <span className="text-lg">⚡</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="text-white font-bold text-base font-orbitron">{power.name}</span>
+                      <TronBadge variant="success" size="sm">
+                        {power.totalAPY}% APY
+                      </TronBadge>
+                    </div>
+                    <div className="text-gray-300 text-xs font-orbitron">
+                      +{power.totalAPY - BASE_APY}% Power Boost
+                    </div>
                   </div>
                 </div>
-              </div>
-              <motion.button
-                whileHover={{ scale: canUpgrade && !isPurchasingPower ? 1.05 : 1 }}
-                whileTap={{ scale: canUpgrade && !isPurchasingPower ? 0.95 : 1 }}
-                onClick={() => canUpgrade && !isPurchasingPower ? handlePurchasePower(power.code) : undefined}
-                disabled={!canUpgrade || isPurchasingPower || !!isLower}
-                aria-label={
-                  isOwned 
-                    ? `${power.name} power is active` 
-                    : isPurchasingPower 
-                    ? 'Purchasing power...' 
-                    : `Purchase ${power.name} power for ${power.priceWLD} WLD`
-                }
-                aria-disabled={!canUpgrade || isPurchasingPower || !!isLower}
-                className={`px-4 py-2 font-bold rounded-lg text-xs whitespace-nowrap ml-3 ${
-                  isOwned
-                    ? 'bg-yellow-400 text-black cursor-default'
-                    : isLower || !canUpgrade
-                    ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-500 hover:bg-green-400 text-white'
-                }`}
-              >
-                {isPurchasingPower ? (
-                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                ) : isOwned ? (
-                  '✓ Active'
+                {isOwned ? (
+                  <TronBadge variant="success" size="md">
+                    ✓ Active
+                  </TronBadge>
                 ) : isLower ? (
-                  '↓'
-                ) : !currentPower ? (
-                  `${power.priceWLD} WLD`
+                  <TronBadge variant="default" size="md">
+                    ↓
+                  </TronBadge>
                 ) : (
-                  `+${(parseFloat(power.priceWLD) - parseFloat(getPowerByCode(currentPower.code)!.priceWLD)).toFixed(1)} WLD`
+                  <TronButton
+                    variant={canUpgrade ? 'success' : 'default'}
+                    size="sm"
+                    onClick={() => canUpgrade && !isPurchasingPower ? handlePurchasePower(power.code) : undefined}
+                    className="whitespace-nowrap ml-3"
+                  >
+                    {isPurchasingPower ? (
+                      <Loader2 className="w-4 h-4 animate-spin inline mr-1.5" />
+                    ) : !currentPower ? (
+                      `${power.priceWLD} WLD`
+                    ) : (
+                      `+${(parseFloat(power.priceWLD) - parseFloat(getPowerByCode(currentPower.code)!.priceWLD)).toFixed(1)} WLD`
+                    )}
+                  </TronButton>
                 )}
-              </motion.button>
-            </motion.div>
+              </div>
+            </TronCard>
           );
         })}
       </div>

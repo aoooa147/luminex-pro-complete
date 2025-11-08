@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { UserPlus, Coins, Share2, Copy, Check, QrCode } from 'lucide-react';
 import { TOKEN_NAME } from '@/lib/utils/constants';
 import { trackReferral } from '@/lib/utils/analytics';
+import { TronCard, TronButton, TronStatCard, TronBadge } from '@/components/tron';
 
 interface ReferralTabProps {
   safeTotalReferrals: number;
@@ -37,13 +38,7 @@ const ReferralTab = memo(({
       style={{ willChange: 'transform, opacity' }}
     >
       {/* Hero Section */}
-      <div 
-        className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-3xl p-8 text-center overflow-hidden border-2 border-yellow-600/30" 
-        style={{
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(234, 179, 8, 0.1), inset 0 1px 0 rgba(234, 179, 8, 0.1)'
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 via-transparent to-transparent animate-pulse"></div>
+      <TronCard glowColor="purple" className="p-8 text-center">
         <div className="relative z-10">
           <motion.div
             animate={{ rotate: [0, 15, -15, 0] }}
@@ -52,73 +47,42 @@ const ReferralTab = memo(({
           >
             🎁🎊
           </motion.div>
-          <h1 className="text-2xl font-extrabold text-white mb-2">
+          <h1 className="text-2xl font-extrabold font-orbitron text-tron-purple mb-2 neon-text">
             Invite Friends!
           </h1>
-          <p className="text-white/90 mb-1.5 text-sm">Get 50 {TOKEN_NAME} for each friend you invite</p>
-          <p className="text-yellow-300 font-bold text-base">💰 Earn More Together! 💰</p>
+          <p className="text-gray-300 mb-1.5 text-sm font-orbitron">Get 50 {TOKEN_NAME} for each friend you invite</p>
+          <p className="text-tron-purple font-bold text-base font-orbitron neon-text">💰 Earn More Together! 💰</p>
         </div>
-      </div>
+      </TronCard>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-2">
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          whileHover={{ scale: 1.02 }}
-          className="bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl p-3 text-black font-bold"
-          style={{
-            boxShadow: '0 4px 15px rgba(234, 179, 8, 0.3)',
-            willChange: 'transform'
-          }}
-        >
-          <div className="flex items-center space-x-2 mb-1">
-            <UserPlus className="w-5 h-5" />
-            <div>
-              <p className="text-white/80 text-xs">Total Referrals</p>
-              <p className="text-xl font-extrabold">{safeTotalReferrals}</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          whileHover={{ scale: 1.02 }}
-          className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl p-3 text-white"
-          style={{ willChange: 'transform' }}
-        >
-          <div className="flex items-center space-x-2 mb-1">
-            <Coins className="w-5 h-5" />
-            <div>
-              <p className="text-white/80 text-xs">Total Earnings</p>
-              <p className="text-xl font-extrabold">{safeTotalEarnings}</p>
-            </div>
-          </div>
-        </motion.div>
+        <TronStatCard
+          label="Total Referrals"
+          value={safeTotalReferrals.toString()}
+          icon={UserPlus}
+          trend="up"
+        />
+        <TronStatCard
+          label="Total Earnings"
+          value={safeTotalEarnings.toString()}
+          icon={Coins}
+          trend="up"
+        />
       </div>
 
       {/* Referral Code */}
-      <div className="bg-black/40 backdrop-blur-2xl rounded-2xl p-4 border border-white/10 shadow-2xl">
-        <h2 className="text-white font-bold text-base mb-2 flex items-center gap-2">
-          <Share2 className="w-5 h-5" />
-          Your Referral Code
-        </h2>
-        
+      <TronCard glowColor="purple" title="Your Referral Code" icon={Share2} className="p-4">
         <div className="relative">
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-xl p-3 border-2 border-yellow-500/40"
-            style={{ willChange: 'transform' }}
-          >
+          <div className="bg-bg-tertiary/80 rounded-xl p-3 border-2 border-tron-purple/40 backdrop-blur-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-400 text-xs mb-1">Share this code with friends</p>
-                <p className="text-2xl font-extrabold text-white font-mono tracking-wider">{safeReferralCode}</p>
+                <p className="text-tron-purple text-xs mb-1 font-orbitron">Share this code with friends</p>
+                <p className="text-2xl font-extrabold text-white font-mono tracking-wider font-orbitron">{safeReferralCode}</p>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
+              <TronButton
+                variant="success"
+                size="sm"
                 onClick={() => {
                   navigator.clipboard.writeText(referralCode);
                   setCopied(true);
@@ -126,28 +90,23 @@ const ReferralTab = memo(({
                   // Track referral code copy
                   trackReferral('code_shared', safeReferralCode);
                 }}
-                aria-label={copied ? 'Referral code copied' : 'Copy referral code'}
-                className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg flex items-center justify-center"
-                style={{
-                  boxShadow: '0 0 15px rgba(234, 179, 8, 0.4)',
-                  willChange: 'transform'
-                }}
+                className="w-10 h-10 p-0"
               >
                 {copied ? (
-                  <Check className="w-5 h-5 text-white" aria-hidden="true" />
+                  <Check className="w-5 h-5" />
                 ) : (
-                  <Copy className="w-5 h-5 text-white" aria-hidden="true" />
+                  <Copy className="w-5 h-5" />
                 )}
-              </motion.button>
+              </TronButton>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Share Buttons */}
         <div className="mt-4 space-y-2">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <TronButton
+            variant="primary"
+            size="sm"
             onClick={async () => {
               try {
                 const WORLD_APP_ID = process.env.NEXT_PUBLIC_WORLD_APP_ID || '';
@@ -171,53 +130,40 @@ const ReferralTab = memo(({
                 // Error sharing - silent error handling
               }
             }}
-            aria-label="Share referral link"
-            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/30 text-sm"
+            className="w-full"
           >
-            <Share2 className="w-5 h-5" aria-hidden="true" />
-            <span>{t('shareLink') || 'Share Link'}</span>
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            <Share2 className="w-5 h-5 inline mr-1.5" />
+            {t('shareLink') || 'Share Link'}
+          </TronButton>
+          <TronButton
+            variant="success"
+            size="sm"
             onClick={() => setShowQRModal(true)}
-            aria-label="Show QR code for referral"
-            className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold py-2.5 px-4 rounded-2xl flex items-center justify-center space-x-2 text-sm"
-            style={{
-              boxShadow: '0 4px 20px rgba(234, 179, 8, 0.4)'
-            }}
+            className="w-full"
           >
-            <QrCode className="w-5 h-5" aria-hidden="true" />
-            <span>{t('showQRCode') || 'Show QR Code'}</span>
-          </motion.button>
+            <QrCode className="w-5 h-5 inline mr-1.5" />
+            {t('showQRCode') || 'Show QR Code'}
+          </TronButton>
         </div>
-      </div>
+      </TronCard>
 
       {/* Rewards Info */}
-      <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl p-3 border border-yellow-400/30">
-        <div className="flex items-start space-x-3">
-          <div className="w-10 h-10 bg-yellow-500/30 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Coins className="w-5 h-5 text-yellow-300" />
-          </div>
-          <div>
-            <h3 className="text-white font-bold text-base mb-1.5">How It Works</h3>
-            <ul className="space-y-1.5 text-white/80 text-xs">
-              <li className="flex items-center space-x-2">
-                <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                <span>Share your referral code with friends</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                <span>Get 50 {TOKEN_NAME} when they sign up</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                <span>Unlimited referrals!</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <TronCard glowColor="orange" icon={Coins} title="How It Works" className="p-3">
+        <ul className="space-y-1.5 text-gray-300 text-xs font-orbitron">
+          <li className="flex items-center space-x-2">
+            <Check className="w-4 h-4 text-tron-cyan flex-shrink-0" style={{ filter: 'drop-shadow(0 0 3px var(--tron-cyan))' }} />
+            <span>Share your referral code with friends</span>
+          </li>
+          <li className="flex items-center space-x-2">
+            <Check className="w-4 h-4 text-tron-cyan flex-shrink-0" style={{ filter: 'drop-shadow(0 0 3px var(--tron-cyan))' }} />
+            <span>Get 50 {TOKEN_NAME} when they sign up</span>
+          </li>
+          <li className="flex items-center space-x-2">
+            <Check className="w-4 h-4 text-tron-cyan flex-shrink-0" style={{ filter: 'drop-shadow(0 0 3px var(--tron-cyan))' }} />
+            <span>Unlimited referrals!</span>
+          </li>
+        </ul>
+      </TronCard>
     </motion.div>
   );
 });

@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Orbitron, Exo_2, JetBrains_Mono } from 'next/font/google';
 import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import BrandStyle from '@/components/BrandStyle';
@@ -11,7 +11,24 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
   require('../sentry.client.config');
 }
 
-const inter = Inter({ subsets: ['latin'] });
+// Tron-inspired fonts
+const orbitron = Orbitron({ 
+  subsets: ['latin'],
+  variable: '--font-orbitron',
+  display: 'swap',
+});
+
+const exo2 = Exo_2({ 
+  subsets: ['latin'],
+  variable: '--font-exo',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({ 
+  subsets: ['latin'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Luminex Staking - Premium DeFi Platform',
@@ -65,8 +82,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="image" href="https://i.postimg.cc/wvJqhSYW/Gemini-Generated-Image-ggu8gdggu8gdggu8-1.png" />
         <link rel="preconnect" href="https://i.postimg.cc" />
+        {/* Tron fonts are loaded via next/font/google */}
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${orbitron.variable} ${exo2.variable} ${jetbrainsMono.variable} font-orbitron`} suppressHydrationWarning>
         <GoogleAnalytics />
         <ErrorBoundary>
           <MiniKitProvider>

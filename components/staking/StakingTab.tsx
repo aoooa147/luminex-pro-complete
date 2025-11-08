@@ -9,6 +9,7 @@ import {
 import { POOLS, TOKEN_NAME } from '@/lib/utils/constants';
 import { BASE_APY, getPowerBoost } from '@/lib/utils/powerConfig';
 import { LoadingSpinner } from '@/components/common/LoadingStates';
+import { TronCard, TronButton, TronBadge } from '@/components/tron';
 
 // Map pool IDs to icons
 const POOL_ICONS: Record<number, typeof Unlock> = {
@@ -19,13 +20,13 @@ const POOL_ICONS: Record<number, typeof Unlock> = {
   4: Lock,
 };
 
-// Map pool IDs to colors
-const POOL_COLORS: Record<number, string> = {
-  0: "from-blue-400 to-cyan-400",
-  1: "from-green-400 to-emerald-400",
-  2: "from-purple-400 to-pink-400",
-  3: "from-orange-400 to-red-400",
-  4: "from-red-500 to-pink-500",
+// Map pool IDs to Tron colors
+const POOL_COLORS: Record<number, 'cyan' | 'blue' | 'purple' | 'orange' | 'pink'> = {
+  0: "cyan",
+  1: "blue",
+  2: "purple",
+  3: "orange",
+  4: "pink",
 };
 
 interface StakingTabProps {
@@ -86,31 +87,32 @@ const StakingTab = memo(({
       <div className="grid grid-cols-5 gap-1.5">
         {POOLS.map((pool) => {
           const Icon = POOL_ICONS[pool.id] || Unlock;
-          const color = POOL_COLORS[pool.id] || "from-blue-400 to-cyan-400";
+          const tronColor = POOL_COLORS[pool.id] || "cyan";
+          const isActive = selectedPool === pool.id;
+          
+          const colorClasses = {
+            cyan: isActive ? 'border-tron-cyan bg-tron-cyan/20 text-tron-cyan shadow-neon-cyan' : 'border-tron-cyan/30 text-gray-400',
+            blue: isActive ? 'border-tron-blue bg-tron-blue/20 text-tron-blue shadow-neon-blue' : 'border-tron-blue/30 text-gray-400',
+            purple: isActive ? 'border-tron-purple bg-tron-purple/20 text-tron-purple shadow-neon-purple' : 'border-tron-purple/30 text-gray-400',
+            orange: isActive ? 'border-tron-orange bg-tron-orange/20 text-tron-orange shadow-neon-orange' : 'border-tron-orange/30 text-gray-400',
+            pink: isActive ? 'border-tron-pink bg-tron-pink/20 text-tron-pink' : 'border-tron-pink/30 text-gray-400',
+          };
+          
           return (
             <motion.button
               key={pool.id}
-              whileHover={{ scale: 1.03 }}
+              whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setSelectedPool(pool.id)}
-              className={`relative p-1.5 rounded-lg border-2 transition-all overflow-hidden ${
-                selectedPool === pool.id
-                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-500/20 to-amber-500/20 shadow-lg shadow-yellow-500/20'
-                  : 'border-white/10 bg-black/40 backdrop-blur-lg hover:border-white/20'
-              }`}
+              className={`relative p-1.5 rounded-lg border-2 transition-all overflow-hidden backdrop-blur-lg font-orbitron ${colorClasses[tronColor]}`}
               style={{ willChange: 'transform' }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-10`}></div>
               <div className="relative">
-                <i
-                  className={`flex justify-center mb-0.5 ${
-                    selectedPool === pool.id ? 'text-yellow-400' : 'text-white/60'
-                  }`}
-                >
+                <div className={`flex justify-center mb-0.5 ${isActive ? '' : 'opacity-60'}`}>
                   <Icon className="w-4 h-4" />
-                </i>
-                <p className="text-white font-bold text-[9px] leading-tight">{pool.name}</p>
-                <p className={`text-[8px] font-semibold mt-0.5 ${selectedPool === pool.id ? 'text-yellow-400' : 'text-white/50'}`}>{pool.apy}%</p>
+                </div>
+                <p className="font-bold text-[9px] leading-tight">{pool.name}</p>
+                <p className={`text-[8px] font-semibold mt-0.5 ${isActive ? 'opacity-100' : 'opacity-50'}`}>{pool.apy}%</p>
               </div>
             </motion.button>
           );
@@ -118,157 +120,123 @@ const StakingTab = memo(({
       </div>
 
       {/* Staking Card */}
-      <motion.div
-        initial={{ scale: 0.95 }}
-        animate={{ scale: 1 }}
-        className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-xl p-3 text-white overflow-hidden border border-yellow-600/20"
-      >
-        <div className="relative z-10 space-y-2">
+      <TronCard glowColor="cyan" className="p-3">
+        <div className="space-y-2">
           {/* Power License Status */}
-          <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/10">
+          <div className="flex items-center justify-between p-2 bg-bg-tertiary/80 rounded-lg border border-tron-cyan/30 backdrop-blur-lg">
             <div className="flex items-center space-x-1.5">
-              <Zap className="w-3.5 h-3.5 text-yellow-400" />
-              <span className="text-white/80 text-[10px]">Power License:</span>
-              <span className="text-white font-bold text-xs">
+              <Zap className="w-3.5 h-3.5 text-tron-cyan" style={{ filter: 'drop-shadow(0 0 5px var(--tron-cyan))' }} />
+              <span className="text-gray-300 text-[10px] font-orbitron">Power License:</span>
+              <TronBadge variant={currentPower ? 'success' : 'default'} size="sm">
                 {currentPower ? currentPower.name : 'None'}
-              </span>
+              </TronBadge>
             </div>
             <div className="text-right">
-              <div className="text-yellow-300 font-bold text-xs">{totalApy}% Total APY</div>
-              <div className="text-white/60 text-[9px] mt-0.5">
+              <div className="text-tron-cyan font-bold text-xs font-orbitron neon-text">{totalApy}% Total APY</div>
+              <div className="text-gray-400 text-[9px] mt-0.5 font-orbitron">
                 Base {baseApy}% {powerBoost > 0 ? `+ ${powerBoost}%` : ''}
               </div>
             </div>
           </div>
 
           {/* Staking Balance */}
-          <div className="p-2 bg-black/40 rounded-lg border border-white/10">
-            <p className="text-white/80 text-[10px] mb-1">{t('myStakingBalance')}</p>
+          <div className="p-2 bg-bg-tertiary/80 rounded-lg border border-tron-cyan/30 backdrop-blur-lg">
+            <p className="text-gray-300 text-[10px] mb-1 font-orbitron">{t('myStakingBalance')}</p>
             {!actualAddress || !STAKING_CONTRACT_ADDRESS ? (
               <div className="flex items-center justify-center py-1">
-                <span className="text-yellow-400 text-[10px] text-center">
+                <span className="text-tron-cyan text-[10px] text-center font-orbitron">
                   {!actualAddress ? 'Connect wallet' : 'Contract not configured'}
                 </span>
               </div>
             ) : (
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1.5">
-                  <Coins className="w-4 h-4 text-yellow-300" />
-                  <span className="text-lg font-extrabold text-white">{formattedStakedAmount}</span>
-                  <span className="text-white/60 text-xs">LUX</span>
+                  <Coins className="w-4 h-4 text-tron-cyan" style={{ filter: 'drop-shadow(0 0 5px var(--tron-cyan))' }} />
+                  <span className="text-lg font-extrabold text-tron-cyan font-orbitron">{formattedStakedAmount}</span>
+                  <span className="text-gray-400 text-xs font-orbitron">LUX</span>
                 </div>
-                <TrendingUp className="w-4 h-4 text-green-300" />
+                <TrendingUp className="w-4 h-4 text-tron-blue" style={{ filter: 'drop-shadow(0 0 5px var(--tron-blue))' }} />
               </div>
             )}
           </div>
 
           {/* Earned Interest */}
-          <div className="p-2 bg-black/40 rounded-lg border border-white/10">
-            <p className="text-white/80 text-[10px] mb-1">{t('earnedInterest')}</p>
+          <div className="p-2 bg-bg-tertiary/80 rounded-lg border border-tron-cyan/30 backdrop-blur-lg">
+            <p className="text-gray-300 text-[10px] mb-1 font-orbitron">{t('earnedInterest')}</p>
             <div className="flex items-center justify-between">
-              <span className="text-xl font-extrabold text-yellow-300">{formattedPendingRewards}</span>
-              <span className="text-white/60 text-xs">LUX</span>
+              <span className="text-xl font-extrabold text-tron-cyan font-orbitron neon-text">{formattedPendingRewards}</span>
+              <span className="text-gray-400 text-xs font-orbitron">LUX</span>
             </div>
           </div>
 
           {/* Time Elapsed */}
           {timeElapsed.days > 0 || timeElapsed.hours > 0 || timeElapsed.minutes > 0 ? (
-            <div className="flex items-center space-x-1.5 text-[10px] text-white/70 bg-white/5 rounded-lg px-2 py-1">
-              <Timer className="w-3 h-3 flex-shrink-0" />
+            <div className="flex items-center space-x-1.5 text-[10px] text-gray-300 bg-tron-cyan/10 rounded-lg px-2 py-1 border border-tron-cyan/20 font-orbitron">
+              <Timer className="w-3 h-3 flex-shrink-0 text-tron-cyan" />
               <span className="font-mono">
                 {timeElapsed.days}D {timeElapsed.hours}H {timeElapsed.minutes}m
               </span>
             </div>
           ) : null}
         </div>
-      </motion.div>
+      </TronCard>
 
       {/* Action Buttons */}
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2">
           {/* STAKING Button */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <TronButton
+            variant="success"
+            size="sm"
             onClick={() => setShowStakeModal(true)}
-            aria-label="Open stake modal"
-            className="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 text-xs shadow-lg"
+            className="w-full"
           >
-            <BarChart3 className="w-4 h-4" aria-hidden="true" />
-            <span>{t('staking')}</span>
-          </motion.button>
+            <BarChart3 className="w-4 h-4 inline mr-1.5" />
+            {t('staking')}
+          </TronButton>
 
           {/* Withdraw Interest */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <TronButton
+            variant="primary"
+            size="sm"
             onClick={handleClaimInterest}
-            disabled={isClaimingInterest || pendingRewards === 0}
-            aria-label={isClaimingInterest ? 'Claiming rewards...' : 'Claim rewards'}
-            aria-disabled={isClaimingInterest || pendingRewards === 0}
-            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
+            className="w-full"
           >
             {isClaimingInterest ? (
-              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+              <Loader2 className="w-4 h-4 animate-spin inline mr-1.5" />
             ) : (
-              <>
-                <DollarIcon className="w-4 h-4" aria-hidden="true" />
-                <span>{t('withdrawInterest')}</span>
-              </>
+              <DollarIcon className="w-4 h-4 inline mr-1.5" />
             )}
-          </motion.button>
+            {t('withdrawInterest')}
+          </TronButton>
         </div>
 
         {/* Withdraw Balance */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <TronButton
+          variant="secondary"
+          size="sm"
           onClick={handleWithdrawBalance}
-          disabled={isWithdrawing || stakedAmount === 0}
-          aria-label={isWithdrawing ? 'Withdrawing...' : 'Withdraw balance'}
-          aria-disabled={isWithdrawing || stakedAmount === 0}
-          className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
+          className="w-full"
         >
           {isWithdrawing ? (
-            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+            <Loader2 className="w-4 h-4 animate-spin inline mr-1.5" />
           ) : (
-            <>
-              <TrendingDown className="w-4 h-4" aria-hidden="true" />
-              <span>{t('withdrawBalance')}</span>
-            </>
+            <TrendingDown className="w-4 h-4 inline mr-1.5" />
           )}
-        </motion.button>
+          {t('withdrawBalance')}
+        </TronButton>
 
         {/* Free Token Button */}
-        <motion.button
-          whileHover={{ scale: 1.02, boxShadow: "0 15px 35px rgba(147, 51, 234, 0.4)" }}
-          whileTap={{ scale: 0.98 }}
+        <TronButton
+          variant="success"
+          size="sm"
           onClick={() => setActiveTab('game')}
-          aria-label="Play games to earn free tokens"
-          className="w-full text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center space-x-1.5 relative overflow-hidden group text-xs"
-          style={{
-            background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
-            backgroundSize: '200% 100%',
-            boxShadow: '0 8px 25px rgba(147, 51, 234, 0.3), 0 0 15px rgba(236, 72, 153, 0.2)'
-          }}
+          className="w-full relative overflow-hidden"
         >
-          <motion.div
-            className="absolute inset-0 rounded-lg"
-            animate={{
-              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-            }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            style={{
-              background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
-              backgroundSize: '200% 100%'
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/50 via-amber-400/50 to-yellow-400/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-lg"></div>
-          <Gift className="w-4 h-4 relative z-10" />
-          <span className="text-xs relative z-10 font-extrabold">{t('freeToken')}</span>
-          <Sparkles className="w-3.5 h-3.5 relative z-10" />
-        </motion.button>
+          <Gift className="w-4 h-4 inline mr-1.5" />
+          {t('freeToken')}
+          <Sparkles className="w-3.5 h-3.5 inline ml-1.5" />
+        </TronButton>
       </div>
     </motion.div>
   );

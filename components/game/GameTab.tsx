@@ -3,6 +3,8 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
+import { TronCard } from '@/components/tron';
+import { Gamepad2 } from 'lucide-react';
 
 const GameLauncherCard = dynamic(() => import('@/components/game/GameLauncherCard'), { ssr: false });
 
@@ -17,13 +19,7 @@ const GameTab = memo(() => {
       style={{ willChange: 'transform, opacity' }}
     >
       {/* Game Tab */}
-      <div 
-        className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-3xl p-8 text-center overflow-hidden border-2 border-yellow-600/30" 
-        style={{
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(234, 179, 8, 0.1), inset 0 1px 0 rgba(234, 179, 8, 0.1)'
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 via-transparent to-transparent animate-pulse"></div>
+      <TronCard glowColor="cyan" className="p-8 text-center">
         <div className="relative z-10">
           <motion.div
             animate={{ rotate: [0, 15, -15, 0] }}
@@ -32,12 +28,12 @@ const GameTab = memo(() => {
           >
             🎮
           </motion.div>
-          <h1 className="text-2xl font-extrabold text-white mb-2">
+          <h1 className="text-2xl font-extrabold font-orbitron text-tron-cyan mb-2 neon-text">
             Play & Earn!
           </h1>
-          <p className="text-white/90 mb-2 text-lg">Play games and earn rewards</p>
+          <p className="text-gray-300 mb-2 text-lg font-orbitron">Play games and earn rewards</p>
         </div>
-      </div>
+      </TronCard>
 
       {/* Game Launcher */}
       <GameLauncherCard />
