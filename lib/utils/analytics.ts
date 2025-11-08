@@ -5,11 +5,20 @@
 
 declare global {
   interface Window {
-    gtag?: (
-      command: 'config' | 'event' | 'set' | 'js',
-      targetId: string | Date,
-      config?: any
-    ) => void;
+    gtag?: {
+      // gtag('config', trackingId, config?)
+      (command: 'config', targetId: string, config?: Record<string, any>): void;
+      // gtag('event', eventName, config?)
+      (command: 'event', eventName: string, config?: Record<string, any>): void;
+      // gtag('set', config) - object form
+      (command: 'set', config: Record<string, any>): void;
+      // gtag('set', key, value) - key-value form
+      (command: 'set', key: string, value: any): void;
+      // gtag('js', date)
+      (command: 'js', date: Date): void;
+      // Fallback for any other usage
+      (command: string, ...args: any[]): void;
+    };
     dataLayer?: any[];
   }
 }

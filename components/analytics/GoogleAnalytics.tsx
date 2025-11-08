@@ -1,40 +1,56 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { initGA, trackPageView, GA_TRACKING_ID } from '@/lib/utils/analytics';
+import Script from 'next/script';
+import { trackPageView, GA_TRACKING_ID } from '@/lib/utils/analytics';
 
+/**
+ * GoogleAnalytics Component
+ * 
+ * Loads Google Analytics script and tracks page views.
+ * 
+ * Fixed: Removed duplicate script loading by:
+ * - Using Next.js Script component instead of regular script tags
+ * - Removing initGA() call that was creating duplicate scripts
+ * - Adding proper loading state to track when GA is ready
+ */
 export function GoogleAnalytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [gaLoaded, setGaLoaded] = useState(false);
 
   useEffect(() => {
-    // Initialize GA on mount
-    if (GA_TRACKING_ID) {
-      initGA();
-    }
-  }, []);
-
-  useEffect(() => {
-    // Track page views
-    if (pathname && GA_TRACKING_ID) {
+    // Track page views when route changes and GA is loaded
+    // Only track after GA script is fully loaded (gtag function exists)
+    if (pathname && GA_TRACKING_ID && gaLoaded && typeof window !== 'undefined' && window.gtag) {
       const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
       trackPageView(url);
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, gaLoaded]);
 
-  // Return GA script tags
+  // Return null if no tracking ID
   if (!GA_TRACKING_ID) {
     return null;
   }
 
   return (
     <>
-      <script
-        async
+      {/* Load Google Analytics script using Next.js Script component */}
+      {/* Using Next.js Script component prevents duplicate script loading */}
+      {/* and provides better optimization and SSR handling */}
+      <Script
+        strategy="afterInteractive"
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
+        onLoad={() => {
+          // Mark GA as loaded after the script loads
+          setGaLoaded(true);
+        }}
       />
-      <script
+      {/* Initialize Google Analytics */}
+      <Script
+        id="google-analytics-init"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             window.dataLayer = window.dataLayer || [];
@@ -49,4 +65,3 @@ export function GoogleAnalytics() {
     </>
   );
 }
-
