@@ -275,6 +275,21 @@ export function useWallet(verifiedAddress: string | null) {
       if (!hasMiniKit) {
         setWldBalance(0);
         setBalance(0);
+        setIsLoadingBalance(false);
+        balanceFetchInProgress.current = false;
+        return;
+      }
+      
+      // Check cache first (5 second cache for balance)
+      const { apiCache } = await import('@/lib/utils/apiCache');
+      const cacheKey = `balance:${addressToUse}`;
+      const cachedBalance = apiCache.get<{ balance: number; wldBalance: number }>(cacheKey);
+      
+      if (cachedBalance) {
+        setWldBalance(cachedBalance.wldBalance);
+        setBalance(cachedBalance.balance);
+        setIsLoadingBalance(false);
+        balanceFetchInProgress.current = false;
         return;
       }
       
@@ -292,6 +307,9 @@ export function useWallet(verifiedAddress: string | null) {
           const balance = data.balance ?? data.formatted ?? 0;
           setWldBalance(balance);
           setBalance(0);
+          
+          // Cache the result (5 seconds TTL)
+          apiCache.set(cacheKey, { balance: 0, wldBalance: balance }, 5000);
         } else {
           const worldchainProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
           const wldContract = new ethers.Contract(WLD_TOKEN_ADDRESS, ERC20_ABI, worldchainProvider);
@@ -300,6 +318,9 @@ export function useWallet(verifiedAddress: string | null) {
           const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, decimals));
           setWldBalance(wldBalanceFormatted);
           setBalance(0);
+          
+          // Cache the result (5 seconds TTL)
+          apiCache.set(cacheKey, { balance: 0, wldBalance: wldBalanceFormatted }, 5000);
         }
       } catch (apiError: any) {
         try {
@@ -310,6 +331,10 @@ export function useWallet(verifiedAddress: string | null) {
           const wldBalanceFormatted = parseFloat(ethers.formatUnits(wldBalanceBN, decimals));
           setWldBalance(wldBalanceFormatted);
           setBalance(0);
+          
+          // Cache the result (5 seconds TTL)
+          const { apiCache } = await import('@/lib/utils/apiCache');
+          apiCache.set(cacheKey, { balance: 0, wldBalance: wldBalanceFormatted }, 5000);
         } catch (fallbackError: any) {
           setWldBalance(0);
           setBalance(0);
@@ -596,16 +621,23 @@ export function useWallet(verifiedAddress: string | null) {
     }
   }, [verifiedAddress, wallet?.address, isConnected]);
 
-  // Fetch balance when address changes
+  // Fetch balance when address changes (with debouncing to avoid too frequent calls)
   useEffect(() => {
-    if (actualAddress) {
-      fetchBalance();
-      const interval = setInterval(() => {
-        fetchBalance();
-      }, 30000);
-      return () => clearInterval(interval);
+    if (!actualAddress) {
+      return;
     }
-  }, [actualAddress, fetchBalance]);
+
+    // Fetch immediately on address change
+    fetchBalance();
+    
+    // Set up periodic refresh (every 30 seconds)
+    const interval = setInterval(() => {
+      fetchBalance();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actualAddress]); // Only depend on actualAddress to avoid recreating interval
 
   // Memoize formatted values
   const formattedBalance = useMemo(() => {

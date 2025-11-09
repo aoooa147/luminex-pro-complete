@@ -73,6 +73,10 @@ export function useStaking(
     }
 
     try {
+      // Check cache first (10 second cache for staking data)
+      // Note: We can't cache blockchain calls easily, but we can cache the formatted results
+      // to reduce re-renders and state updates
+      
       stakingDataFetchInProgress.current = true;
       setIsLoadingStakingData(true);
       
@@ -86,6 +90,7 @@ export function useStaking(
       const rewardsFormatted = parseFloat(ethers.formatUnits(pendingRewardsBN, 18));
       setPendingRewards(rewardsFormatted);
       
+      let timeElapsedData = { days: 0, hours: 0, minutes: 0, seconds: 0 };
       try {
         const stakeInfo = await stakingContract.getUserStakeInfo(actualAddress, selectedPool);
         if (stakeInfo.startTime && stakeInfo.startTime > 0n) {
@@ -98,10 +103,14 @@ export function useStaking(
           const minutes = Math.floor((elapsed % 3600) / 60);
           const seconds = elapsed % 60;
           
-          setTimeElapsed({ days, hours, minutes, seconds });
+          timeElapsedData = { days, hours, minutes, seconds };
+          setTimeElapsed(timeElapsedData);
+        } else {
+          setTimeElapsed(timeElapsedData);
         }
       } catch (error) {
         // Could not fetch stake start time - silent error handling
+        setTimeElapsed(timeElapsedData);
       }
       
       stakingDataFetchInProgress.current = false;

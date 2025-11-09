@@ -2,6 +2,7 @@
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Wallet, Loader2 } from 'lucide-react';
 import { TOKEN_NAME, LOGO_URL, LANGUAGES } from '@/lib/utils/constants';
 
@@ -52,27 +53,8 @@ const AppHeader = memo(({
       }
     }
     
-    // Priority 3: Fallback to truncated address (but try to fetch username in background)
+    // Priority 3: Fallback to truncated address
     if (actualAddress && typeof actualAddress === 'string') {
-      // Trigger username fetch in background (don't block UI)
-      if (typeof window !== 'undefined' && !sessionStorage.getItem('username_fetch_attempted')) {
-        sessionStorage.setItem('username_fetch_attempted', 'true');
-        fetch(`/api/world/user-profile?address=${actualAddress}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data?.success && data?.data?.username) {
-              const fetchedUsername = data.data.username;
-              sessionStorage.setItem('userName', fetchedUsername);
-              localStorage.setItem('userName', fetchedUsername);
-              // Trigger re-render by updating userInfo (if parent component supports it)
-              window.dispatchEvent(new CustomEvent('username-updated', { detail: { username: fetchedUsername } }));
-            }
-          })
-          .catch(() => {
-            // Silent fallback
-          });
-      }
-      
       return `@${actualAddress.slice(0, 8)}...${actualAddress.slice(-6)}`;
     }
     
@@ -109,7 +91,16 @@ const AppHeader = memo(({
       <div className="max-w-md mx-auto px-4 py-4">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center space-x-2">
-            <img src={LOGO_URL} alt="LUX" className="w-8 h-8 rounded-full ring-2 ring-purple-400/50" />
+            <Image
+              src={LOGO_URL}
+              alt="LUX"
+              width={32}
+              height={32}
+              className="rounded-full ring-2 ring-purple-400/50"
+              loading="lazy"
+              priority={false}
+              unoptimized={process.env.NODE_ENV === 'development'}
+            />
             <div>
               <h1 className="text-lg font-bold text-white">
                 Luminex Staking

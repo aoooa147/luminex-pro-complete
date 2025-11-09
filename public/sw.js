@@ -1,24 +1,35 @@
-// Service Worker for Luminex Staking PWA
+/**
+ * Service Worker for Luminex App
+ * Enhanced caching strategy for better performance
+ */
+
 const CACHE_NAME = 'luminex-v1';
-const urlsToCache = [
+const RUNTIME_CACHE = 'luminex-runtime-v1';
+const STATIC_CACHE = 'luminex-static-v1';
+
+// Assets to cache on install
+const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  // Add other static assets here
 ];
 
-// Install event - cache resources
+// API endpoints to cache (with shorter TTL)
+const API_CACHE_PATTERNS = [
+  /^\/api\/world\/username\/get/,
+  /^\/api\/world\/user-profile/,
+  /^\/api\/power\/active/,
+  /^\/api\/wld-balance/,
+];
+
+// Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        // Silent error handling
-      })
+    caches.open(STATIC_CACHE).then((cache) => {
+      return cache.addAll(STATIC_ASSETS);
+    })
   );
-  self.skipWaiting();
+  self.skipWaiting(); // Activate immediately
 });
 
 // Activate event - clean up old caches
@@ -26,58 +37,167 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+        cacheNames
+          .filter((cacheName) => {
+            return (
+              cacheName !== CACHE_NAME &&
+              cacheName !== RUNTIME_CACHE &&
+              cacheName !== STATIC_CACHE
+            );
+          })
+          .map((cacheName) => {
             return caches.delete(cacheName);
-          }
-        })
+          })
       );
     })
   );
-  self.clients.claim();
+  return self.clients.claim(); // Take control of all pages
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - implement caching strategy
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests
-  if (event.request.method !== 'GET') {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
     return;
   }
 
-  // Skip API routes and external resources
-  if (
-    event.request.url.includes('/api/') ||
-    event.request.url.includes('alchemy.com') ||
-    event.request.url.includes('world.org')
-  ) {
+  // Skip cross-origin requests
+  if (url.origin !== location.origin) {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request).then((response) => {
-          // Don't cache if not a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+  // Handle API requests with network-first strategy
+  if (API_CACHE_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
+    event.respondWith(
+      caches.open(RUNTIME_CACHE).then((cache) => {
+        return fetch(request)
+          .then((response) => {
+            // Cache successful responses
+            if (response.ok) {
+              // Clone the response before caching
+              const responseToCache = response.clone();
+              cache.put(request, responseToCache);
+            }
             return response;
-          }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
+          })
+          .catch(() => {
+            // Network failed - try cache
+            return cache.match(request).then((cachedResponse) => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              // Return a fallback response
+              return new Response(
+                JSON.stringify({ error: 'Network error and no cache available' }),
+                {
+                  status: 503,
+                  headers: { 'Content-Type': 'application/json' },
+                }
+              );
             });
+          });
+      })
+    );
+    return;
+  }
 
+  // Handle static assets with cache-first strategy
+  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/static/')) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const responseToCache = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
           return response;
         });
       })
+    );
+    return;
+  }
+
+  // Handle images with cache-first strategy
+  if (
+    request.destination === 'image' ||
+    url.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)
+  ) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const responseToCache = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Default: network-first strategy for other requests
+  event.respondWith(
+    fetch(request)
+      .then((response) => {
+        // Cache successful responses
+        if (response.ok) {
+          const responseToCache = response.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(request, responseToCache);
+          });
+        }
+        return response;
+      })
       .catch(() => {
-        // Return offline page if available
-        return caches.match('/');
+        // Network failed - try cache
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Return offline page or error
+          return new Response('Offline', {
+            status: 503,
+            statusText: 'Service Unavailable',
+          });
+        });
       })
   );
 });
 
+// Background sync for offline actions (optional)
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'background-sync') {
+    event.waitUntil(
+      // Perform background sync tasks
+      Promise.resolve()
+    );
+  }
+});
+
+// Push notifications (optional)
+self.addEventListener('push', (event) => {
+  if (event.data) {
+    const data = event.data.json();
+    const title = data.title || 'Luminex';
+    const options = {
+      body: data.body || 'You have a new notification',
+      icon: '/icon-192x192.png',
+      badge: '/icon-192x192.png',
+    };
+    event.waitUntil(self.registration.showNotification(title, options));
+  }
+});

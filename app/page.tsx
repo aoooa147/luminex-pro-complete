@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
+import { initPrefetching } from '@/lib/utils/prefetch';
 
 const LOGO_URL = "https://i.postimg.cc/wvJqhSYW/Gemini-Generated-Image-ggu8gdggu8gdggu8-1.png";
 
@@ -12,13 +13,17 @@ const LuminexApp = dynamic(() => import('./main-app'), {
 });
 
 export default function HomePage() {
-  // Preload logo on mount
   useEffect(() => {
+    // Preload logo on mount
     const link = document.createElement('link');
     link.rel = 'preload';
     link.as = 'image';
     link.href = LOGO_URL;
     document.head.appendChild(link);
+    
+    // Initialize prefetching for better performance
+    initPrefetching();
+    
     return () => {
       if (document.head.contains(link)) {
         document.head.removeChild(link);

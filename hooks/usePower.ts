@@ -36,6 +36,17 @@ export function usePower(
     }
 
     try {
+      // Check cache first (30 second cache for power status)
+      const { apiCache } = await import('@/lib/utils/apiCache');
+      const cacheKey = `power:${actualAddress}`;
+      const cachedPower = apiCache.get<{ code: PowerCode; name: string; totalAPY: number }>(cacheKey);
+      
+      if (cachedPower) {
+        setCurrentPower(cachedPower);
+        setIsLoadingPowerData(false);
+        return;
+      }
+
       setIsLoadingPowerData(true);
       const response = await fetch(`/api/power/active?userId=${actualAddress}`, {
         method: 'GET',
@@ -46,11 +57,15 @@ export function usePower(
       const data = await response.json();
       
       if (data.success && data.data?.power) {
-        setCurrentPower({
+        const powerData = {
           code: data.data.power.code,
           name: data.data.power.name,
           totalAPY: data.data.power.totalAPY,
-        });
+        };
+        setCurrentPower(powerData);
+        
+        // Cache the result (30 seconds TTL)
+        apiCache.set(cacheKey, powerData, 30000);
       } else {
         setCurrentPower(null);
       }

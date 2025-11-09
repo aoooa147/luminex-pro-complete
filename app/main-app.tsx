@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { WORLD_APP_ID as ENV_WORLD_APP_ID, WORLD_ACTION as ENV_WORLD_ACTION, LUX_TOKEN_ADDRESS as LUX_TOKEN_ADDRESS_FROM_CONSTANTS, STAKING_CONTRACT_ADDRESS as STAKING_CONTRACT_ADDRESS_FROM_CONSTANTS, WLD_TOKEN_ADDRESS as WLD_TOKEN_ADDRESS_FROM_CONSTANTS, TREASURY_ADDRESS as TREASURY_ADDRESS_FROM_CONSTANTS, POOLS as POOLS_FROM_CONSTANTS, LOGO_URL as LOGO_URL_FROM_CONSTANTS, TOKEN_NAME as TOKEN_NAME_FROM_CONSTANTS } from '@/lib/utils/constants';
 import { POWERS, BASE_APY, getPowerByCode, getPowerBoost, type PowerCode } from '@/lib/utils/powerConfig';
 import { registerServiceWorker, improveTouchInteractions } from '@/lib/utils/pwa';
+import { prefetchUserData } from '@/lib/utils/prefetch';
 import { useWallet } from '@/hooks/useWallet';
 import { useStaking } from '@/hooks/useStaking';
 import { usePower } from '@/hooks/usePower';
@@ -159,73 +160,104 @@ const LuminexApp = () => {
   }, [actualAddress]);
 
   // Fetch username from storage/API when address changes (if not already set)
-  useEffect(() => {
-    if (actualAddress && (!userInfo?.username && !userInfo?.name)) {
-      // Check if we already have username in local storage first
-      if (typeof window !== 'undefined') {
-        const storedUsername = sessionStorage.getItem('userName') || localStorage.getItem('userName');
-        if (storedUsername) {
-          setUserInfo({ name: storedUsername, username: storedUsername });
+  // Use useMemo to memoize the fetch function and avoid unnecessary re-fetches
+  const fetchUsername = useCallback(async () => {
+    if (!actualAddress || (userInfo?.username || userInfo?.name)) {
+      return;
+    }
+
+    // Check if we already have username in local storage first
+    if (typeof window !== 'undefined') {
+      const storedUsername = sessionStorage.getItem('userName') || localStorage.getItem('userName');
+      if (storedUsername) {
+        setUserInfo({ name: storedUsername, username: storedUsername });
+        return;
+      }
+    }
+    
+    try {
+      // Check cache first (60 second cache for username)
+      const { apiCache } = await import('@/lib/utils/apiCache');
+      const cacheKey = `username:${actualAddress}`;
+      const cachedUsername = apiCache.get<string>(cacheKey);
+      
+      if (cachedUsername) {
+        setUserInfo({ name: cachedUsername, username: cachedUsername });
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('userName', cachedUsername);
+          localStorage.setItem('userName', cachedUsername);
+        }
+        return;
+      }
+
+      // Try server storage first
+      const getResponse = await fetch(`/api/world/username/get?address=${actualAddress}`);
+      if (getResponse.ok) {
+        const getData = await getResponse.json();
+        if (getData?.success && getData?.username) {
+          const username = getData.username;
+          setUserInfo({ name: username, username: username });
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('userName', username);
+            localStorage.setItem('userName', username);
+          }
+          
+          // Cache the result (60 seconds TTL)
+          apiCache.set(cacheKey, username, 60000);
           return;
         }
       }
       
-      // Fetch username from server storage (fastest, most reliable)
-      const fetchUsername = async () => {
-        try {
-          // Try server storage first
-          const getResponse = await fetch(`/api/world/username/get?address=${actualAddress}`);
-          if (getResponse.ok) {
-            const getData = await getResponse.json();
-            if (getData?.success && getData?.username) {
-              const username = getData.username;
-              setUserInfo({ name: username, username: username });
-              if (typeof window !== 'undefined') {
-                sessionStorage.setItem('userName', username);
-                localStorage.setItem('userName', username);
-              }
-              console.log('✅ Username fetched from server storage:', username);
-              return;
+      // If not in server storage, try World App API
+      const response = await fetch(`/api/world/user-profile?address=${actualAddress}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.success && data?.data?.username) {
+          const username = data.data.username;
+          if (username) {
+            setUserInfo({ name: username, username: username });
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('userName', username);
+              localStorage.setItem('userName', username);
             }
+            
+            // Cache the result (60 seconds TTL)
+            apiCache.set(cacheKey, username, 60000);
+            
+            // Save to server storage for future use (don't wait for this)
+            fetch('/api/world/username/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                address: actualAddress,
+                username: username,
+                source: 'api',
+              }),
+            }).catch(() => {
+              // Silent fallback
+            });
           }
-          
-          // If not in server storage, try World App API
-          const response = await fetch(`/api/world/user-profile?address=${actualAddress}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data?.success && data?.data?.username) {
-              const username = data.data.username;
-              if (username) {
-                setUserInfo({ name: username, username: username });
-                if (typeof window !== 'undefined') {
-                  sessionStorage.setItem('userName', username);
-                  localStorage.setItem('userName', username);
-                }
-                console.log('✅ Username fetched from World App API:', username);
-                
-                // Save to server storage for future use
-                fetch('/api/world/username/save', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    address: actualAddress,
-                    username: username,
-                    source: 'api',
-                  }),
-                }).catch(() => {
-                  // Silent fallback
-                });
-              }
-            }
-          }
-        } catch (error) {
-          // Silent fallback
         }
-      };
-      
-      fetchUsername();
+      }
+    } catch (error) {
+      // Silent fallback
     }
   }, [actualAddress, userInfo, setUserInfo]);
+
+  useEffect(() => {
+    if (actualAddress && (!userInfo?.username && !userInfo?.name)) {
+      fetchUsername();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actualAddress]); // Only depend on actualAddress to avoid infinite loop and unnecessary re-fetches
+
+  // Prefetch user data when address is available
+  useEffect(() => {
+    if (actualAddress) {
+      // Prefetch user data in background (low priority)
+      prefetchUserData(actualAddress);
+    }
+  }, [actualAddress]);
 
   // Wrapper for handleStake to handle modal state
   const handleStake = useCallback(async () => {
