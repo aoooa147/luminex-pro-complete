@@ -3,6 +3,7 @@
 /// <reference path="../luminex-unified-app.ts" />
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { ethers } from "ethers";
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -18,21 +19,8 @@ import { usePower } from '@/hooks/usePower';
 import { useReferral } from '@/hooks/useReferral';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Toast, useToast } from '@/components/common/Toast';
-import { AILoadingState } from '@/components/common/AILoadingState';
-import { SplashScreen } from '@/components/common/SplashScreen';
-import { WelcomeCard } from '@/components/common/WelcomeCard';
-import { QuickActionCard } from '@/components/common/QuickActionCard';
-import { HomeTab } from '@/components/home/HomeTab';
-import { PowerTab } from '@/components/power/PowerTab';
-import { ProfileTab } from '@/components/profile/ProfileTab';
-const MiniKitPanel = dynamic(() => import('@/components/world/MiniKitPanel'), { 
-  ssr: false,
-  loading: () => <AILoadingState message="Loading panel..." size="sm" />
-});
-const GameLauncherCard = dynamic(() => import('@/components/game/GameLauncherCard'), { 
-  ssr: false,
-  loading: () => <AILoadingState message="Loading games..." size="md" />
-});
+const MiniKitPanel = dynamic(() => import('@/components/world/MiniKitPanel'), { ssr: false });
+const GameLauncherCard = dynamic(() => import('@/components/game/GameLauncherCard'), { ssr: false });
 import { 
   Wallet, Shield, Coins, TrendingUp, Settings, Gift, Users, Zap, Lock, Unlock, 
   AlertTriangle, ExternalLink, Copy, Check, Loader2, Clock, Star, Droplet,
@@ -54,8 +42,6 @@ import BottomNav from '@/components/layout/BottomNav';
 // Lazy load modals
 const StakeModal = dynamic(() => import('@/components/modals/StakeModal'), { ssr: false });
 const QRModal = dynamic(() => import('@/components/modals/QRModal'), { ssr: false });
-import { TronShell, TronPanel } from '@/components/tron';
-import { BroadcastMessage } from '@/components/common/BroadcastMessage';
 
 const LOGO_URL = LOGO_URL_FROM_CONSTANTS;
 const TOKEN_NAME = TOKEN_NAME_FROM_CONSTANTS;
@@ -476,7 +462,7 @@ const LuminexApp = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [verified, setVerified] = useState(false);
   const [verifiedAddress, setVerifiedAddress] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'home' | 'power' | 'game' | 'friends' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<'staking' | 'membership' | 'referral' | 'game'>('staking');
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedPool, setSelectedPool] = useState(0);
   const [stakeAmount, setStakeAmount] = useState('');
@@ -616,43 +602,126 @@ const LuminexApp = () => {
   }, [setUserInfo]);
 
 
-  // Initial loading screen - show before verification (optimized)
+  // Initial loading screen - show before verification
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
     const hideLoading = () => {
-      // Reduced loading time for better UX (1 second instead of 1.5)
+      // Wait minimum 1.5 seconds for smooth UX
       timer = setTimeout(() => {
         setIsInitialLoading(false);
-      }, 1000);
+      }, 1500);
     };
 
     // Check if page is already loaded
-    if (typeof window !== 'undefined') {
-      if (document.readyState === 'complete') {
-        hideLoading();
-      } else {
-        // Wait for page to fully load
-        window.addEventListener('load', hideLoading, { once: true });
-      }
+    if (document.readyState === 'complete') {
+      hideLoading();
+    } else {
+      // Wait for page to fully load
+      window.addEventListener('load', hideLoading, { once: true });
     }
     
     return () => {
       if (timer) clearTimeout(timer);
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('load', hideLoading);
-      }
+      window.removeEventListener('load', hideLoading);
     };
   }, []);
 
-  // Show Splash Screen with Booting Sequence
+  // Show loading screen first
   if (isInitialLoading) {
     return (
-      <SplashScreen 
-        onComplete={() => {
-          setIsInitialLoading(false);
-        }}
-      />
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden flex items-center justify-center">
+        {/* Elegant gold background particles */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <motion.div 
+            className="absolute top-20 left-10 w-96 h-96 bg-yellow-500/8 rounded-full blur-3xl"
+            animate={{ 
+              opacity: [0.1, 0.2, 0.1],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div 
+            className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-amber-500/6 rounded-full blur-3xl"
+            animate={{ 
+              opacity: [0.08, 0.15, 0.08],
+              scale: [1, 1.15, 1]
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          />
+          <motion.div 
+            className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-yellow-400/5 rounded-full blur-3xl"
+            animate={{ 
+              opacity: [0.05, 0.12, 0.05],
+              scale: [1, 1.2, 1]
+            }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          />
+        </div>
+        
+                  <div className="text-center relative z-10 max-w-md w-full px-4">      
+            {/* Large Logo - 3D */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative inline-block mb-8 flex justify-center"
+            >
+              <Logo3D size={160} interactive={true} />
+            </motion.div>
+          
+          {/* Gold spinner */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="relative w-20 h-20 mx-auto mb-6"
+          >
+            <div className="absolute inset-0 border-4 border-yellow-600/30 border-t-yellow-500 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 border-4 border-transparent border-t-amber-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            <div className="absolute inset-0 border-4 border-transparent border-r-yellow-400/40 rounded-full animate-spin" style={{ animationDuration: '2s' }}></div>
+          </motion.div>
+          
+          {/* Loading text */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="text-yellow-400/90 text-xl font-medium tracking-wide mb-4"
+            style={{
+              textShadow: '0 0 10px rgba(234, 179, 8, 0.5)'
+            }}
+          >
+            Loading Luminex...
+          </motion.p>
+          
+          {/* Animated dots */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
+            className="flex items-center justify-center gap-2"
+          >
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="w-2 h-2 bg-yellow-500 rounded-full"
+                animate={{
+                  opacity: [0.3, 1, 0.3],
+                  scale: [1, 1.3, 1],
+                  y: [0, -5, 0]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                  ease: "easeInOut"
+                }}
+              />
+            ))}
+          </motion.div>
+        </div>
+      </div>
     );
   }
 
@@ -711,25 +780,14 @@ const LuminexApp = () => {
   // Only World App is supported
   if (!verified && !isWorldApp()) {
     return (
-      <TronShell showEnergyStream={false} className="bg-[#050505]">
-        <div className="flex flex-1 items-center justify-center px-6 py-10">
-          <TronPanel title={t('worldAppRequired') ?? 'World App Required'} padding="lg" className="max-w-md text-center">
-            <p className="text-gray-300 mb-6 font-orbitron text-sm tracking-wide">
-              {t('openInWorldApp') ?? 'This application only works in World App. Please open this app in World App to continue.'}
-            </p>
-            <TronPanel
-              status="warning"
-              padding="sm"
-              className="bg-black/40 border-tron-orange/40 text-gray-200"
-              title={t('downloadWorldApp') ?? 'Download World App'}
-            >
-              <p className="text-xs font-light tracking-widest text-gray-400">
-                {t('download') ?? 'Download World App'}
-              </p>
-            </TronPanel>
-          </TronPanel>
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold text-yellow-400 mb-4">World App Required</h1>
+          <p className="text-gray-300 mb-6">
+            This application only works in World App. Please open this app in World App to continue.
+          </p>
         </div>
-      </TronShell>
+      </div>
     );
   }
 
@@ -739,7 +797,51 @@ const LuminexApp = () => {
   const totalApy = currentPower ? currentPower.totalAPY : baseApy;
 
   return (
-    <TronShell>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-y-auto">
+      {/* Luxurious gold geometric background pattern */}
+      <div className="fixed inset-0 opacity-[0.02] pointer-events-none" style={{ 
+        backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(234, 179, 8, 0.08) 35px, rgba(234, 179, 8, 0.08) 70px),
+                          repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(217, 119, 6, 0.08) 35px, rgba(217, 119, 6, 0.08) 70px)`,
+        transform: 'translateZ(0)'
+      }}></div>
+      
+      {/* Elegant gold animated background particles */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div 
+          className="absolute top-20 left-10 w-96 h-96 bg-yellow-500/8 rounded-full blur-3xl"
+          animate={{ 
+            opacity: [0.06, 0.12, 0.06],
+            scale: [1, 1.1, 1],
+            x: [0, 20, 0],
+            y: [0, 15, 0]
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ willChange: 'opacity, transform', transform: 'translateZ(0)' }}
+        />
+        <motion.div 
+          className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-amber-500/6 rounded-full blur-3xl"
+          animate={{ 
+            opacity: [0.05, 0.1, 0.05],
+            scale: [1, 1.15, 1],
+            x: [0, -25, 0],
+            y: [0, -20, 0]
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          style={{ willChange: 'opacity, transform', transform: 'translateZ(0)' }}
+        />
+        <motion.div 
+          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-yellow-400/5 rounded-full blur-3xl"
+          animate={{ 
+            opacity: [0.03, 0.08, 0.03],
+            scale: [1, 1.2, 1],
+            rotate: [0, 180, 360]
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          style={{ willChange: 'opacity, transform', transform: 'translateZ(0)' }}
+        />
+      </div>
+
+      {/* Header */}
       <AppHeader
         actualAddress={actualAddress}
         userInfo={userInfo}
@@ -753,33 +855,46 @@ const LuminexApp = () => {
         t={t}
       />
 
-      <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-3 sm:px-4 pb-20 sm:pb-24 pt-2 sm:pt-4 min-h-0">
-        <BroadcastMessage />
-        
-        <div>
-          {activeTab === 'home' && (
-            <HomeTab
-              username={userInfo?.username || userInfo?.name}
-              address={actualAddress || undefined}
-              powerLevel={currentPower ? Math.min(100, (totalApy / 325) * 100) : 0}
-              powerStatus={currentPower ? 'ปกติ' : 'ไม่มี Power'}
-              onNavigate={setActiveTab}
-            />
-          )}
-
-          {activeTab === 'power' && (
-            <PowerTab
+      {/* Main Content */}
+      <div 
+        className="relative max-w-md mx-auto px-4 py-2 pb-20 overflow-y-auto"
+      >
+        <AnimatePresence mode="wait">
+          {activeTab === 'staking' && (
+            <StakingTab
+              selectedPool={selectedPool}
+              setSelectedPool={setSelectedPool}
               currentPower={currentPower}
               totalApy={totalApy}
-              baseApy={BASE_APY}
-              powerBoost={currentPower ? totalApy - BASE_APY : 0}
-              isPurchasingPower={isPurchasingPower}
-              handlePurchasePower={handlePurchasePower}
-              onNavigate={setActiveTab}
+              baseApy={baseApy}
+              powerBoost={powerBoost}
+              actualAddress={actualAddress}
+              STAKING_CONTRACT_ADDRESS={STAKING_CONTRACT_ADDRESS}
+              formattedStakedAmount={formattedStakedAmount}
+              formattedPendingRewards={formattedPendingRewards}
+              timeElapsed={timeElapsed}
+              setShowStakeModal={setShowStakeModal}
+              handleClaimInterest={handleClaimInterest}
+              handleWithdrawBalance={handleWithdrawBalance}
+              setActiveTab={setActiveTab}
+              isClaimingInterest={isClaimingInterest}
+              isWithdrawing={isWithdrawing}
+              pendingRewards={pendingRewards}
+              stakedAmount={stakedAmount}
+              t={t}
             />
           )}
-
-          {activeTab === 'friends' && (
+          
+          {activeTab === 'membership' && (
+            <MembershipTab
+              currentPower={currentPower}
+              totalApy={totalApy}
+              isPurchasingPower={isPurchasingPower}
+              handlePurchasePower={handlePurchasePower}
+            />
+          )}
+          
+          {activeTab === 'referral' && (
             <ReferralTab
               safeTotalReferrals={safeTotalReferrals}
               safeTotalEarnings={safeTotalEarnings}
@@ -792,21 +907,13 @@ const LuminexApp = () => {
             />
           )}
 
-          {activeTab === 'profile' && (
-            <ProfileTab
-              userInfo={userInfo}
-              actualAddress={actualAddress}
-              formattedBalance={formattedBalance}
-              formattedWldBalance={formattedWldBalance}
-              isAdmin={isAdmin}
-              onNavigate={setActiveTab}
-            />
+          {activeTab === 'game' && (
+            <GameTab />
           )}
+        </AnimatePresence>
+            </div>
 
-          {activeTab === 'game' && <GameTab />}
-        </div>
-      </main>
-
+      {/* Stake Modal */}
       <StakeModal
         showStakeModal={showStakeModal}
         setShowStakeModal={setShowStakeModal}
@@ -819,17 +926,27 @@ const LuminexApp = () => {
         handleStake={handleStake}
       />
 
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} isAdmin={isAdmin} />
+      {/* Bottom Navigation */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isAdmin={isAdmin}
+      />
 
+      {/* Toast Notification */}
       <Toast toast={toast} />
 
+      {/* QR Code Modal */}
       <QRModal
         showQRModal={showQRModal}
         setShowQRModal={setShowQRModal}
         safeReferralCode={safeReferralCode}
         showToast={showToast}
       />
-    </TronShell>
+
+      {/* Spacer for bottom nav */}
+      <div className="h-16"></div>
+    </div>
   );
 };
 

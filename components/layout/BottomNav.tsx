@@ -1,11 +1,12 @@
 'use client';
 
 import React, { memo } from 'react';
-import { Home, Zap, Gamepad2, UserPlus, User, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { PiggyBank, Zap, UserPlus, Gamepad2, Shield } from 'lucide-react';
 
 interface BottomNavProps {
-  activeTab: 'home' | 'power' | 'game' | 'friends' | 'profile';
-  setActiveTab: (tab: 'home' | 'power' | 'game' | 'friends' | 'profile') => void;
+  activeTab: 'staking' | 'membership' | 'referral' | 'game';
+  setActiveTab: (tab: 'staking' | 'membership' | 'referral' | 'game') => void;
   isAdmin: boolean;
 }
 
@@ -16,103 +17,98 @@ const BottomNav = memo(({
 }: BottomNavProps) => {
   return (
     <div 
-      className="fixed bottom-0 left-0 right-0 glass-tron border-t z-40 safe-area-bottom" 
+      className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-2xl border-t border-yellow-600/20 z-40" 
       style={{
-        background: 'linear-gradient(180deg, rgba(5, 8, 22, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderTopColor: 'rgba(79, 70, 229, 0.2)',
-        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(79, 70, 229, 0.1)',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))',
-        transform: 'translateZ(0)',
-        contain: 'layout style',
+        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(234, 179, 8, 0.05)'
       }}
     >
       <div className="max-w-md mx-auto px-4 py-3 flex justify-around">
-        {/* Home Tab */}
-        <button
-          onClick={() => setActiveTab('home')}
-          aria-label="Home tab"
-          aria-pressed={activeTab === 'home'}
-          className={`flex flex-col items-center space-y-1 relative min-h-[44px] min-w-[44px] transition-colors duration-150 ${activeTab === 'home' ? 'text-luminex-primary' : 'text-gray-400'}`}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setActiveTab('staking')}
+          aria-label="Staking tab"
+          aria-pressed={activeTab === 'staking'}
+          className={`flex flex-col items-center space-y-1 relative ${activeTab === 'staking' ? 'text-white' : 'text-gray-500'}`}
         >
-          {activeTab === 'home' && (
-            <div
-              className="absolute -inset-2 bg-luminex-primary/20 rounded-2xl"
-              style={{ boxShadow: '0 0 15px rgba(79, 70, 229, 0.3)' }}
+          {activeTab === 'staking' && (
+            <motion.div
+              layoutId="activeTab"
+              className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
             />
           )}
-          <Home className={`w-6 h-6 relative z-10 ${activeTab === 'home' ? 'drop-shadow-[0_0_6px_rgba(79,70,229,0.6)]' : ''}`} aria-hidden="true" />
-          <span className="text-xs font-semibold relative z-10">Home</span>
-        </button>
-
-        {/* Power Tab */}
-        <button
-          onClick={() => setActiveTab('power')}
-          aria-label="Power tab"
-          aria-pressed={activeTab === 'power'}
-          className={`flex flex-col items-center space-y-1 relative min-h-[44px] min-w-[44px] transition-colors duration-150 ${activeTab === 'power' ? 'text-luminex-cyan' : 'text-gray-400'}`}
+          <PiggyBank className="w-6 h-6 relative z-10" aria-hidden="true" />
+          <span className="text-xs font-bold relative z-10">Staking</span>
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setActiveTab('membership')}
+          aria-label="Power/Membership tab"
+          aria-pressed={activeTab === 'membership'}
+          className={`flex flex-col items-center space-y-1 relative ${activeTab === 'membership' ? 'text-white' : 'text-gray-500'}`}
         >
-          {activeTab === 'power' && (
-            <div
-              className="absolute -inset-2 bg-luminex-cyan/20 rounded-2xl"
-              style={{ boxShadow: '0 0 15px rgba(34, 211, 238, 0.3)' }}
+          {activeTab === 'membership' && (
+            <motion.div
+              layoutId="activeTab"
+              className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
             />
           )}
-          <Zap className={`w-6 h-6 relative z-10 ${activeTab === 'power' ? 'drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]' : ''}`} aria-hidden="true" />
-          <span className="text-xs font-semibold relative z-10">Power</span>
-        </button>
-
-        {/* Game Tab */}
-        <button
+          <Zap className="w-6 h-6 relative z-10" aria-hidden="true" />
+          <span className="text-xs font-bold relative z-10">Power</span>
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setActiveTab('referral')}
+          aria-label="Referral tab"
+          aria-pressed={activeTab === 'referral'}
+          className={`flex flex-col items-center space-y-1 relative ${activeTab === 'referral' ? 'text-white' : 'text-gray-500'}`}
+        >
+          {activeTab === 'referral' && (
+            <motion.div
+              layoutId="activeTab"
+              className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
+            />
+          )}
+          <UserPlus className="w-6 h-6 relative z-10" aria-hidden="true" />
+          <span className="text-xs font-bold relative z-10">Referral</span>
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setActiveTab('game')}
           aria-label="Game tab"
           aria-pressed={activeTab === 'game'}
-          className={`flex flex-col items-center space-y-1 relative min-h-[44px] min-w-[44px] transition-colors duration-150 ${activeTab === 'game' ? 'text-luminex-purple' : 'text-gray-400'}`}
+          className={`flex flex-col items-center space-y-1 relative ${activeTab === 'game' ? 'text-white' : 'text-gray-500'}`}
         >
           {activeTab === 'game' && (
-            <div
-              className="absolute -inset-2 bg-luminex-purple/20 rounded-2xl"
-              style={{ boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)' }}
+            <motion.div
+              layoutId="activeTab"
+              className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl blur"
             />
           )}
-          <Gamepad2 className={`w-6 h-6 relative z-10 ${activeTab === 'game' ? 'drop-shadow-[0_0_6px_rgba(168,85,247,0.6)]' : ''}`} aria-hidden="true" />
-          <span className="text-xs font-semibold relative z-10">Game</span>
-        </button>
-
-        {/* Friends Tab */}
-        <button
-          onClick={() => setActiveTab('friends')}
-          aria-label="Friends tab"
-          aria-pressed={activeTab === 'friends'}
-          className={`flex flex-col items-center space-y-1 relative min-h-[44px] min-w-[44px] transition-colors duration-150 ${activeTab === 'friends' ? 'text-luminex-green' : 'text-gray-400'}`}
-        >
-          {activeTab === 'friends' && (
-            <div
-              className="absolute -inset-2 bg-luminex-green/20 rounded-2xl"
-              style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.3)' }}
-            />
-          )}
-          <UserPlus className={`w-6 h-6 relative z-10 ${activeTab === 'friends' ? 'drop-shadow-[0_0_6px_rgba(34,197,94,0.6)]' : ''}`} aria-hidden="true" />
-          <span className="text-xs font-semibold relative z-10">Friends</span>
-        </button>
-
-        {/* Profile Tab */}
-        <button
-          onClick={() => setActiveTab('profile')}
-          aria-label="Profile tab"
-          aria-pressed={activeTab === 'profile'}
-          className={`flex flex-col items-center space-y-1 relative min-h-[44px] min-w-[44px] transition-colors duration-150 ${activeTab === 'profile' ? 'text-luminex-primary' : 'text-gray-400'}`}
-        >
-          {activeTab === 'profile' && (
-            <div
-              className="absolute -inset-2 bg-luminex-primary/20 rounded-2xl"
-              style={{ boxShadow: '0 0 15px rgba(79, 70, 229, 0.3)' }}
-            />
-          )}
-          <User className={`w-6 h-6 relative z-10 ${activeTab === 'profile' ? 'drop-shadow-[0_0_6px_rgba(79,70,229,0.6)]' : ''}`} aria-hidden="true" />
-          <span className="text-xs font-semibold relative z-10">Profile</span>
-        </button>
+          <Gamepad2 className="w-6 h-6 relative z-10" aria-hidden="true" />
+          <span className="text-xs font-bold relative z-10">Game</span>
+        </motion.button>
+        {/* Admin Button - Only visible to admin users */}
+        {isAdmin && (
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.location.assign('/admin');
+              }
+            }}
+            aria-label="Admin dashboard"
+            className="flex flex-col items-center space-y-1 relative text-yellow-400 hover:text-yellow-300"
+          >
+            <Shield className="w-6 h-6 relative z-10" aria-hidden="true" />
+            <span className="text-xs font-bold relative z-10">Admin</span>
+          </motion.button>
+        )}
       </div>
     </div>
   );
@@ -121,4 +117,3 @@ const BottomNav = memo(({
 BottomNav.displayName = 'BottomNav';
 
 export default BottomNav;
-

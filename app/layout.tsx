@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Prompt } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import BrandStyle from '@/components/BrandStyle';
@@ -11,19 +11,7 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
   require('../sentry.client.config');
 }
 
-// Luminex Power App fonts - Clean, modern
-const inter = Inter({ 
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const prompt = Prompt({ 
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-prompt',
-  display: 'swap',
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Luminex Staking - Premium DeFi Platform',
@@ -77,9 +65,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="image" href="https://i.postimg.cc/wvJqhSYW/Gemini-Generated-Image-ggu8gdggu8gdggu8-1.png" />
         <link rel="preconnect" href="https://i.postimg.cc" />
-        {/* Tron fonts are loaded via next/font/google */}
       </head>
-      <body className={`${inter.variable} ${prompt.variable} font-sans`} suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <GoogleAnalytics />
         <ErrorBoundary>
           <MiniKitProvider>

@@ -1,72 +1,50 @@
 'use client';
 
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo } from 'react';
+import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
-import { TronCard } from '@/components/tron';
-import { AILoadingState } from '@/components/common/AILoadingState';
 
-const GameLauncherCard = dynamic(() => import('@/components/game/GameLauncherCard'), { 
-  ssr: false,
-  loading: () => <AILoadingState message="Loading games..." size="md" />
-});
+const GameLauncherCard = dynamic(() => import('@/components/game/GameLauncherCard'), { ssr: false });
 
 const GameTab = memo(() => {
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    // Simulate intelligent loading
-    const timer = setTimeout(() => setIsLoaded(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <AILoadingState message="Initializing game portal..." size="lg" />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-3">
-      {/* The Arena Header */}
-      <TronCard glowColor="orange" className="p-6 sm:p-8 text-center relative overflow-hidden">
-        {/* Arena background effect */}
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `
-              radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.3), transparent 50%),
-              radial-gradient(circle at 70% 70%, rgba(255, 26, 42, 0.2), transparent 50%)
-            `,
-          }}
-        />
-        
+    <motion.div
+      key="game"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-3"
+      style={{ willChange: 'transform, opacity' }}
+    >
+      {/* Game Tab */}
+      <div 
+        className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-3xl p-8 text-center overflow-hidden border-2 border-yellow-600/30" 
+        style={{
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(234, 179, 8, 0.1), inset 0 1px 0 rgba(234, 179, 8, 0.1)'
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 via-transparent to-transparent animate-pulse"></div>
         <div className="relative z-10">
-          <div className="text-6xl sm:text-7xl mb-4">
+          <motion.div
+            animate={{ rotate: [0, 15, -15, 0] }}
+            transition={{ duration: 5, repeat: Infinity }}
+            className="text-7xl mb-4"
+          >
             🎮
-          </div>
-          <h1 className="text-xl sm:text-2xl font-extrabold font-orbitron text-tron-orange mb-2 neon-text uppercase tracking-wider">
-            THE ARENA
+          </motion.div>
+          <h1 className="text-2xl font-extrabold text-white mb-2">
+            Play & Earn!
           </h1>
-          <p className="text-gray-300 mb-2 text-base sm:text-lg font-orbitron">
-            Enter the games and earn rewards
-          </p>
-          <div className="mt-4 inline-block px-4 py-2 rounded-lg border border-tron-orange/30 bg-tron-orange/10">
-            <p className="text-tron-orange text-xs font-orbitron font-bold">
-              Win up to 0-5 LUX per game
-            </p>
-          </div>
+          <p className="text-white/90 mb-2 text-lg">Play games and earn rewards</p>
         </div>
-      </TronCard>
+      </div>
 
       {/* Game Launcher */}
       <GameLauncherCard />
-    </div>
+    </motion.div>
   );
 });
 
 GameTab.displayName = 'GameTab';
 
 export default GameTab;
-
