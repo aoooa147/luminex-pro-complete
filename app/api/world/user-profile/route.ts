@@ -73,9 +73,11 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
             username = data.username;
             userProfile = data;
             
-            // Save to storage for future use
-            const { saveUsername } = await import('@/lib/storage/usernameStorage');
-            await saveUsername(address, username, 'api');
+            // Save to storage for future use (only if username is not null)
+            if (username) {
+              const { saveUsername } = await import('@/lib/storage/usernameStorage');
+              await saveUsername(address, username, 'api');
+            }
             
             logger.info('Username found from World App Backend API', { address: address.toLowerCase(), username }, 'world/user-profile');
             return createSuccessResponse({
@@ -114,9 +116,11 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
             username = data.username;
             userProfile = data;
             
-            // Save to storage for future use
-            const { saveUsername } = await import('@/lib/storage/usernameStorage');
-            await saveUsername(address, username, 'api');
+            // Save to storage for future use (only if username is not null)
+            if (username) {
+              const { saveUsername } = await import('@/lib/storage/usernameStorage');
+              await saveUsername(address, username, 'api');
+            }
             
             logger.info('Username found from World App Developer API', { address: address.toLowerCase(), username }, 'world/user-profile');
             return createSuccessResponse({
