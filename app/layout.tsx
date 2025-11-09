@@ -13,13 +13,13 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
 
 // Luminex Power App fonts - Clean, modern
 const inter = Inter({ 
-  subsets: ['latin', 'thai'],
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-inter',
   display: 'swap',
 });
 
 const prompt = Prompt({ 
-  subsets: ['latin', 'thai'],
+  subsets: ['latin', 'latin-ext'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-prompt',
   display: 'swap',
