@@ -48,3 +48,9 @@ next-env.d.ts
 *.swp
 *.swo
 *~
+
+# Backup folders and files
+luminex-v4-ultimate 33/
+*.backup
+*-tron-ares.*
+*-backup.*
