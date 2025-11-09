@@ -154,3 +154,18 @@ model SystemSettings {
 
   @@map("system_settings")
 }
+
+model UserProfile {
+  address    String   @id @db.VarChar(42)
+  username   String?
+  name       String?
+  source     String?  // 'minikit' | 'world_app_api' | 'manual' | 'database'
+  metadata   Json?    // Store additional user data
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lastFetched DateTime? // Last time we tried to fetch from World App
+
+  @@index([username])
+  @@index([address])
+  @@map("user_profiles")
+}

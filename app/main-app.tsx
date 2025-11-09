@@ -158,6 +158,75 @@ const LuminexApp = () => {
     }
   }, [actualAddress]);
 
+  // Fetch username from storage/API when address changes (if not already set)
+  useEffect(() => {
+    if (actualAddress && (!userInfo?.username && !userInfo?.name)) {
+      // Check if we already have username in local storage first
+      if (typeof window !== 'undefined') {
+        const storedUsername = sessionStorage.getItem('userName') || localStorage.getItem('userName');
+        if (storedUsername) {
+          setUserInfo({ name: storedUsername, username: storedUsername });
+          return;
+        }
+      }
+      
+      // Fetch username from server storage (fastest, most reliable)
+      const fetchUsername = async () => {
+        try {
+          // Try server storage first
+          const getResponse = await fetch(`/api/world/username/get?address=${actualAddress}`);
+          if (getResponse.ok) {
+            const getData = await getResponse.json();
+            if (getData?.success && getData?.username) {
+              const username = getData.username;
+              setUserInfo({ name: username, username: username });
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('userName', username);
+                localStorage.setItem('userName', username);
+              }
+              console.log('✅ Username fetched from server storage:', username);
+              return;
+            }
+          }
+          
+          // If not in server storage, try World App API
+          const response = await fetch(`/api/world/user-profile?address=${actualAddress}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data?.success && data?.data?.username) {
+              const username = data.data.username;
+              if (username) {
+                setUserInfo({ name: username, username: username });
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem('userName', username);
+                  localStorage.setItem('userName', username);
+                }
+                console.log('✅ Username fetched from World App API:', username);
+                
+                // Save to server storage for future use
+                fetch('/api/world/username/save', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    address: actualAddress,
+                    username: username,
+                    source: 'api',
+                  }),
+                }).catch(() => {
+                  // Silent fallback
+                });
+              }
+            }
+          }
+        } catch (error) {
+          // Silent fallback
+        }
+      };
+      
+      fetchUsername();
+    }
+  }, [actualAddress, userInfo, setUserInfo]);
+
   // Wrapper for handleStake to handle modal state
   const handleStake = useCallback(async () => {
     if (!stakeAmount) {
@@ -344,10 +413,30 @@ const LuminexApp = () => {
               console.warn('⚠️ No verified address found in storage');
             }
             
-            // Try to get username from multiple sources
+            // Try to get username from multiple sources (priority order)
             let userName = sessionStorage.getItem('userName') || localStorage.getItem('userName');
             
-            // If no username in storage, try to fetch from API
+            // If no username in local storage, try to fetch from server storage first (fastest)
+            if (!userName && verifiedAddr) {
+              try {
+                const getResponse = await fetch(`/api/world/username/get?address=${verifiedAddr}`);
+                if (getResponse.ok) {
+                  const getData = await getResponse.json();
+                  if (getData?.success && getData?.username) {
+                    userName = getData.username;
+                    if (userName) {
+                      sessionStorage.setItem('userName', userName);
+                      localStorage.setItem('userName', userName);
+                      console.log('✅ Username retrieved from server storage:', userName);
+                    }
+                  }
+                }
+              } catch (error) {
+                // Silent fallback
+              }
+            }
+            
+            // If still no username, try to fetch from World App API
             if (!userName && verifiedAddr) {
               try {
                 const response = await fetch(`/api/world/user-profile?address=${verifiedAddr}`);
@@ -358,6 +447,20 @@ const LuminexApp = () => {
                     if (userName) {
                       sessionStorage.setItem('userName', userName);
                       localStorage.setItem('userName', userName);
+                      console.log('✅ Username retrieved from World App API:', userName);
+                      
+                      // Save to server storage for future use
+                      fetch('/api/world/username/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          address: verifiedAddr,
+                          username: userName,
+                          source: 'api',
+                        }),
+                      }).catch(() => {
+                        // Silent fallback
+                      });
                     }
                   }
                 }

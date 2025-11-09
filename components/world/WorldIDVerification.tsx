@@ -58,6 +58,32 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
         if (MiniKit.commandsAsync?.walletAuth) {
           const nonce = crypto.randomUUID().replace(/-/g, '');
           const result = await MiniKit.commandsAsync.walletAuth({ nonce });
+          
+          // DEBUG: Log entire result object to see all available fields
+          console.log('🔍 MiniKit walletAuth result (full):', JSON.stringify(result, null, 2));
+          console.log('🔍 MiniKit walletAuth result.finalPayload:', JSON.stringify(result.finalPayload, null, 2));
+          
+          // Check all possible fields in result
+          if (result) {
+            console.log('🔍 result keys:', Object.keys(result));
+            if (result.user) console.log('🔍 result.user:', JSON.stringify(result.user, null, 2));
+            if (result.profile) console.log('🔍 result.profile:', JSON.stringify(result.profile, null, 2));
+            if (result.username) console.log('🔍 result.username:', result.username);
+            if (result.name) console.log('🔍 result.name:', result.name);
+          }
+          
+          // Check MiniKit object itself
+          console.log('🔍 MiniKit object keys:', Object.keys(MiniKit));
+          if (MiniKit.user) {
+            console.log('🔍 MiniKit.user:', JSON.stringify(MiniKit.user, null, 2));
+          }
+          if (MiniKit.getUser) {
+            console.log('🔍 MiniKit.getUser available');
+          }
+          if (MiniKit.getUserInfo) {
+            console.log('🔍 MiniKit.getUserInfo available');
+          }
+          
           const walletData = result.finalPayload;
 
           const res = await fetch('/api/complete-siwe', {
@@ -84,54 +110,167 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
                 // Try to get username from multiple sources (priority order)
                 let foundUsername: string | null = null;
                 
-                // Method 1: Check walletData from MiniKit walletAuth
-                if (walletData.name || walletData.username) {
-                  foundUsername = walletData.name || walletData.username || null;
-                  console.log('✅ Username from walletData:', foundUsername);
-                }
-                
-                // Method 2: Check MiniKit.user.username (if available)
-                if (!foundUsername && (window as any).MiniKit?.user?.username) {
-                  foundUsername = (window as any).MiniKit.user.username;
-                  console.log('✅ Username from MiniKit.user:', foundUsername);
-                }
-                
-                // Method 3: Try MiniKit.getUserByAddress (if available)
-                if (!foundUsername && (window as any).MiniKit?.getUserByAddress) {
-                  try {
-                    const userData = await (window as any).MiniKit.getUserByAddress(address);
-                    if (userData?.username) {
-                      foundUsername = userData.username;
-                      console.log('✅ Username from getUserByAddress:', foundUsername);
-                    }
-                  } catch (e) {
-                    // Silent fallback
+                // Method 1: Check result object itself (not just finalPayload)
+                if (result && typeof result === 'object') {
+                  if ((result as any).username) {
+                    foundUsername = (result as any).username;
+                    console.log('✅ Username from result.username:', foundUsername);
+                  } else if ((result as any).name) {
+                    foundUsername = (result as any).name;
+                    console.log('✅ Username from result.name:', foundUsername);
+                  } else if ((result as any).user?.username) {
+                    foundUsername = (result as any).user.username;
+                    console.log('✅ Username from result.user.username:', foundUsername);
+                  } else if ((result as any).profile?.username) {
+                    foundUsername = (result as any).profile.username;
+                    console.log('✅ Username from result.profile.username:', foundUsername);
                   }
                 }
                 
-                // Method 4: Fetch from World App API (as fallback)
+                // Method 2: Check walletData from MiniKit walletAuth (check all possible fields)
+                if (!foundUsername && walletData) {
+                  const walletDataAny = walletData as any;
+                  if (walletDataAny.name) {
+                    foundUsername = walletDataAny.name;
+                    console.log('✅ Username from walletData.name:', foundUsername);
+                  } else if (walletDataAny.username) {
+                    foundUsername = walletDataAny.username;
+                    console.log('✅ Username from walletData.username:', foundUsername);
+                  } else if (walletDataAny.user?.username) {
+                    foundUsername = walletDataAny.user.username;
+                    console.log('✅ Username from walletData.user.username:', foundUsername);
+                  } else if (walletDataAny.profile?.username) {
+                    foundUsername = walletDataAny.profile.username;
+                    console.log('✅ Username from walletData.profile.username:', foundUsername);
+                  } else if (walletDataAny.userName) {
+                    foundUsername = walletDataAny.userName;
+                    console.log('✅ Username from walletData.userName:', foundUsername);
+                  } else if (walletDataAny.displayName) {
+                    foundUsername = walletDataAny.displayName;
+                    console.log('✅ Username from walletData.displayName:', foundUsername);
+                  }
+                }
+                
+                // Method 3: Check MiniKit.user (if available)
+                if (!foundUsername && (window as any).MiniKit?.user) {
+                  const miniKitUser = (window as any).MiniKit.user;
+                  if (miniKitUser.username) {
+                    foundUsername = miniKitUser.username;
+                    console.log('✅ Username from MiniKit.user.username:', foundUsername);
+                  } else if (miniKitUser.name) {
+                    foundUsername = miniKitUser.name;
+                    console.log('✅ Username from MiniKit.user.name:', foundUsername);
+                  } else if (miniKitUser.displayName) {
+                    foundUsername = miniKitUser.displayName;
+                    console.log('✅ Username from MiniKit.user.displayName:', foundUsername);
+                  }
+                }
+                
+                // Method 4: Try MiniKit.getUserByAddress (if available)
+                if (!foundUsername && (window as any).MiniKit?.getUserByAddress) {
+                  try {
+                    const userData = await (window as any).MiniKit.getUserByAddress(address);
+                    console.log('🔍 getUserByAddress result:', JSON.stringify(userData, null, 2));
+                    if (userData?.username) {
+                      foundUsername = userData.username;
+                      console.log('✅ Username from getUserByAddress:', foundUsername);
+                    } else if (userData?.name) {
+                      foundUsername = userData.name;
+                      console.log('✅ Username from getUserByAddress.name:', foundUsername);
+                    }
+                  } catch (e) {
+                    console.warn('⚠️ getUserByAddress error:', e);
+                  }
+                }
+                
+                // Method 5: Try MiniKit.getUser (if available)
+                if (!foundUsername && (window as any).MiniKit?.getUser) {
+                  try {
+                    const userData = await (window as any).MiniKit.getUser();
+                    console.log('🔍 getUser result:', JSON.stringify(userData, null, 2));
+                    if (userData?.username) {
+                      foundUsername = userData.username;
+                      console.log('✅ Username from getUser:', foundUsername);
+                    }
+                  } catch (e) {
+                    console.warn('⚠️ getUser error:', e);
+                  }
+                }
+                
+                // Method 6: Try MiniKit.getUserInfo (if available)
+                if (!foundUsername && (window as any).MiniKit?.getUserInfo) {
+                  try {
+                    const userInfo = await (window as any).MiniKit.getUserInfo();
+                    console.log('🔍 getUserInfo result:', JSON.stringify(userInfo, null, 2));
+                    if (userInfo?.username) {
+                      foundUsername = userInfo.username;
+                      console.log('✅ Username from getUserInfo:', foundUsername);
+                    }
+                  } catch (e) {
+                    console.warn('⚠️ getUserInfo error:', e);
+                  }
+                }
+                
+                // Method 7: Fetch from our API (which will check database first, then World App APIs)
                 if (!foundUsername) {
                   try {
                     const profileResponse = await fetch(`/api/world/user-profile?address=${address}`);
                     if (profileResponse.ok) {
                       const profileData = await profileResponse.json();
+                      console.log('🔍 API user-profile response:', JSON.stringify(profileData, null, 2));
                       if (profileData?.success && profileData?.data?.username) {
                         foundUsername = profileData.data.username;
                         console.log('✅ Username from API:', foundUsername);
                       }
                     }
                   } catch (e) {
-                    // Silent fallback
+                    console.warn('⚠️ API user-profile error:', e);
                   }
                 }
                 
-                // Store username if found
+                // Store username if found - save to database AND localStorage
                 if (foundUsername) {
                   sessionStorage.setItem('userName', foundUsername);
                   localStorage.setItem('userName', foundUsername);
-                  console.log('✅ Username saved:', foundUsername);
+                  console.log('✅ Username saved to storage:', foundUsername);
+                  
+                  // Save to database via API
+                  try {
+                    const saveResponse = await fetch('/api/world/username/save', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        address: address, 
+                        username: foundUsername,
+                        source: 'minikit',
+                      })
+                    });
+                    if (saveResponse.ok) {
+                      const saveData = await saveResponse.json();
+                      if (saveData?.success) {
+                        console.log('✅ Username saved to database:', foundUsername);
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('⚠️ Failed to save username to database:', e);
+                  }
                 } else {
-                  console.warn('⚠️ No username found from World App');
+                  console.warn('⚠️ No username found from any source');
+                  // Check server storage for stored username (fallback)
+                  try {
+                    const getResponse = await fetch(`/api/world/username/get?address=${address}`);
+                    if (getResponse.ok) {
+                      const getData = await getResponse.json();
+                      if (getData?.success && getData?.username) {
+                        foundUsername = getData.username;
+                        sessionStorage.setItem('userName', foundUsername);
+                        localStorage.setItem('userName', foundUsername);
+                        console.log('✅ Username retrieved from server storage (fallback):', foundUsername);
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('⚠️ Failed to load username from database:', e);
+                  }
                 }
               }
               

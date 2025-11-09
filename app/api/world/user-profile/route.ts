@@ -34,14 +34,24 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   }
 
   try {
-    // Try to get username from World App Backend API
-    // Note: This API endpoint may require authentication or may not be publicly available
-    // We'll try multiple methods to get the username
+    // Method 1: Try to get username from our storage first (fastest)
+    const { getUsername } = await import('@/lib/storage/usernameStorage');
+    let username = await getUsername(address);
     
-    let username: string | null = null;
-    let userProfile: any = null;
+    if (username) {
+      logger.info('Username found in storage', { address: address.toLowerCase(), username }, 'world/user-profile');
+      return createSuccessResponse({
+        address: address.toLowerCase(),
+        username,
+        found: true,
+        source: 'storage',
+      });
+    }
 
-    // Method 1: Try World App Backend API (if available)
+    // Method 2: Try World App Backend API (if available)
+    // Note: These APIs may not be publicly available or may require authentication
+    let userProfile: any = null;
+    
     if (WORLD_BACKEND_API_BASE_URL && WORLD_APP_ID) {
       try {
         const response = await fetch(
@@ -53,6 +63,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
               'X-App-ID': WORLD_APP_ID,
             },
             cache: 'no-store',
+            signal: AbortSignal.timeout(5000), // 5 second timeout
           }
         );
 
@@ -61,6 +72,19 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
           if (data?.username) {
             username = data.username;
             userProfile = data;
+            
+            // Save to storage for future use
+            const { saveUsername } = await import('@/lib/storage/usernameStorage');
+            await saveUsername(address, username, 'api');
+            
+            logger.info('Username found from World App Backend API', { address: address.toLowerCase(), username }, 'world/user-profile');
+            return createSuccessResponse({
+              address: address.toLowerCase(),
+              username,
+              profile: userProfile,
+              found: true,
+              source: 'world-app-api',
+            });
           }
         }
       } catch (error: any) {
@@ -69,7 +93,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       }
     }
 
-    // Method 2: Try World App Developer API (alternative endpoint)
+    // Method 3: Try World App Developer API (alternative endpoint)
     if (!username && WORLD_APP_ID) {
       try {
         const response = await fetch(
@@ -80,6 +104,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
               'Content-Type': 'application/json',
             },
             cache: 'no-store',
+            signal: AbortSignal.timeout(5000), // 5 second timeout
           }
         );
 
@@ -88,6 +113,19 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
           if (data?.username) {
             username = data.username;
             userProfile = data;
+            
+            // Save to storage for future use
+            const { saveUsername } = await import('@/lib/storage/usernameStorage');
+            await saveUsername(address, username, 'api');
+            
+            logger.info('Username found from World App Developer API', { address: address.toLowerCase(), username }, 'world/user-profile');
+            return createSuccessResponse({
+              address: address.toLowerCase(),
+              username,
+              profile: userProfile,
+              found: true,
+              source: 'world-developer-api',
+            });
           }
         }
       } catch (error: any) {
@@ -96,12 +134,14 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       }
     }
 
-    // Return username if found, otherwise return null
+    // Return null username if not found anywhere
+    logger.debug('Username not found for address', { address: address.toLowerCase() }, 'world/user-profile');
     return createSuccessResponse({
       address: address.toLowerCase(),
-      username: username || null,
-      profile: userProfile || null,
-      found: !!username,
+      username: null,
+      profile: null,
+      found: false,
+      source: 'none',
     });
   } catch (error: any) {
     logger.error('Error fetching user profile from World App', { 
@@ -115,6 +155,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       username: null,
       profile: null,
       found: false,
+      source: 'error',
     });
   }
 }, 'world/user-profile');

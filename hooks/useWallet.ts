@@ -162,15 +162,65 @@ export function useWallet(verifiedAddress: string | null) {
           if (typeof window !== 'undefined') {
             sessionStorage.setItem('userName', foundUsername);
             localStorage.setItem('userName', foundUsername);
+            
+            // Save username to server storage for persistence
+            fetch('/api/world/username/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                address: walletData.address,
+                username: foundUsername,
+                source: 'minikit',
+              }),
+            }).catch(() => {
+              // Silent fallback - non-critical error
+            });
           }
         } else if (walletData?.name || walletData?.username) {
           // Fallback to walletData if no username found
+          const fallbackUsername = walletData.name || walletData.username;
           setUserInfo({ 
-            name: walletData.name || walletData.username, 
+            name: fallbackUsername, 
             username: walletData.username || walletData.name
           });
+          
+          // Also save fallback username if available
+          if (typeof window !== 'undefined' && fallbackUsername) {
+            sessionStorage.setItem('userName', fallbackUsername);
+            localStorage.setItem('userName', fallbackUsername);
+            
+            fetch('/api/world/username/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                address: walletData.address,
+                username: fallbackUsername,
+                source: 'minikit',
+              }),
+            }).catch(() => {
+              // Silent fallback
+            });
+          }
         } else {
-          setUserInfo(null);
+          // Try to get username from server storage as last resort
+          if (typeof window !== 'undefined') {
+            fetch(`/api/world/username/get?address=${walletData.address}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data?.success && data?.username) {
+                  setUserInfo({ name: data.username, username: data.username });
+                  sessionStorage.setItem('userName', data.username);
+                  localStorage.setItem('userName', data.username);
+                } else {
+                  setUserInfo(null);
+                }
+              })
+              .catch(() => {
+                setUserInfo(null);
+              });
+          } else {
+            setUserInfo(null);
+          }
         }
         
         const rpcProvider = new ethers.JsonRpcProvider(WALLET_RPC_URL);
