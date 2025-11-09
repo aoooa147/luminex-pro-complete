@@ -9,6 +9,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '@/lib/utils/logger';
 
+// Check if we're in a serverless environment
+const isServerless = () => {
+  return !!(
+    process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.VERCEL_ENV ||
+    process.env.NEXT_PUBLIC_VERCEL_ENV
+  );
+};
+
 const STORAGE_DIR = path.join(process.cwd(), 'tmp_data');
 const USERNAME_FILE = path.join(STORAGE_DIR, 'usernames.json');
 
