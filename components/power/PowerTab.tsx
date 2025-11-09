@@ -10,7 +10,7 @@ interface PowerTabProps {
   baseApy: number;
   powerBoost: number;
   isPurchasingPower: boolean;
-  handlePurchasePower: (powerCode: string | PowerCode) => Promise<void>;
+  handlePurchasePower: (powerCode: PowerCode) => Promise<void>;
   onNavigate: (tab: 'home' | 'power' | 'game' | 'friends' | 'profile') => void;
 }
 
@@ -99,7 +99,7 @@ export const PowerTab = memo(function PowerTab({
           <button
             onClick={async () => {
               if (!currentPower) {
-                await handlePurchasePower('basic' as PowerCode);
+                await handlePurchasePower('basic');
               }
             }}
             disabled={isPurchasingPower}
