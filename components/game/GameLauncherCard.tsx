@@ -38,7 +38,7 @@ const GAMES = [
     name: '📝 Word Builder',
     description: 'Build words from letters to win rewards!',
     href: '/game/word-builder',
-    glowColor: 'blue' as const,
+    glowColor: 'cyan' as const,
   },
   {
     id: 'math-quiz',
@@ -71,7 +71,7 @@ const GameLauncherCard = memo(() => {
             style={{ transform: 'translateZ(0)' }}
           >
             <TronCard
-              glowColor={game.glowColor === 'cyan' ? 'orange' : game.glowColor === 'orange' ? 'orange' : game.glowColor}
+              glowColor={game.glowColor}
               className="p-4 sm:p-5 flex flex-col min-h-[160px] h-full cursor-pointer relative overflow-hidden group"
             >
               {/* Hover glow effect - CSS only for better performance */}
