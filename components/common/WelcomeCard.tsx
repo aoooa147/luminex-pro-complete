@@ -62,6 +62,6 @@ export const WelcomeCard = memo(function WelcomeCard({ username, address }: Welc
           }
         }
       `}</style>
-    </TronCard>
+    </div>
   );
 })
