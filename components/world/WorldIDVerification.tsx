@@ -80,14 +80,63 @@ export default function WorldIDVerification({ onVerify }: WorldIDVerificationPro
                 // Also store in localStorage for persistence
                 localStorage.setItem('user_address', address);
                 console.log('✅ Wallet address saved:', address);
+                
+                // Try to get username from multiple sources (priority order)
+                let foundUsername: string | null = null;
+                
+                // Method 1: Check walletData from MiniKit walletAuth
+                if (walletData.name || walletData.username) {
+                  foundUsername = walletData.name || walletData.username || null;
+                  console.log('✅ Username from walletData:', foundUsername);
+                }
+                
+                // Method 2: Check MiniKit.user.username (if available)
+                if (!foundUsername && (window as any).MiniKit?.user?.username) {
+                  foundUsername = (window as any).MiniKit.user.username;
+                  console.log('✅ Username from MiniKit.user:', foundUsername);
+                }
+                
+                // Method 3: Try MiniKit.getUserByAddress (if available)
+                if (!foundUsername && (window as any).MiniKit?.getUserByAddress) {
+                  try {
+                    const userData = await (window as any).MiniKit.getUserByAddress(address);
+                    if (userData?.username) {
+                      foundUsername = userData.username;
+                      console.log('✅ Username from getUserByAddress:', foundUsername);
+                    }
+                  } catch (e) {
+                    // Silent fallback
+                  }
+                }
+                
+                // Method 4: Fetch from World App API (as fallback)
+                if (!foundUsername) {
+                  try {
+                    const profileResponse = await fetch(`/api/world/user-profile?address=${address}`);
+                    if (profileResponse.ok) {
+                      const profileData = await profileResponse.json();
+                      if (profileData?.success && profileData?.data?.username) {
+                        foundUsername = profileData.data.username;
+                        console.log('✅ Username from API:', foundUsername);
+                      }
+                    }
+                  } catch (e) {
+                    // Silent fallback
+                  }
+                }
+                
+                // Store username if found
+                if (foundUsername) {
+                  sessionStorage.setItem('userName', foundUsername);
+                  localStorage.setItem('userName', foundUsername);
+                  console.log('✅ Username saved:', foundUsername);
+                } else {
+                  console.warn('⚠️ No username found from World App');
+                }
               }
               
               if (data.siweMessageData?.chain_id) {
                 sessionStorage.setItem('chainId', String(data.siweMessageData.chain_id));
-              }
-              
-              if (walletData.name || walletData.username) {
-                sessionStorage.setItem('userName', walletData.name || walletData.username || '');
               }
               
               console.log('✅ Verification successful, calling onVerify callback');

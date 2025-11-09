@@ -168,32 +168,32 @@ const StakingTab = memo(({
           />
         </motion.div>
       ) : (
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-xl p-3 text-white overflow-hidden border border-yellow-600/20"
-        >
-          <div className="relative z-10 space-y-2">
-            {/* Power License Status */}
-            <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/10">
-              <div className="flex items-center space-x-1.5">
+      <motion.div
+        initial={{ scale: 0.95 }}
+        animate={{ scale: 1 }}
+        className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-xl p-3 text-white overflow-hidden border border-yellow-600/20"
+      >
+        <div className="relative z-10 space-y-2">
+          {/* Power License Status */}
+          <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/10">
+            <div className="flex items-center space-x-1.5">
                 <Zap className="w-3.5 h-3.5 text-yellow-400" aria-hidden="true" />
-                <span className="text-white/80 text-[10px]">Power License:</span>
-                <span className="text-white font-bold text-xs">
-                  {currentPower ? currentPower.name : 'None'}
-                </span>
-              </div>
-              <div className="text-right">
-                <div className="text-yellow-300 font-bold text-xs">{totalApy}% Total APY</div>
-                <div className="text-white/60 text-[9px] mt-0.5">
-                  Base {baseApy}% {powerBoost > 0 ? `+ ${powerBoost}%` : ''}
-                </div>
+              <span className="text-white/80 text-[10px]">Power License:</span>
+              <span className="text-white font-bold text-xs">
+                {currentPower ? currentPower.name : 'None'}
+              </span>
+            </div>
+            <div className="text-right">
+              <div className="text-yellow-300 font-bold text-xs">{totalApy}% Total APY</div>
+              <div className="text-white/60 text-[9px] mt-0.5">
+                Base {baseApy}% {powerBoost > 0 ? `+ ${powerBoost}%` : ''}
               </div>
             </div>
+          </div>
 
-            {/* Staking Balance */}
-            <div className="p-2 bg-black/40 rounded-lg border border-white/10">
-              <p className="text-white/80 text-[10px] mb-1">{t('myStakingBalance')}</p>
+          {/* Staking Balance */}
+          <div className="p-2 bg-black/40 rounded-lg border border-white/10">
+            <p className="text-white/80 text-[10px] mb-1">{t('myStakingBalance')}</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1.5">
                   <Coins className="w-4 h-4 text-yellow-300" aria-hidden="true" />
@@ -202,32 +202,32 @@ const StakingTab = memo(({
                 </div>
                 <TrendingUp className="w-4 h-4 text-green-300" aria-hidden="true" />
               </div>
-            </div>
+          </div>
 
-            {/* Earned Interest */}
-            <div className="p-2 bg-black/40 rounded-lg border border-white/10">
-              <p className="text-white/80 text-[10px] mb-1">{t('earnedInterest')}</p>
+          {/* Earned Interest */}
+          <div className="p-2 bg-black/40 rounded-lg border border-white/10">
+            <p className="text-white/80 text-[10px] mb-1">{t('earnedInterest')}</p>
               {pendingRewards === 0 ? (
                 <EmptyRewardsState className="p-0" />
               ) : (
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-extrabold text-yellow-300">{formattedPendingRewards}</span>
-                  <span className="text-white/60 text-xs">LUX</span>
-                </div>
-              )}
+            <div className="flex items-center justify-between">
+              <span className="text-xl font-extrabold text-yellow-300">{formattedPendingRewards}</span>
+              <span className="text-white/60 text-xs">LUX</span>
             </div>
-
-            {/* Time Elapsed */}
-            {timeElapsed.days > 0 || timeElapsed.hours > 0 || timeElapsed.minutes > 0 ? (
-              <div className="flex items-center space-x-1.5 text-[10px] text-white/70 bg-white/5 rounded-lg px-2 py-1">
-                <Timer className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-                <span className="font-mono">
-                  {timeElapsed.days}D {timeElapsed.hours}H {timeElapsed.minutes}m
-                </span>
-              </div>
-            ) : null}
+              )}
           </div>
-        </motion.div>
+
+          {/* Time Elapsed */}
+          {timeElapsed.days > 0 || timeElapsed.hours > 0 || timeElapsed.minutes > 0 ? (
+            <div className="flex items-center space-x-1.5 text-[10px] text-white/70 bg-white/5 rounded-lg px-2 py-1">
+                <Timer className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+              <span className="font-mono">
+                {timeElapsed.days}D {timeElapsed.hours}H {timeElapsed.minutes}m
+              </span>
+            </div>
+          ) : null}
+        </div>
+      </motion.div>
       )}
 
       {/* Action Buttons */}

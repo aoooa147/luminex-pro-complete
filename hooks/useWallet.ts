@@ -96,16 +96,26 @@ export function useWallet(verifiedAddress: string | null) {
         trackWalletConnect(walletData.address);
         setUserId(walletData.address);
         
-        // Try to get username from MiniKit
+        // Try to get username from multiple sources (priority order)
         let foundUsername: string | null = null;
-        try {
-          if (MiniKit.user?.username) {
-            foundUsername = MiniKit.user.username;
-          }
-        } catch (e) {
-          // Silent error handling
+        
+        // Method 1: Check walletData from MiniKit walletAuth
+        if (walletData?.name || walletData?.username) {
+          foundUsername = walletData.name || walletData.username || null;
         }
         
+        // Method 2: Check MiniKit.user.username (if available)
+        if (!foundUsername) {
+          try {
+            if (MiniKit.user?.username) {
+              foundUsername = MiniKit.user.username;
+            }
+          } catch (e) {
+            // Silent error handling
+          }
+        }
+        
+        // Method 3: Try MiniKit.getUserByAddress (if available)
         if (!foundUsername) {
           try {
             if (MiniKit.getUserByAddress) {
@@ -119,13 +129,46 @@ export function useWallet(verifiedAddress: string | null) {
           }
         }
         
-        if (walletData?.name || walletData?.username) {
+        // Method 4: Fetch from World App API (as fallback)
+        if (!foundUsername) {
+          try {
+            const profileResponse = await fetch(`/api/world/user-profile?address=${walletData.address}`);
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              if (profileData?.success && profileData?.data?.username) {
+                foundUsername = profileData.data.username;
+              }
+            }
+          } catch (e) {
+            // Silent fallback
+          }
+        }
+        
+        // Method 5: Check sessionStorage/localStorage (from previous session)
+        if (!foundUsername && typeof window !== 'undefined') {
+          const storedUsername = sessionStorage.getItem('userName') || localStorage.getItem('userName');
+          if (storedUsername) {
+            foundUsername = storedUsername;
+          }
+        }
+        
+        // Set user info with found username
+        if (foundUsername) {
           setUserInfo({ 
-            name: walletData.name || foundUsername, 
-            username: walletData.username || foundUsername
+            name: foundUsername, 
+            username: foundUsername
           });
-        } else if (foundUsername) {
-          setUserInfo({ name: foundUsername, username: foundUsername });
+          // Store in sessionStorage and localStorage for persistence
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('userName', foundUsername);
+            localStorage.setItem('userName', foundUsername);
+          }
+        } else if (walletData?.name || walletData?.username) {
+          // Fallback to walletData if no username found
+          setUserInfo({ 
+            name: walletData.name || walletData.username, 
+            username: walletData.username || walletData.name
+          });
         } else {
           setUserInfo(null);
         }

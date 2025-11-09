@@ -37,11 +37,45 @@ const AppHeader = memo(({
   );
 
   const userName = useMemo(() => {
+    // Priority 1: Use userInfo from props (from World App)
     const userName = userInfo?.name || userInfo?.username;
-    if (userName && typeof userName === 'string') return userName;
+    if (userName && typeof userName === 'string' && userName.trim() !== '') {
+      // Ensure username starts with @ if it doesn't already
+      return userName.startsWith('@') ? userName : `@${userName}`;
+    }
+    
+    // Priority 2: Try to get from sessionStorage/localStorage
+    if (typeof window !== 'undefined') {
+      const storedUsername = sessionStorage.getItem('userName') || localStorage.getItem('userName');
+      if (storedUsername && storedUsername.trim() !== '') {
+        return storedUsername.startsWith('@') ? storedUsername : `@${storedUsername}`;
+      }
+    }
+    
+    // Priority 3: Fallback to truncated address (but try to fetch username in background)
     if (actualAddress && typeof actualAddress === 'string') {
+      // Trigger username fetch in background (don't block UI)
+      if (typeof window !== 'undefined' && !sessionStorage.getItem('username_fetch_attempted')) {
+        sessionStorage.setItem('username_fetch_attempted', 'true');
+        fetch(`/api/world/user-profile?address=${actualAddress}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data?.success && data?.data?.username) {
+              const fetchedUsername = data.data.username;
+              sessionStorage.setItem('userName', fetchedUsername);
+              localStorage.setItem('userName', fetchedUsername);
+              // Trigger re-render by updating userInfo (if parent component supports it)
+              window.dispatchEvent(new CustomEvent('username-updated', { detail: { username: fetchedUsername } }));
+            }
+          })
+          .catch(() => {
+            // Silent fallback
+          });
+      }
+      
       return `@${actualAddress.slice(0, 8)}...${actualAddress.slice(-6)}`;
     }
+    
     return 'USER';
   }, [userInfo, actualAddress]);
 

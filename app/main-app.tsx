@@ -344,7 +344,28 @@ const LuminexApp = () => {
               console.warn('⚠️ No verified address found in storage');
             }
             
-            const userName = sessionStorage.getItem('userName');
+            // Try to get username from multiple sources
+            let userName = sessionStorage.getItem('userName') || localStorage.getItem('userName');
+            
+            // If no username in storage, try to fetch from API
+            if (!userName && verifiedAddr) {
+              try {
+                const response = await fetch(`/api/world/user-profile?address=${verifiedAddr}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data?.success && data?.data?.username) {
+                    userName = data.data.username;
+                    if (userName) {
+                      sessionStorage.setItem('userName', userName);
+                      localStorage.setItem('userName', userName);
+                    }
+                  }
+                }
+              } catch (error) {
+                // Silent fallback
+              }
+            }
+            
             if (userName) {
               setUserInfo({ name: userName, username: userName });
               console.log('✅ User name set:', userName);

@@ -128,9 +128,9 @@ const MembershipTab = memo(({
                 ) : (
                   `+${upgradePrice} WLD`
                 )}
-            </motion.button>
-          </motion.div>
-        );
+              </motion.button>
+            </motion.div>
+          );
         })
         )}
       </div>
