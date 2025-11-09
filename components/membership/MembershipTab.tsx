@@ -54,14 +54,14 @@ const MembershipTab = memo(({
           const isLower = currentPower && parseFloat(getPowerByCode(currentPower.code)!.priceWLD) > parseFloat(power.priceWLD);
 
           // Map power codes to glow colors
-          const glowColors: Record<string, 'cyan' | 'blue' | 'purple' | 'orange'> = {
+          const glowColors: Record<string, 'primary' | 'cyan' | 'purple' | 'orange'> = {
             'spark': 'cyan',
-            'nova': 'blue',
+            'nova': 'cyan',
             'quasar': 'purple',
             'supernova': 'orange',
-            'singularity': 'orange',
+            'singularity': 'primary',
           };
-          const glowColor = glowColors[power.code] || 'cyan';
+          const glowColor = glowColors[power.code] || 'primary';
 
           return (
             <TronCard 
