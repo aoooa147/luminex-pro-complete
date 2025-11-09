@@ -85,7 +85,7 @@ const LuminexApp = () => {
     fetchBalance: walletFetchBalance,
   } = walletHook;
   
-  const { language, showLanguageMenu, setShowLanguageMenu, setLanguage: setLanguageHook, t, activeLanguage } = languageHook;
+  const { language, showLanguageMenu, setShowLanguageMenu, setLanguage: setLanguageHook, t } = languageHook;
 
   // Use staking hook
   const stakingHook = useStaking(
