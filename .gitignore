@@ -7,10 +7,6 @@
 
 # testing
 /coverage
-/.nyc_output
-/test-results
-/playwright-report
-/playwright/.cache
 
 # next.js
 /.next/
@@ -39,8 +35,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma
-/prisma/migrations
+# hardhat
+/cache
+/artifacts
+/deployments
 
 # IDE
 .idea
@@ -49,8 +47,13 @@ next-env.d.ts
 *.swo
 *~
 
-# Backup folders and files
-luminex-v4-ultimate 33/
-*.backup
-*-tron-ares.*
-*-backup.*
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+/prisma/migrations
+
+# Temporary files
+tmp_data/
+*.log
