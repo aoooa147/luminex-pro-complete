@@ -38,6 +38,9 @@ export default function CoinFlipPage() {
   const [gameStartTime, setGameStartTime] = useState(0);
   const [isOnCooldown, setIsOnCooldown] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState({ hours: 0, minutes: 0 });
+  const [luxReward, setLuxReward] = useState<number | null>(null);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
+  const [isClaimingReward, setIsClaimingReward] = useState(false);
   const [deviceId, setDeviceId] = useState<string>('');
   
   const flipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -327,20 +330,64 @@ export default function CoinFlipPage() {
         body: JSON.stringify({ address, payload, sig: signature, deviceId })
       });
       
-      // Reward
-      const key = 'luminex_tokens';
-      const cur = Number(localStorage.getItem(key) || '0');
-      localStorage.setItem(key, String(cur + 10)); // 10 tokens reward
+      // Calculate reward (coin-flip gives 10 LUX fixed)
+      const rewardRes = await fetch('/api/game/reward/lux', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ address, gameId: GAME_ID, score, deviceId, fixedAmount: 10 })
+      });
+      const rewardData = await rewardRes.json();
       
-              loadEnergy(address);
-        
-        // Update cooldown status
-        setIsOnCooldown(true);
-        await checkCooldown();
+      if (rewardData.ok) {
+        setLuxReward(rewardData.luxReward || 10);
+        setRewardClaimed(false); // User needs to claim manually
+      } else {
+        // If cooldown or error, show message
+        if (rewardData.error === 'COOLDOWN_ACTIVE') {
+          alert('You are still on cooldown. Please wait 24 hours.');
+        }
+      }
+      
+      loadEnergy(address);
+      
+      // Update cooldown status
+      setIsOnCooldown(true);
+      await checkCooldown();
       } catch (e) {
         // Silent error handling
       }
     }
+
+  async function handleClaimReward() {
+    if (!address || !luxReward || rewardClaimed || isClaimingReward) return;
+    
+    setIsClaimingReward(true);
+    try {
+      // Call API to distribute reward via contract
+      const claimRes = await fetch('/api/game/reward/claim', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          address, 
+          gameId: GAME_ID, 
+          amount: luxReward 
+        })
+      });
+      
+      const claimData = await claimRes.json();
+      
+      if (claimData.ok) {
+        setRewardClaimed(true);
+        alert(`Successfully claimed ${luxReward} LUX!`);
+      } else {
+        alert(claimData.error || 'Failed to claim reward. Please try again.');
+      }
+    } catch (error) {
+      alert('Failed to claim reward. Please try again.');
+    } finally {
+      setIsClaimingReward(false);
+    }
+  }
 
   function handleGameOver() {
     setGameState('gameover');
@@ -354,6 +401,8 @@ export default function CoinFlipPage() {
     setFlipResult(null);
     setPlayerGuess(null);
     setFlipRotation(0);
+    setLuxReward(null);
+    setRewardClaimed(false);
     if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
     if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
     // Check cooldown status after reset
@@ -541,7 +590,33 @@ export default function CoinFlipPage() {
             <div className="space-y-3 text-lg font-orbitron">
               <p className="text-gray-300">🎯 Final Score: <b className="text-tron-orange">{score.toLocaleString()}</b></p>
               <p className="text-gray-300">🔥 Highest Streak: <b className="text-tron-orange">{streak}</b></p>
-              <p className="text-tron-purple font-bold">💰 Earned 10 Tokens!</p>
+              {luxReward !== null && (
+                <div className="space-y-3">
+                  <div className="font-bold text-2xl text-tron-purple">
+                    💰 Earned {luxReward} LUX!
+                  </div>
+                  {!rewardClaimed && (
+                    <GameButton
+                      onClick={handleClaimReward}
+                      variant="primary"
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-yellow-500 to-amber-600"
+                      disabled={isClaimingReward}
+                    >
+                      {isClaimingReward ? (
+                        <>⏳ Claiming...</>
+                      ) : (
+                        <>🎁 Claim {luxReward} LUX Reward</>
+                      )}
+                    </GameButton>
+                  )}
+                  {rewardClaimed && (
+                    <div className="text-green-400 font-bold text-lg">
+                      ✅ Reward Claimed Successfully!
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <GameButton
               onClick={resetGame}

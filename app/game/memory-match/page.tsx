@@ -8,7 +8,7 @@ import { getDeviceFingerprint } from '@/lib/utils/deviceFingerprint';
 import { GameStatsCard } from '@/components/game/GameStatsCard';
 import { GameButton } from '@/components/game/GameButton';
 import { TronCard, TronPanel } from '@/components/tron';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Coins } from 'lucide-react';
 
 type Color = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
 type GameState = 'idle' | 'showing' | 'playing' | 'victory' | 'gameover';
@@ -42,6 +42,8 @@ export default function MemoryMatchPage() {
   const [cooldownRemaining, setCooldownRemaining] = useState({ hours: 0, minutes: 0 });
   const [highlightedColor, setHighlightedColor] = useState<Color | null>(null);
   const [luxReward, setLuxReward] = useState<number | null>(null);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
+  const [isClaimingReward, setIsClaimingReward] = useState(false);
   const [deviceId, setDeviceId] = useState<string>('');
   
   const sequenceRef = useRef<Color[]>([]);
@@ -224,7 +226,7 @@ export default function MemoryMatchPage() {
         return;
       }
 
-      // Claim LUX reward
+      // Calculate reward (don't claim yet - user needs to click button)
       const rewardRes = await fetch('/api/game/reward/lux', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -234,6 +236,12 @@ export default function MemoryMatchPage() {
       
       if (rewardData.ok) {
         setLuxReward(rewardData.luxReward);
+        setRewardClaimed(false); // User needs to claim manually
+      } else {
+        // If cooldown or error, show message
+        if (rewardData.error === 'COOLDOWN_ACTIVE') {
+          alert('You are still on cooldown. Please wait 24 hours.');
+        }
       }
 
       // Update cooldown status
@@ -241,6 +249,37 @@ export default function MemoryMatchPage() {
       await checkCooldown();
     } catch (e) {
       // Silent error handling
+    }
+  }
+
+  async function handleClaimReward() {
+    if (!address || !luxReward || rewardClaimed || isClaimingReward) return;
+    
+    setIsClaimingReward(true);
+    try {
+      // Call API to distribute reward via contract
+      const claimRes = await fetch('/api/game/reward/claim', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          address, 
+          gameId: GAME_ID, 
+          amount: luxReward 
+        })
+      });
+      
+      const claimData = await claimRes.json();
+      
+      if (claimData.ok) {
+        setRewardClaimed(true);
+        alert(`Successfully claimed ${luxReward} LUX!`);
+      } else {
+        alert(claimData.error || 'Failed to claim reward. Please try again.');
+      }
+    } catch (error) {
+      alert('Failed to claim reward. Please try again.');
+    } finally {
+      setIsClaimingReward(false);
     }
   }
 
@@ -254,6 +293,7 @@ export default function MemoryMatchPage() {
     setLives(3);
     setHighlightedColor(null);
     setLuxReward(null);
+    setRewardClaimed(false);
     if (showingTimeoutRef.current) clearTimeout(showingTimeoutRef.current);
     // Check cooldown status after reset
     checkCooldown();
@@ -374,8 +414,30 @@ export default function MemoryMatchPage() {
               <p className="text-gray-300">🎯 Final score: <b className="text-tron-orange">{score.toLocaleString()}</b></p>
               <p className="text-gray-300">📊 Highest level: <b className="text-tron-purple">{level}</b></p>
               {luxReward !== null && (
-                <div className={`font-bold text-2xl ${luxReward === 5 ? 'text-yellow-400 animate-pulse' : 'text-tron-purple'}`}>
-                  {luxReward === 5 ? '🎉 EXTREME RARE! ' : '💰 '}Earned {luxReward} LUX!
+                <div className="space-y-3">
+                  <div className={`font-bold text-2xl ${luxReward === 5 ? 'text-yellow-400 animate-pulse' : 'text-tron-purple'}`}>
+                    {luxReward === 5 ? '🎉 EXTREME RARE! ' : '💰 '}Earned {luxReward} LUX!
+                  </div>
+                  {!rewardClaimed && (
+                    <GameButton
+                      onClick={handleClaimReward}
+                      variant="primary"
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-yellow-500 to-amber-600"
+                      disabled={isClaimingReward}
+                    >
+                      {isClaimingReward ? (
+                        <>⏳ Claiming...</>
+                      ) : (
+                        <>🎁 Claim {luxReward} LUX Reward</>
+                      )}
+                    </GameButton>
+                  )}
+                  {rewardClaimed && (
+                    <div className="text-green-400 font-bold text-lg">
+                      ✅ Reward Claimed Successfully!
+                    </div>
+                  )}
                 </div>
               )}
             </div>

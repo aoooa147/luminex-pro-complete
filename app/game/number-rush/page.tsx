@@ -41,6 +41,8 @@ export default function NumberRushPage() {
   const [cooldownRemaining, setCooldownRemaining] = useState({ hours: 0, minutes: 0 });
   const [buttonAppearTime, setButtonAppearTime] = useState(0);
   const [luxReward, setLuxReward] = useState<number | null>(null);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
+  const [isClaimingReward, setIsClaimingReward] = useState(false);
   const [deviceId, setDeviceId] = useState<string>('');
   
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -237,7 +239,7 @@ export default function NumberRushPage() {
         return;
       }
 
-      // Claim LUX reward
+      // Calculate reward (don't claim yet - user needs to click button)
       const rewardRes = await fetch('/api/game/reward/lux', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -247,6 +249,12 @@ export default function NumberRushPage() {
       
       if (rewardData.ok) {
         setLuxReward(rewardData.luxReward);
+        setRewardClaimed(false); // User needs to claim manually
+      } else {
+        // If cooldown or error, show message
+        if (rewardData.error === 'COOLDOWN_ACTIVE') {
+          alert('You are still on cooldown. Please wait 24 hours.');
+        }
       }
 
       // Update cooldown status
@@ -254,6 +262,37 @@ export default function NumberRushPage() {
       await checkCooldown();
     } catch (e) {
       // Silent error handling
+    }
+  }
+
+  async function handleClaimReward() {
+    if (!address || !luxReward || rewardClaimed || isClaimingReward) return;
+    
+    setIsClaimingReward(true);
+    try {
+      // Call API to distribute reward via contract
+      const claimRes = await fetch('/api/game/reward/claim', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          address, 
+          gameId: GAME_ID, 
+          amount: luxReward 
+        })
+      });
+      
+      const claimData = await claimRes.json();
+      
+      if (claimData.ok) {
+        setRewardClaimed(true);
+        alert(`Successfully claimed ${luxReward} LUX!`);
+      } else {
+        alert(claimData.error || 'Failed to claim reward. Please try again.');
+      }
+    } catch (error) {
+      alert('Failed to claim reward. Please try again.');
+    } finally {
+      setIsClaimingReward(false);
     }
   }
 
@@ -266,6 +305,7 @@ export default function NumberRushPage() {
     setReactionTime([]);
     setLives(3);
     setLuxReward(null);
+    setRewardClaimed(false);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (waitTimeoutRef.current) clearTimeout(waitTimeoutRef.current);
     // Check cooldown status after reset
@@ -441,8 +481,30 @@ export default function NumberRushPage() {
               <p className="text-gray-300">🔥 Highest combo: <b className="text-tron-orange">{maxCombo}</b></p>
               <p className="text-gray-300">⚡ Average reaction time: <b className="text-tron-blue">{avgReactionTime}ms</b></p>
               {luxReward !== null && (
-                <div className={`font-bold text-2xl ${luxReward === 5 ? 'text-yellow-400 animate-pulse' : 'text-tron-purple'}`}>
-                  {luxReward === 5 ? '🎉 EXTREME RARE! ' : '💰 '}Earned {luxReward} LUX!
+                <div className="space-y-3">
+                  <div className={`font-bold text-2xl ${luxReward === 5 ? 'text-yellow-400 animate-pulse' : 'text-tron-purple'}`}>
+                    {luxReward === 5 ? '🎉 EXTREME RARE! ' : '💰 '}Earned {luxReward} LUX!
+                  </div>
+                  {!rewardClaimed && (
+                    <GameButton
+                      onClick={handleClaimReward}
+                      variant="primary"
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-yellow-500 to-amber-600"
+                      disabled={isClaimingReward}
+                    >
+                      {isClaimingReward ? (
+                        <>⏳ Claiming...</>
+                      ) : (
+                        <>🎁 Claim {luxReward} LUX Reward</>
+                      )}
+                    </GameButton>
+                  )}
+                  {rewardClaimed && (
+                    <div className="text-green-400 font-bold text-lg">
+                      ✅ Reward Claimed Successfully!
+                    </div>
+                  )}
                 </div>
               )}
             </div>

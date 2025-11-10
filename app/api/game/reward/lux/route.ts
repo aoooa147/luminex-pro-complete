@@ -62,7 +62,7 @@ function calculateLuxReward(score: number): number {
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
   const body = await request.json();
-  const { address, gameId, score, deviceId } = body;
+  const { address, gameId, score, deviceId, fixedAmount } = body;
   
   // Validate required fields
   if (!address || !gameId || typeof score !== 'number') {
@@ -135,22 +135,22 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       rewards[addressLower] = {};
     }
     
-    // Check cooldown first
-    const cooldowns = readJSON<Record<string, Record<string, number>>>('game_cooldowns', {});
-    const lastPlayTime = cooldowns[addressLower]?.[gameId] || 0;
+    // Check cooldown first - Use global cooldown (playing ANY game locks ALL games)
+    const cooldowns = readJSON<Record<string, number>>('game_cooldowns_global', {});
+    const lastPlayTime = cooldowns[addressLower] || 0;
     const COOLDOWN_MS = 24 * 60 * 60 * 1000;
     const timeSinceLastPlay = Date.now() - lastPlayTime;
     
     if (timeSinceLastPlay < COOLDOWN_MS) {
       return createErrorResponse(
-        'Still on cooldown',
+        'Still on cooldown. You can only play one game every 24 hours.',
         'COOLDOWN_ACTIVE',
         400
       );
     }
     
-    // Calculate reward
-    const luxAmount = calculateLuxReward(score);
+    // Calculate reward (use fixedAmount if provided, otherwise calculate based on score)
+    const luxAmount = fixedAmount !== undefined ? fixedAmount : calculateLuxReward(score);
     
     // Record reward
     rewards[addressLower][gameId] = {

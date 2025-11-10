@@ -45,6 +45,9 @@ export default function WordBuilderPage() {
   const [currentTargetWord, setCurrentTargetWord] = useState<string>('');
   const [isOnCooldown, setIsOnCooldown] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState({ hours: 0, minutes: 0 });
+  const [luxReward, setLuxReward] = useState<number | null>(null);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
+  const [isClaimingReward, setIsClaimingReward] = useState(false);
   const [deviceId, setDeviceId] = useState<string>('');
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -323,10 +326,23 @@ export default function WordBuilderPage() {
         body: JSON.stringify({ address, payload, sig: signature, deviceId })
       });
       
-      // Reward
-      const key = 'luminex_tokens';
-      const cur = Number(localStorage.getItem(key) || '0');
-      localStorage.setItem(key, String(cur + 5)); // 5 tokens reward
+      // Calculate reward (word-builder gives 0-5 LUX based on score)
+      const rewardRes = await fetch('/api/game/reward/lux', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ address, gameId: GAME_ID, score, deviceId })
+      });
+      const rewardData = await rewardRes.json();
+      
+      if (rewardData.ok) {
+        setLuxReward(rewardData.luxReward);
+        setRewardClaimed(false); // User needs to claim manually
+      } else {
+        // If cooldown or error, show message
+        if (rewardData.error === 'COOLDOWN_ACTIVE') {
+          alert('You are still on cooldown. Please wait 24 hours.');
+        }
+      }
       
       loadEnergy(address);
       
@@ -335,6 +351,37 @@ export default function WordBuilderPage() {
       await checkCooldown();
     } catch (e) {
       // Silent error handling
+    }
+  }
+
+  async function handleClaimReward() {
+    if (!address || !luxReward || rewardClaimed || isClaimingReward) return;
+    
+    setIsClaimingReward(true);
+    try {
+      // Call API to distribute reward via contract
+      const claimRes = await fetch('/api/game/reward/claim', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          address, 
+          gameId: GAME_ID, 
+          amount: luxReward 
+        })
+      });
+      
+      const claimData = await claimRes.json();
+      
+      if (claimData.ok) {
+        setRewardClaimed(true);
+        alert(`Successfully claimed ${luxReward} LUX!`);
+      } else {
+        alert(claimData.error || 'Failed to claim reward. Please try again.');
+      }
+    } catch (error) {
+      alert('Failed to claim reward. Please try again.');
+    } finally {
+      setIsClaimingReward(false);
     }
   }
 
@@ -567,7 +614,33 @@ export default function WordBuilderPage() {
             <div className="space-y-3 text-lg font-orbitron">
               <p className="text-gray-300">🎯 Final score: <b className="text-tron-orange">{score.toLocaleString()}</b></p>
               <p className="text-gray-300">📚 Words found: <b className="text-tron-purple">{usedWords.size}</b> words</p>
-              <p className="text-tron-purple font-bold">💰 Earned 5 Tokens!</p>
+              {luxReward !== null && (
+                <div className="space-y-3">
+                  <div className={`font-bold text-2xl ${luxReward === 5 ? 'text-yellow-400 animate-pulse' : 'text-tron-purple'}`}>
+                    {luxReward === 5 ? '🎉 EXTREME RARE! ' : '💰 '}Earned {luxReward} LUX!
+                  </div>
+                  {!rewardClaimed && (
+                    <GameButton
+                      onClick={handleClaimReward}
+                      variant="primary"
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-yellow-500 to-amber-600"
+                      disabled={isClaimingReward}
+                    >
+                      {isClaimingReward ? (
+                        <>⏳ Claiming...</>
+                      ) : (
+                        <>🎁 Claim {luxReward} LUX Reward</>
+                      )}
+                    </GameButton>
+                  )}
+                  {rewardClaimed && (
+                    <div className="text-green-400 font-bold text-lg">
+                      ✅ Reward Claimed Successfully!
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <GameButton
               onClick={resetGame}
