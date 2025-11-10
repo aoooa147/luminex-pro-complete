@@ -11,7 +11,7 @@ import { TronCard, TronPanel } from '@/components/tron';
 import { Volume2, VolumeX, Coins } from 'lucide-react';
 import { useMiniKit } from '@/hooks/useMiniKit';
 import { MiniKit } from '@worldcoin/minikit-js';
-import { STAKING_CONTRACT_ADDRESS } from '@/lib/utils/constants';
+import { STAKING_CONTRACT_ADDRESS, STAKING_CONTRACT_NETWORK } from '@/lib/utils/constants';
 import { ethers } from 'ethers';
 
 type Color = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
@@ -409,7 +409,8 @@ export default function MemoryMatchPage() {
         payload = await sendTransaction(
           STAKING_CONTRACT_ADDRESS as `0x${string}`,
           transactionData,
-          '0' // 0 value - user is receiving reward, not paying
+          '0', // 0 value - user is receiving reward, not paying
+          STAKING_CONTRACT_NETWORK // Include network parameter
         );
       } catch (e: any) {
         // Handle user cancellation

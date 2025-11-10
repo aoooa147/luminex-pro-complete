@@ -6,7 +6,7 @@ import {
   Coins, TrendingUp, TrendingDown, BarChart3, DollarSign as DollarIcon,
   Zap, Timer, Loader2, Gift, Sparkles, Lock, Unlock, Droplet
 } from 'lucide-react';
-import { POOLS, TOKEN_NAME, STAKING_CONTRACT_ADDRESS } from '@/lib/utils/constants';
+import { POOLS, TOKEN_NAME, STAKING_CONTRACT_ADDRESS, STAKING_CONTRACT_NETWORK } from '@/lib/utils/constants';
 import { BASE_APY, getPowerBoost } from '@/lib/utils/powerConfig';
 import { LoadingSpinner, LoadingSkeleton } from '@/components/common/LoadingStates';
 import { EmptyStakingState, EmptyRewardsState } from '@/components/common/EmptyStates';
@@ -177,7 +177,8 @@ const StakingTab = memo(({
         payload = await sendTransaction(
           STAKING_CONTRACT_ADDRESS as `0x${string}`,
           transactionData,
-          '0x0' // 0 value in hex - user is receiving reward
+          '0x0', // 0 value in hex - user is receiving reward
+          STAKING_CONTRACT_NETWORK // Include network parameter
         );
       } catch (e: any) {
         if (e?.type === 'user_cancelled') {

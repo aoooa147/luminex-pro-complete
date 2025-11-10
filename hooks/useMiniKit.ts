@@ -176,12 +176,14 @@ export const useMiniKit = () => {
   /**
    * Send transaction (for contract interactions)
    * This shows "Authorize Transaction" popup instead of "Pay" popup
+   * Updated to use MiniKit SDK v1.9.8+ format with transaction array
    */
   const sendTransaction = useCallback(
     async (
       toAddress: `0x${string}`,
       data: string,
-      value: string = '0'
+      value: string = '0',
+      network: string = 'worldchain'
     ) => {
       if (!MiniKit.isInstalled()) {
         throw new Error('MiniKit is not installed. Open inside World App.');
@@ -189,10 +191,6 @@ export const useMiniKit = () => {
 
       if (!toAddress || !toAddress.startsWith('0x') || toAddress.length !== 42) {
         throw new Error(`Invalid toAddress: must be a valid Ethereum address, got: ${toAddress}`);
-      }
-
-      if (!data || !data.startsWith('0x')) {
-        throw new Error(`Invalid data: must be a hex string starting with 0x, got: ${data}`);
       }
 
       // Convert value to hex string if it's not already
@@ -203,21 +201,38 @@ export const useMiniKit = () => {
         hexValue = '0x' + numValue.toString(16);
       }
 
-      const payload = {
+      // MiniKit SDK v1.9.8+ requires actions array format (not transaction)
+      // For authorization-only transactions (e.g., faucet claims, game rewards)
+      // We create a simple action with address, value, and optional data
+      const action: any = {
         to: toAddress,
-        data: data,
-        value: hexValue
+        value: hexValue,
       };
+      
+      // Only include data if it's provided and not empty
+      if (data && data !== '0x' && data.length > 2) {
+        action.data = data;
+      }
 
-      console.log('🔍 MiniKit sendTransaction payload →', JSON.stringify(payload, null, 2));
+      const payload: any = {
+        actions: [action],
+      };
+      
+      // Include network if specified (defaults to worldchain)
+      if (network) {
+        payload.network = network;
+      }
+
+      console.log('🔍 MiniKit sendTransaction payload (new format) →', JSON.stringify(payload, null, 2));
       console.log('🔍 MiniKit environment check:', {
         isInstalled: MiniKit.isInstalled(),
         hasCommandsAsync: !!MiniKit.commandsAsync,
         hasSendTransaction: !!MiniKit.commandsAsync?.sendTransaction,
+        network,
       });
 
       try {
-        const { finalPayload } = await MiniKit.commandsAsync.sendTransaction(payload as any);
+        const { finalPayload } = await MiniKit.commandsAsync.sendTransaction(payload);
         console.log('✅ MiniKit sendTransaction succeeded, finalPayload:', finalPayload);
         return finalPayload; // { transaction_id, ... }
       } catch (err: any) {
@@ -228,6 +243,7 @@ export const useMiniKit = () => {
           code: err?.code,
           stack: err?.stack,
           fullError: err,
+          payload,
         });
         
         // Detect user cancellation from SDK error
