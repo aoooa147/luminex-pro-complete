@@ -298,13 +298,26 @@ export default function ColorTapPage() {
       }
       
       const payload = { ...base };
-      await fetch('/api/game/score/submit', {
+      
+      // Submit score first
+      console.log('Submitting score:', { address, score, gameId: GAME_ID, gameDuration, actionsCount });
+      const scoreRes = await fetch('/api/game/score/submit', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ address, payload, sig: signature, deviceId })
       });
       
+      const scoreData = await scoreRes.json();
+      console.log('Score submit response:', scoreData);
+      
+      if (!scoreRes.ok || !scoreData.ok) {
+        console.error('Score submit failed:', scoreData);
+        alert(scoreData.error || scoreData.message || 'Failed to submit score. Please try again.');
+        return;
+      }
+      
       // Calculate reward (color-tap gives 0-5 LUX based on score)
+      console.log('Requesting reward:', { address, gameId: GAME_ID, score, deviceId });
       const rewardRes = await fetch('/api/game/reward/lux', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

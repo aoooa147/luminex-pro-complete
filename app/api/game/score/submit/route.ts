@@ -34,32 +34,72 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     );
   }
 
-  const body = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch (error) {
+    logger.error('Failed to parse request body', { error }, 'game/score/submit');
+    return createErrorResponse('Invalid JSON in request body', 'INVALID_JSON', 400);
+  }
+  
   const { address, payload, sig, deviceId } = body;
+
+  logger.info('Score submit API called', {
+    hasAddress: !!address,
+    hasPayload: !!payload,
+    hasSig: !!sig,
+    deviceId,
+    payloadKeys: payload ? Object.keys(payload) : [],
+    bodyKeys: Object.keys(body || {})
+  }, 'game/score/submit');
 
   // Security: Check request body for threats
   const threats = checkSecurityThreats(req, body, { logEvents: true, severity: 'high' });
   if (threats.hasThreat) {
+    logger.warn('Security threat detected', { threats, address }, 'game/score/submit');
     return createErrorResponse('Invalid input detected', 'INVALID_INPUT', 400);
   }
   
   // Validate required fields
   if (!address || !payload?.nonce || !sig) {
-    return createErrorResponse('Missing address, payload.nonce, or sig', 'MISSING_FIELDS', 400);
+    logger.error('Missing required fields', {
+      hasAddress: !!address,
+      hasPayload: !!payload,
+      hasNonce: !!payload?.nonce,
+      hasSig: !!sig,
+      body
+    }, 'game/score/submit');
+    return createErrorResponse(
+      `Missing required fields: address=${!!address}, payload.nonce=${!!payload?.nonce}, sig=${!!sig}`,
+      'MISSING_FIELDS',
+      400
+    );
   }
   
   const { score, ts, nonce, gameDuration, actionsCount } = payload; 
   if (typeof score !== 'number' || !ts || !nonce) {
-    return createErrorResponse('Invalid payload format', 'INVALID_PAYLOAD', 400);
+    logger.error('Invalid payload format', {
+      score,
+      scoreType: typeof score,
+      ts,
+      nonce,
+      payload
+    }, 'game/score/submit');
+    return createErrorResponse(
+      `Invalid payload format: score=${typeof score}, ts=${!!ts}, nonce=${!!nonce}`,
+      'INVALID_PAYLOAD',
+      400
+    );
   }
   
   // Validate address format
   if (!isValidAddress(address)) {
+    logger.error('Invalid address format', { address }, 'game/score/submit');
     // Security: Check if invalid address contains security threats
     if (typeof address === 'string') {
       checkSecurityThreats(req, { address }, { logEvents: true, severity: 'medium' });
     }
-    return createErrorResponse('Invalid address format', 'INVALID_ADDRESS', 400);
+    return createErrorResponse(`Invalid address format: ${address}`, 'INVALID_ADDRESS', 400);
   }
   
   // Enhanced anti-cheat validation
@@ -107,7 +147,17 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const nonces = readJSON<Record<string,string>>('nonces',{}); 
   const expected = nonces[addressLower]; 
   if (!expected || expected !== nonce) {
-    return createErrorResponse('Invalid or expired nonce', 'NONCE_INVALID', 400);
+    logger.error('Invalid or expired nonce', {
+      address: addressLower,
+      received: nonce,
+      expected,
+      availableNonces: Object.keys(nonces)
+    }, 'game/score/submit');
+    return createErrorResponse(
+      `Invalid or expired nonce. Expected: ${expected || 'none'}, Got: ${nonce}`,
+      'NONCE_INVALID',
+      400
+    );
   }
   
   // Verify signature
@@ -117,13 +167,31 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     signature:sig as `0x${string}`
   }); 
   if (!ok) {
+    logger.error('Invalid signature', {
+      address: addressLower,
+      score,
+      ts,
+      nonce
+    }, 'game/score/submit');
     return createErrorResponse('Invalid signature', 'SIG_INVALID', 400);
   }
   
   // Check timestamp freshness
   const now = Date.now(); 
-  if (Math.abs(now - Number(ts)) > WINDOW_MS) {
-    return createErrorResponse('Request timestamp is stale', 'STALE_TIMESTAMP', 400);
+  const timeDiff = Math.abs(now - Number(ts));
+  if (timeDiff > WINDOW_MS) {
+    logger.error('Stale timestamp', {
+      address: addressLower,
+      now,
+      ts,
+      timeDiff,
+      windowMs: WINDOW_MS
+    }, 'game/score/submit');
+    return createErrorResponse(
+      `Request timestamp is stale. Time difference: ${timeDiff}ms, Window: ${WINDOW_MS}ms`,
+      'STALE_TIMESTAMP',
+      400
+    );
   }
   
   // Enhanced anti-cheat checks using the enhanced anti-cheat system

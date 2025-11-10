@@ -48,17 +48,46 @@ function calculateLuxReward(score: number): number {
 }
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch (error) {
+    logger.error('Failed to parse request body', { error }, 'game/reward/lux');
+    return createErrorResponse('Invalid JSON in request body', 'INVALID_JSON', 400);
+  }
+  
   const { address, gameId, score, deviceId, fixedAmount } = body;
+  
+  logger.info('Reward LUX API called', {
+    address,
+    gameId,
+    score,
+    scoreType: typeof score,
+    deviceId,
+    fixedAmount,
+    bodyKeys: Object.keys(body || {})
+  }, 'game/reward/lux');
   
   // Validate required fields
   if (!address || !gameId || typeof score !== 'number') {
-    return createErrorResponse('Missing address, gameId, or score', 'MISSING_FIELDS', 400);
+    logger.error('Missing required fields', {
+      hasAddress: !!address,
+      hasGameId: !!gameId,
+      scoreType: typeof score,
+      scoreValue: score,
+      body
+    }, 'game/reward/lux');
+    return createErrorResponse(
+      `Missing required fields: address=${!!address}, gameId=${!!gameId}, score=${typeof score}`,
+      'MISSING_FIELDS',
+      400
+    );
   }
 
   // Validate address format
   if (!isValidAddress(address)) {
-    return createErrorResponse('Invalid address format', 'INVALID_ADDRESS', 400);
+    logger.error('Invalid address format', { address }, 'game/reward/lux');
+    return createErrorResponse(`Invalid address format: ${address}`, 'INVALID_ADDRESS', 400);
   }
   
   const addressLower = address.toLowerCase();
@@ -128,9 +157,25 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     const COOLDOWN_MS = 24 * 60 * 60 * 1000;
     const timeSinceLastPlay = Date.now() - lastPlayTime;
     
+    logger.info('Cooldown check', {
+      address: addressLower,
+      lastPlayTime,
+      currentTime: Date.now(),
+      timeSinceLastPlay,
+      cooldownMs: COOLDOWN_MS,
+      isOnCooldown: timeSinceLastPlay < COOLDOWN_MS
+    }, 'game/reward/lux');
+    
     if (timeSinceLastPlay < COOLDOWN_MS) {
+      const hoursRemaining = Math.floor((COOLDOWN_MS - timeSinceLastPlay) / (60 * 60 * 1000));
+      const minutesRemaining = Math.floor(((COOLDOWN_MS - timeSinceLastPlay) % (60 * 60 * 1000)) / (60 * 1000));
+      logger.warn('User on cooldown', {
+        address: addressLower,
+        hoursRemaining,
+        minutesRemaining
+      }, 'game/reward/lux');
       return createErrorResponse(
-        'Still on cooldown. You can only play one game every 24 hours.',
+        `Still on cooldown. Please wait ${hoursRemaining}h ${minutesRemaining}m. You can only play one game every 24 hours.`,
         'COOLDOWN_ACTIVE',
         400
       );
