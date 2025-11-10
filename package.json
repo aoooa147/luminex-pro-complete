@@ -33,7 +33,8 @@
     "deployment:info": "hardhat run scripts/get-deployment-info.js",
     "distributor:set": "node scripts/set-game-reward-distributor.js",
     "distributor:address": "node scripts/get-distributor-address.js",
-    "distributor:check": "node scripts/check-contract-owner.js"
+    "distributor:check": "node scripts/check-contract-owner.js",
+    "faucet:check": "node scripts/check-faucet-distributor.js"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
