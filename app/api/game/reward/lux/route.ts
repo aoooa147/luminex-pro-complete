@@ -151,37 +151,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       rewards[addressLower] = {};
     }
     
-    // Check cooldown first - Use global cooldown (playing ANY game locks ALL games)
-    const cooldowns = readJSON<Record<string, number>>('game_cooldowns_global', {});
-    const lastPlayTime = cooldowns[addressLower] || 0;
-    const COOLDOWN_MS = 24 * 60 * 60 * 1000;
-    const timeSinceLastPlay = Date.now() - lastPlayTime;
-    
-    logger.info('Cooldown check', {
-      address: addressLower,
-      lastPlayTime,
-      currentTime: Date.now(),
-      timeSinceLastPlay,
-      cooldownMs: COOLDOWN_MS,
-      isOnCooldown: timeSinceLastPlay < COOLDOWN_MS
-    }, 'game/reward/lux');
-    
-    if (timeSinceLastPlay < COOLDOWN_MS) {
-      const hoursRemaining = Math.floor((COOLDOWN_MS - timeSinceLastPlay) / (60 * 60 * 1000));
-      const minutesRemaining = Math.floor(((COOLDOWN_MS - timeSinceLastPlay) % (60 * 60 * 1000)) / (60 * 1000));
-      logger.warn('User on cooldown', {
-        address: addressLower,
-        hoursRemaining,
-        minutesRemaining
-      }, 'game/reward/lux');
-      return createErrorResponse(
-        `Still on cooldown. Please wait ${hoursRemaining}h ${minutesRemaining}m. You can only play one game every 24 hours.`,
-        'COOLDOWN_ACTIVE',
-        400
-      );
-    }
-    
-    // Calculate reward (use fixedAmount if provided, otherwise calculate based on score)
+    // Calculate reward FIRST (use fixedAmount if provided, otherwise calculate based on score)
     const luxAmount = fixedAmount !== undefined ? fixedAmount : calculateLuxReward(score);
     
     // Validate calculated reward
@@ -200,12 +170,64 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       );
     }
     
-    // Record reward
+    // Check cooldown - but allow reward if this is the first reward request for this game session
+    // Cooldown will be started AFTER giving reward
+    const cooldowns = readJSON<Record<string, number>>('game_cooldowns_global', {});
+    const lastPlayTime = cooldowns[addressLower] || 0;
+    const COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    const timeSinceLastPlay = Date.now() - lastPlayTime;
+    
+    // Check if user already has a reward for this game (to prevent duplicate rewards)
+    const existingReward = rewards[addressLower]?.[gameId];
+    const hasExistingReward = !!existingReward;
+    
+    logger.info('Cooldown check before reward', {
+      address: addressLower,
+      lastPlayTime,
+      currentTime: Date.now(),
+      timeSinceLastPlay,
+      cooldownMs: COOLDOWN_MS,
+      isOnCooldown: timeSinceLastPlay < COOLDOWN_MS,
+      hasExistingReward,
+      existingRewardTimestamp: existingReward?.timestamp
+    }, 'game/reward/lux');
+    
+    // Only block if user already has a reward for this game AND is on cooldown
+    // This prevents users from getting multiple rewards in the same cooldown period
+    if (hasExistingReward && timeSinceLastPlay < COOLDOWN_MS) {
+      const hoursRemaining = Math.floor((COOLDOWN_MS - timeSinceLastPlay) / (60 * 60 * 1000));
+      const minutesRemaining = Math.floor(((COOLDOWN_MS - timeSinceLastPlay) % (60 * 60 * 1000)) / (60 * 1000));
+      logger.warn('User on cooldown with existing reward', {
+        address: addressLower,
+        hoursRemaining,
+        minutesRemaining,
+        existingRewardTimestamp: existingReward.timestamp
+      }, 'game/reward/lux');
+      return createErrorResponse(
+        `Still on cooldown. Please wait ${hoursRemaining}h ${minutesRemaining}m. You can only play one game every 24 hours.`,
+        'COOLDOWN_ACTIVE',
+        400
+      );
+    }
+    
+    // Record reward FIRST
     rewards[addressLower][gameId] = {
       amount: luxAmount,
       timestamp: Date.now()
     };
     writeJSON('game_rewards', rewards);
+    
+    // Start cooldown AFTER giving reward (so user can claim reward for current game)
+    // This ensures users get reward for the game they just played
+    cooldowns[addressLower] = Date.now();
+    writeJSON('game_cooldowns_global', cooldowns);
+    
+    logger.info('Reward given and cooldown started', {
+      address: addressLower,
+      gameId,
+      rewardAmount: luxAmount,
+      cooldownStartTime: cooldowns[addressLower]
+    }, 'game/reward/lux');
     
   logger.success('LUX reward processed', {
     address: addressLower,

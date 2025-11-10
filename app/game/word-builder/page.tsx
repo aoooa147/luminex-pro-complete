@@ -156,12 +156,7 @@ export default function WordBuilderPage() {
       return;
     }
 
-    // Start cooldown
-    fetch('/api/game/cooldown/start', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ address, gameId: GAME_ID })
-    });
+    // Don't start cooldown here - it will be started after reward is given
     
     const randomDiff = getRandomDifficulty(address, GAME_ID, 1, 3);
     setDifficulty(randomDiff);
