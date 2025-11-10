@@ -1,81 +1,63 @@
-import { NextRequest } from 'next/server';
-import { withErrorHandler, createErrorResponse, createSuccessResponse, validateBody } from '@/lib/utils/apiHandler';
-import { isValidAddress } from '@/lib/utils/validation';
-import { logger } from '@/lib/utils/logger';
-import { readJSON } from '@/lib/game/storage';
+import { NextRequest, NextResponse } from 'next/server';
+import { ethers } from 'ethers';
 
-export const runtime = 'nodejs';
+const FAUCET_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const FAUCET_AMOUNT = '1000000000000000000'; // 1 LUX (18 decimals)
 
-const FAUCET_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
-const FAUCET_AMOUNT = 1; // 1 LUX
+// In-memory storage (ใน production ควรใช้ database)
+const faucetClaims = new Map<string, number>();
 
-export const POST = withErrorHandler(async (request: NextRequest) => {
-  let body;
+export async function POST(request: NextRequest) {
   try {
-    body = await request.json();
-  } catch (error) {
-    logger.error('Failed to parse request body', { error }, 'faucet/check');
-    return createErrorResponse('Invalid JSON in request body', 'INVALID_JSON', 400);
-  }
-  
-  const { address } = body;
+    const { address } = await request.json();
 
-  logger.info('Faucet check API called', {
-    address,
-    hasAddress: !!address,
-    addressType: typeof address
-  }, 'faucet/check');
+    if (!address || !ethers.isAddress(address)) {
+      return NextResponse.json(
+        { error: 'Invalid address' },
+        { status: 400 }
+      );
+    }
 
-  // Validate required fields
-  const bodyValidation = validateBody(body, ['address']);
-  if (!bodyValidation.valid) {
-    logger.error('Missing required fields', {
-      missing: bodyValidation.missing,
-      body
-    }, 'faucet/check');
-    return createErrorResponse(
-      `Missing required fields: ${bodyValidation.missing?.join(', ')}`,
-      'MISSING_FIELDS',
-      400
+    const normalizedAddress = address.toLowerCase();
+    const lastClaim = faucetClaims.get(normalizedAddress);
+    const now = Date.now();
+
+    if (!lastClaim) {
+      // Never claimed before
+      return NextResponse.json({
+        ok: true,
+        canClaim: true,
+        remainingHours: 0,
+        remainingMinutes: 0,
+        lastClaimTime: null
+      });
+    }
+
+    const timeSinceLastClaim = now - lastClaim;
+    const canClaim = timeSinceLastClaim >= FAUCET_COOLDOWN;
+
+    let remainingHours = 0;
+    let remainingMinutes = 0;
+
+    if (!canClaim) {
+      const remainingTime = FAUCET_COOLDOWN - timeSinceLastClaim;
+      remainingHours = Math.floor(remainingTime / (1000 * 60 * 60));
+      remainingMinutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+    }
+
+    return NextResponse.json({
+      ok: true,
+      canClaim,
+      remainingHours,
+      remainingMinutes,
+      lastClaimTime: lastClaim
+    });
+
+  } catch (error: any) {
+    console.error('Faucet check error:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to check faucet status' },
+      { status: 500 }
     );
   }
-
-  // Validate address format
-  if (!isValidAddress(address)) {
-    logger.error('Invalid address format', { address, addressType: typeof address }, 'faucet/check');
-    return createErrorResponse(`Invalid address format: ${address}`, 'INVALID_ADDRESS', 400);
-  }
-
-  const addressLower = address.toLowerCase();
-
-  // Check faucet cooldown
-  const faucetCooldowns = readJSON<Record<string, number>>('faucet_cooldowns', {});
-  const lastClaimTime = faucetCooldowns[addressLower] || 0;
-  const now = Date.now();
-  const timeSinceLastClaim = now - lastClaimTime;
-  const isOnCooldown = timeSinceLastClaim < FAUCET_COOLDOWN_MS;
-  const remainingMs = Math.max(0, FAUCET_COOLDOWN_MS - timeSinceLastClaim);
-  const remainingHours = Math.floor(remainingMs / (60 * 60 * 1000));
-  const remainingMinutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
-
-  logger.info('Faucet cooldown checked', {
-    address: addressLower,
-    isOnCooldown,
-    lastClaimTime,
-    remainingHours,
-    remainingMinutes
-  }, 'faucet/check');
-
-  return createSuccessResponse({
-    ok: true,
-    canClaim: !isOnCooldown,
-    isOnCooldown,
-    lastClaimTime,
-    remainingMs,
-    remainingHours,
-    remainingMinutes,
-    amount: FAUCET_AMOUNT,
-    cooldownHours: 24
-  });
-}, 'faucet/check');
-
+}

@@ -3,39 +3,64 @@ import { MiniKit, VerificationLevel, ISuccessResult, MiniAppWalletAuthSuccessPay
 import { applyMiniKitCompatShim } from '@/lib/minikit/compat';
 
 /**
- * useMiniKit - thin wrapper around official MiniKit-JS
+ * useMiniKit - Enhanced wrapper around official MiniKit-JS
  * Works only inside World App (MiniKit.isInstalled() === true)
  */
 export const useMiniKit = () => {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     try {
       // Ensure MiniKit sendTransaction compat patch is applied
       applyMiniKitCompatShim();
-      setReady(MiniKit.isInstalled());
+      const installed = MiniKit.isInstalled();
+      setIsInstalled(installed);
+      setReady(installed);
+      
+      if (!installed) {
+        console.warn('⚠️ MiniKit not installed. Please open in World App.');
+      }
     } catch (e: any) {
       setReady(false);
+      setIsInstalled(false);
       setError(e?.message || 'MiniKit detection failed');
+      console.error('MiniKit initialization error:', e);
     }
   }, []);
 
   const verify = useCallback(async (action: string) => {
-    if (!MiniKit.isInstalled()) throw new Error('MiniKit is not installed. Open inside World App.');
-    const { finalPayload } = await MiniKit.commandsAsync.verify({
-      action,
-      verification_level: VerificationLevel.Orb,
-    });
-    return finalPayload as ISuccessResult; // send to /api/verify
+    if (!MiniKit.isInstalled()) {
+      throw new Error('MiniKit is not installed. Open inside World App.');
+    }
+    
+    try {
+      const { finalPayload } = await MiniKit.commandsAsync.verify({
+        action,
+        verification_level: VerificationLevel.Orb,
+      });
+      return finalPayload as ISuccessResult;
+    } catch (error: any) {
+      console.error('Verification failed:', error);
+      throw new Error(error?.message || 'Verification failed. Please try again.');
+    }
   }, []);
 
   const walletAuth = useCallback(async () => {
-    if (!MiniKit.isInstalled()) throw new Error('MiniKit is not installed. Open inside World App.');
-    // Generate nonce for wallet auth
-    const nonce = crypto.randomUUID().replace(/-/g, '');
-    const { finalPayload } = await MiniKit.commandsAsync.walletAuth({ nonce });
-    return finalPayload as MiniAppWalletAuthSuccessPayload;
+    if (!MiniKit.isInstalled()) {
+      throw new Error('MiniKit is not installed. Open inside World App.');
+    }
+    
+    try {
+      // Generate nonce for wallet auth
+      const nonce = crypto.randomUUID().replace(/-/g, '');
+      const { finalPayload } = await MiniKit.commandsAsync.walletAuth({ nonce });
+      return finalPayload as MiniAppWalletAuthSuccessPayload;
+    } catch (error: any) {
+      console.error('Wallet auth failed:', error);
+      throw new Error(error?.message || 'Wallet authentication failed. Please try again.');
+    }
   }, []);
 
   type PayToken = 'WLD' | 'USDC';
@@ -45,7 +70,8 @@ export const useMiniKit = () => {
       referenceId: string,
       toAddress: `0x${string}`,
       amount: string,
-      token: PayToken = 'WLD'
+      token: PayToken = 'WLD',
+      description?: string
     ) => {
       if (!MiniKit.isInstalled()) {
         throw new Error('MiniKit is not installed. Open inside World App.');
@@ -73,16 +99,13 @@ export const useMiniKit = () => {
         throw new Error(`Invalid amount: must be a non-negative number, got: ${safeAmount}`);
       }
       
-      // For 0 amount, we still need to send a valid decimal amount (minimum 1 wei)
-      // But MiniKit requires at least 0.000001 for display purposes
-      const parsedAmount = parseFloat(safeAmount);
-      if (parsedAmount === 0) {
-        // Use a very small amount (0.000001) for 0-amount transactions
-        // This is just for UI display - the actual reward is handled by the contract
-        const minAmount = '0.000001';
-        console.log('⚠️ Zero amount detected, using minimum amount for MiniKit:', minAmount);
+      try {
+        // For 0 amount, we still need to send a valid decimal amount (minimum 1 wei)
+        const parsedAmount = parseFloat(safeAmount);
+        const effectiveAmount = parsedAmount === 0 ? 0.000001 : parsedAmount;
+        
         const tokenSymbol = safeToken === 'WLD' ? Tokens.WLD : Tokens.USDC;
-        const amountInDecimals = tokenToDecimals(parseFloat(minAmount), tokenSymbol);
+        const amountInDecimals = tokenToDecimals(effectiveAmount, tokenSymbol);
         const tokenAmountStr = amountInDecimals.toString();
 
         const payload = {
@@ -92,190 +115,160 @@ export const useMiniKit = () => {
             symbol: tokenSymbol,
             token_amount: tokenAmountStr
           }],
-          description: `Transaction confirmation (reward will be distributed separately)`,
+          description: description || (parsedAmount === 0 
+            ? 'Transaction confirmation (reward will be distributed separately)'
+            : `Payment of ${safeAmount} ${safeToken}`),
         };
 
-        console.log('🔍 MiniKit PAY payload (zero-amount override) →', JSON.stringify(payload, null, 2));
+        console.log('🔍 MiniKit PAY payload →', JSON.stringify(payload, null, 2));
         
-        try {
-          const { finalPayload } = await MiniKit.commandsAsync.pay(payload as any);
-          console.log('✅ MiniKit pay succeeded (zero-amount), finalPayload:', finalPayload);
-          return finalPayload;
-        } catch (err: any) {
-          console.error('❌ MiniKit pay error (zero-amount) →', err);
-          throw err;
+        const { finalPayload } = await MiniKit.commandsAsync.pay(payload);
+        console.log('✅ MiniKit PAY success →', finalPayload);
+        
+        return finalPayload;
+      } catch (error: any) {
+        console.error('❌ MiniKit PAY error:', error);
+        
+        // Better error handling
+        if (error?.message?.includes('cancelled')) {
+          throw new Error('Transaction was cancelled');
+        } else if (error?.message?.includes('insufficient')) {
+          throw new Error('Insufficient balance');
+        } else {
+          throw new Error(error?.message || 'Payment failed. Please try again.');
         }
-      }
-
-      // Convert amount to decimals using tokenToDecimals() as per MiniKit documentation
-      // WLD has 18 decimals, USDC has 6 decimals
-      // Example: tokenToDecimals(1, Tokens.WLD) = 1000000000000000000 (1 * 10^18)
-      const tokenSymbol = safeToken === 'WLD' ? Tokens.WLD : Tokens.USDC;
-      const amountInDecimals = tokenToDecimals(parseFloat(safeAmount), tokenSymbol);
-      const tokenAmountStr = amountInDecimals.toString();
-
-      // MiniKit v1.9.8+ requires tokens as TokensPayload array with symbol and token_amount
-      // token_amount MUST be in smallest unit (decimals) as per documentation
-      const payload = {
-      reference: referenceId,
-      to: toAddress,
-        tokens: [{
-          symbol: tokenSymbol, // Tokens.WLD or Tokens.USDC (enum, not string)
-          token_amount: tokenAmountStr // Amount in decimals (e.g., "1000000000000000000" for 1 WLD)
-        }],
-        description: `Payment of ${safeAmount} ${safeToken}`, // Required in v1.9.8+
-      };
-
-      // Log the exact payload being sent to MiniKit SDK
-      console.log('🔍 MiniKit PAY payload →', JSON.stringify(payload, null, 2));
-      console.log('🔍 MiniKit environment check:', {
-        isInstalled: MiniKit.isInstalled(),
-        hasCommandsAsync: !!MiniKit.commandsAsync,
-        hasPay: !!MiniKit.commandsAsync?.pay,
-      });
-
-            try {
-        const { finalPayload } = await MiniKit.commandsAsync.pay(payload as any);                                                                               
-        console.log('✅ MiniKit pay succeeded, finalPayload:', finalPayload);  
-        return finalPayload; // { transaction_id, reference, ... }
-      } catch (err: any) {
-        console.error('❌ MiniKit pay full error →', {
-          message: err?.message,
-          description: err?.description,
-          error_code: err?.error_code,
-          code: err?.code,
-          stack: err?.stack,
-          fullError: err,
-        });
-        
-        // Detect user cancellation from SDK error
-        const msg = String(err?.message || '').toLowerCase();
-        const desc = String(err?.description || '').toLowerCase();
-        const code = String(err?.code || err?.error_code || '').toLowerCase();
-        
-        // Case: User cancelled/rejected/closed the payment window
-        if (
-          code.includes('user_rejected') || 
-          code.includes('cancelled') || 
-          code.includes('cancel') ||
-          msg.includes('cancel') || 
-          msg.includes('rejected') ||
-          msg.includes('user') ||
-          desc.includes('cancel') ||
-          desc.includes('rejected')
-        ) {
-          const e = new Error('user_cancelled');
-          (e as any).type = 'user_cancelled';
-          (e as any).originalError = err;
-          throw e;
-        }
-        
-        throw err;
       }
     },
     []
   );
 
-  /**
-   * Send transaction (for contract interactions)
-   * This shows "Authorize Transaction" popup instead of "Pay" popup
-   * Updated to use MiniKit SDK v1.9.8+ format with transaction array
-   */
   const sendTransaction = useCallback(
-    async (
-      toAddress: `0x${string}`,
-      data: string,
-      value: string = '0',
-      network: string = 'worldchain'
-    ) => {
+    async (params: {
+      transaction: Array<{
+        address: `0x${string}`;
+        functionName: string;
+        abi: any[];
+        args: any[];
+      }>;
+      network: 'worldchain' | 'optimism';
+    }) => {
       if (!MiniKit.isInstalled()) {
         throw new Error('MiniKit is not installed. Open inside World App.');
       }
 
-      if (!toAddress || !toAddress.startsWith('0x') || toAddress.length !== 42) {
-        throw new Error(`Invalid toAddress: must be a valid Ethereum address, got: ${toAddress}`);
-      }
-
-      // Convert value to hex string if it's not already
-      let hexValue = value || '0';
-      if (!hexValue.startsWith('0x')) {
-        // Convert decimal string to hex
-        const numValue = BigInt(hexValue);
-        hexValue = '0x' + numValue.toString(16);
-      }
-
-      // MiniKit SDK v1.9.8+ requires actions array format (not transaction)
-      // For authorization-only transactions (e.g., faucet claims, game rewards)
-      // We create a simple action with address, value, and optional data
-      const action: any = {
-        to: toAddress,
-        value: hexValue,
-      };
-      
-      // Only include data if it's provided and not empty
-      if (data && data !== '0x' && data.length > 2) {
-        action.data = data;
-      }
-
-      const payload: any = {
-        actions: [action],
-      };
-      
-      // Include network if specified (defaults to worldchain)
-      if (network) {
-        payload.network = network;
-      }
-
-      console.log('🔍 MiniKit sendTransaction payload (new format) →', JSON.stringify(payload, null, 2));
-      console.log('🔍 MiniKit environment check:', {
-        isInstalled: MiniKit.isInstalled(),
-        hasCommandsAsync: !!MiniKit.commandsAsync,
-        hasSendTransaction: !!MiniKit.commandsAsync?.sendTransaction,
-        network,
-      });
-
       try {
-        const { finalPayload } = await MiniKit.commandsAsync.sendTransaction(payload);
-        console.log('✅ MiniKit sendTransaction succeeded, finalPayload:', finalPayload);
-        return finalPayload; // { transaction_id, ... }
-      } catch (err: any) {
-        console.error('❌ MiniKit sendTransaction error →', {
-          message: err?.message,
-          description: err?.description,
-          error_code: err?.error_code,
-          code: err?.code,
-          stack: err?.stack,
-          fullError: err,
-          payload,
-        });
+        console.log('📝 Sending transaction:', params);
         
-        // Detect user cancellation from SDK error
-        const msg = String(err?.message || '').toLowerCase();
-        const desc = String(err?.description || '').toLowerCase();
-        const code = String(err?.code || err?.error_code || '').toLowerCase();
-        
-        // Case: User cancelled/rejected/closed the transaction window
-        if (
-          code.includes('user_rejected') || 
-          code.includes('cancelled') || 
-          code.includes('cancel') ||
-          msg.includes('cancel') || 
-          msg.includes('rejected') ||
-          msg.includes('user') ||
-          desc.includes('cancel') ||
-          desc.includes('rejected')
-        ) {
-          const e = new Error('user_cancelled');
-          (e as any).type = 'user_cancelled';
-          (e as any).originalError = err;
-          throw e;
+        // Validate transaction parameters
+        if (!params.transaction || !Array.isArray(params.transaction) || params.transaction.length === 0) {
+          throw new Error('Invalid transaction: must provide at least one transaction');
         }
+
+        for (const tx of params.transaction) {
+          if (!tx.address || !tx.address.startsWith('0x') || tx.address.length !== 42) {
+            throw new Error(`Invalid contract address: ${tx.address}`);
+          }
+          
+          if (!tx.functionName || typeof tx.functionName !== 'string') {
+            throw new Error('Invalid function name');
+          }
+          
+          if (!tx.abi || !Array.isArray(tx.abi) || tx.abi.length === 0) {
+            throw new Error('Invalid ABI: must provide contract ABI');
+          }
+        }
+
+        // Use MiniKit.commandsAsync.sendTransaction if available
+        if (MiniKit.commandsAsync?.sendTransaction) {
+          const { finalPayload } = await MiniKit.commandsAsync.sendTransaction(params);
+          console.log('✅ Transaction sent successfully:', finalPayload);
+          return finalPayload;
+        } else {
+          throw new Error('sendTransaction is not available in this version of MiniKit');
+        }
+      } catch (error: any) {
+        console.error('❌ Transaction failed:', error);
         
-        throw err;
+        // Enhanced error handling
+        if (error?.message?.includes('cancelled')) {
+          throw new Error('Transaction was cancelled');
+        } else if (error?.message?.includes('insufficient')) {
+          throw new Error('Insufficient balance or gas');
+        } else if (error?.message?.includes('reverted')) {
+          throw new Error('Transaction reverted. Please check your input.');
+        } else {
+          throw new Error(error?.message || 'Transaction failed. Please try again.');
+        }
       }
     },
     []
   );
 
-  return { ready, error, verify, walletAuth, pay, sendTransaction };
+  const signMessage = useCallback(
+    async (message: string) => {
+      if (!MiniKit.isInstalled()) {
+        throw new Error('MiniKit is not installed. Open inside World App.');
+      }
+
+      try {
+        const { finalPayload } = await MiniKit.commandsAsync.signMessage({ message });
+        console.log('✅ Message signed successfully');
+        return finalPayload;
+      } catch (error: any) {
+        console.error('❌ Message signing failed:', error);
+        throw new Error(error?.message || 'Failed to sign message');
+      }
+    },
+    []
+  );
+
+  const signTypedData = useCallback(
+    async (typedData: any) => {
+      if (!MiniKit.isInstalled()) {
+        throw new Error('MiniKit is not installed. Open inside World App.');
+      }
+
+      try {
+        const { finalPayload } = await MiniKit.commandsAsync.signTypedData({ typedData });
+        console.log('✅ Typed data signed successfully');
+        return finalPayload;
+      } catch (error: any) {
+        console.error('❌ Typed data signing failed:', error);
+        throw new Error(error?.message || 'Failed to sign typed data');
+      }
+    },
+    []
+  );
+
+  // Get user info (if available)
+  const getUserInfo = useCallback(() => {
+    if (!MiniKit.isInstalled()) {
+      return null;
+    }
+
+    try {
+      // Check if user info is available in MiniKit
+      if ((MiniKit as any).user) {
+        return (MiniKit as any).user;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to get user info:', error);
+      return null;
+    }
+  }, []);
+
+  return {
+    ready,
+    error,
+    isInstalled,
+    verify,
+    walletAuth,
+    pay,
+    sendTransaction,
+    signMessage,
+    signTypedData,
+    getUserInfo,
+    MiniKit,
+  };
 };

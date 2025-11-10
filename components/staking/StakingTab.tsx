@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Coins, TrendingUp, TrendingDown, BarChart3, DollarSign as DollarIcon,
@@ -30,6 +30,15 @@ const POOL_COLORS: Record<number, string> = {
   3: "from-orange-400 to-red-400",
   4: "from-red-500 to-pink-500",
 };
+
+// Default pools fallback
+const DEFAULT_POOLS = [
+  { id: 0, name: "Flexible", lockDays: 0, apy: 50, desc: "No lock required" },
+  { id: 1, name: "30 Days", lockDays: 30, apy: 75, desc: "Lock for 30 days" },
+  { id: 2, name: "90 Days", lockDays: 90, apy: 125, desc: "Lock for 90 days" },
+  { id: 3, name: "180 Days", lockDays: 180, apy: 175, desc: "Lock for 180 days" },
+  { id: 4, name: "365 Days", lockDays: 365, apy: 325, desc: "Maximum APY!" },
+];
 
 interface StakingTabProps {
   selectedPool: number;
@@ -84,37 +93,26 @@ const StakingTab = memo(({
   const { sendTransaction } = useMiniKit();
   
   // Ensure POOLS is always an array with fallback
-  const safePools = React.useMemo(() => {
+  const safePools = useMemo(() => {
     try {
       if (Array.isArray(POOLS) && POOLS.length > 0) {
         return POOLS;
       }
-      // Fallback pools if POOLS is undefined or empty
-      return [
-        { id: 0, name: "Flexible", lockDays: 0, apy: 50, desc: "No lock required" },
-        { id: 1, name: "30 Days", lockDays: 30, apy: 75, desc: "Lock for 30 days" },
-        { id: 2, name: "90 Days", lockDays: 90, apy: 125, desc: "Lock for 90 days" },
-        { id: 3, name: "180 Days", lockDays: 180, apy: 175, desc: "Lock for 180 days" },
-        { id: 4, name: "365 Days", lockDays: 365, apy: 325, desc: "Maximum APY!" },
-      ];
+      return DEFAULT_POOLS;
     } catch (error) {
-      console.error('Error initializing POOLS:', error);
-      // Return default pools on error
-      return [
-        { id: 0, name: "Flexible", lockDays: 0, apy: 50, desc: "No lock required" },
-        { id: 1, name: "30 Days", lockDays: 30, apy: 75, desc: "Lock for 30 days" },
-        { id: 2, name: "90 Days", lockDays: 90, apy: 125, desc: "Lock for 90 days" },
-        { id: 3, name: "180 Days", lockDays: 180, apy: 175, desc: "Lock for 180 days" },
-        { id: 4, name: "365 Days", lockDays: 365, apy: 325, desc: "Maximum APY!" },
-      ];
+      console.error('Error loading pools:', error);
+      return DEFAULT_POOLS;
     }
   }, []);
 
-  // Check faucet cooldown
+  // Check faucet status
   useEffect(() => {
-    if (!actualAddress) return;
-    
-    const checkFaucet = async () => {
+    const checkFaucetStatus = async () => {
+      if (!actualAddress) {
+        setCanClaimFaucet(false);
+        return;
+      }
+      
       try {
         const res = await fetch('/api/faucet/check', {
           method: 'POST',
@@ -133,28 +131,25 @@ const StakingTab = memo(({
           }
         }
       } catch (e) {
-        // Silent error
+        console.error('Failed to check faucet status:', e);
       }
     };
     
-    checkFaucet();
-    const interval = setInterval(checkFaucet, 60000); // Check every minute
+    checkFaucetStatus();
+    const interval = setInterval(checkFaucetStatus, 60000);
     return () => clearInterval(interval);
   }, [actualAddress]);
 
-  // Handle faucet claim
   const handleClaimFaucet = async () => {
-    if (!actualAddress || !canClaimFaucet || isClaimingFaucet) return;
-    
-    if (!MiniKit.isInstalled()) {
-      alert('World App is required to claim faucet. Please open this app in World App.');
+    if (!actualAddress || !canClaimFaucet || isClaimingFaucet) {
       return;
     }
-    
+
     setIsClaimingFaucet(true);
+    
     try {
-      // Step 1: Initialize transaction
-      const initRes = await fetch('/api/faucet/init', {
+      // First check if can claim
+      const initRes = await fetch('/api/faucet/initiate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ address: actualAddress })
@@ -162,39 +157,41 @@ const StakingTab = memo(({
       
       const initData = await initRes.json();
       
-      if (!initRes.ok || !initData.ok || !initData.reference) {
-        alert(initData.error || initData.message || 'Failed to initialize faucet claim. Please try again.');
-        setIsClaimingFaucet(false);
-        return;
+      if (!initData || !initData.ok) {
+        throw new Error(initData?.error || 'Failed to initiate faucet claim');
       }
 
-      const reference = initData.reference;
+      // Use sendTransaction with proper error handling
+      if (!sendTransaction) {
+        throw new Error('MiniKit not available. Please open in World App.');
+      }
+
+      const reference = initData.reference || crypto.randomUUID();
       
-      // Step 2: Show transaction authorization popup
-      let payload: any = null;
-      try {
-        const transactionData = '0x'; // Empty data - just for authorization
-        payload = await sendTransaction(
-          STAKING_CONTRACT_ADDRESS as `0x${string}`,
-          transactionData,
-          '0x0', // 0 value in hex - user is receiving reward
-          STAKING_CONTRACT_NETWORK // Include network parameter
-        );
-      } catch (e: any) {
-        if (e?.type === 'user_cancelled') {
-          setIsClaimingFaucet(false);
-          return;
-        }
-        throw e;
+      // Call sendTransaction with proper configuration
+      const payload = await sendTransaction({
+        transaction: [{
+          address: STAKING_CONTRACT_ADDRESS || '0x50AB6B4C3a8f7377F424A0400CDc3724891A3103',
+          functionName: 'claimFaucetReward',
+          abi: [
+            {
+              inputs: [],
+              name: "claimFaucetReward",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function"
+            }
+          ],
+          args: []
+        }],
+        network: 'worldchain'
+      });
+
+      if (!payload) {
+        throw new Error('Transaction was cancelled or failed');
       }
 
-      // Step 3: Confirm transaction
-      if (!payload?.transaction_id) {
-        alert('Transaction was cancelled. Please try again.');
-        setIsClaimingFaucet(false);
-        return;
-      }
-
+      // Confirm transaction
       const confirmRes = await fetch('/api/faucet/confirm', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -212,35 +209,34 @@ const StakingTab = memo(({
         alert(`Successfully claimed ${initData.amount || 1} LUX!`);
         setCanClaimFaucet(false);
         setFaucetCooldown({ hours: 24, minutes: 0 });
+        
         // Refresh faucet status after successful claim
-        setTimeout(() => {
-          const checkFaucet = async () => {
-            try {
-              const res = await fetch('/api/faucet/check', {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ address: actualAddress })
-              });
-              if (res.ok) {
-                const data = await res.json();
-                if (data && typeof data === 'object') {
-                  setCanClaimFaucet(data.canClaim || false);
-                  setFaucetCooldown({ 
-                    hours: data.remainingHours || 0, 
-                    minutes: data.remainingMinutes || 0 
-                  });
-                }
+        setTimeout(async () => {
+          try {
+            const res = await fetch('/api/faucet/check', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ address: actualAddress })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data && typeof data === 'object') {
+                setCanClaimFaucet(data.canClaim || false);
+                setFaucetCooldown({ 
+                  hours: data.remainingHours || 0, 
+                  minutes: data.remainingMinutes || 0 
+                });
               }
-            } catch (e) {
-              // Silent error
             }
-          };
-          checkFaucet();
+          } catch (e) {
+            console.error('Failed to refresh faucet status:', e);
+          }
         }, 1000);
       } else {
-        alert(confirmData?.error || confirmData?.message || 'Failed to claim faucet reward. Please try again.');
+        throw new Error(confirmData?.error || confirmData?.message || 'Failed to confirm transaction');
       }
     } catch (error: any) {
+      console.error('Faucet claim error:', error);
       alert(error?.message || 'Failed to claim faucet reward. Please try again.');
     } finally {
       setIsClaimingFaucet(false);
@@ -296,43 +292,37 @@ const StakingTab = memo(({
 
       {/* Pool Selection */}
       <div className="grid grid-cols-5 gap-1.5">
-        {safePools && Array.isArray(safePools) && safePools.length > 0 ? (
-          safePools.map((pool) => {
-            const Icon = POOL_ICONS[pool.id] || Unlock;
-            const color = POOL_COLORS[pool.id] || "from-blue-400 to-cyan-400";
-            return (
-              <motion.button
-                key={pool.id}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setSelectedPool(pool.id)}
-                className={`relative p-1.5 rounded-lg border-2 transition-all overflow-hidden ${
-                  selectedPool === pool.id
-                    ? 'border-yellow-500 bg-gradient-to-br from-yellow-500/20 to-amber-500/20 shadow-lg shadow-yellow-500/20'
-                    : 'border-white/10 bg-black/40 backdrop-blur-lg hover:border-white/20'
-                }`}
-                style={{ willChange: 'transform' }}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-10`}></div>
-                <div className="relative">
-                  <i
-                    className={`flex justify-center mb-0.5 ${
-                      selectedPool === pool.id ? 'text-yellow-400' : 'text-white/60'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </i>
-                  <p className="text-white font-bold text-[9px] leading-tight">{pool.name}</p>
-                  <p className={`text-[8px] font-semibold mt-0.5 ${selectedPool === pool.id ? 'text-yellow-400' : 'text-white/50'}`}>{pool.apy}%</p>
-                </div>
-              </motion.button>
-            );
-          })
-        ) : (
-          <div className="col-span-5 text-center text-white/60 text-xs p-4">
-            Loading pools...
-          </div>
-        )}
+        {safePools.map((pool) => {
+          const Icon = POOL_ICONS[pool.id] || Unlock;
+          const color = POOL_COLORS[pool.id] || "from-blue-400 to-cyan-400";
+          return (
+            <motion.button
+              key={pool.id}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setSelectedPool(pool.id)}
+              className={`relative p-1.5 rounded-lg border-2 transition-all overflow-hidden ${
+                selectedPool === pool.id
+                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-500/20 to-amber-500/20 shadow-lg shadow-yellow-500/20'
+                  : 'border-white/10 bg-black/40 backdrop-blur-lg hover:border-white/20'
+              }`}
+              style={{ willChange: 'transform' }}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-10`}></div>
+              <div className="relative">
+                <i
+                  className={`flex justify-center mb-0.5 ${
+                    selectedPool === pool.id ? 'text-yellow-400' : 'text-white/60'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                </i>
+                <p className="text-white font-bold text-[9px] leading-tight">{pool.name}</p>
+                <p className={`text-[8px] font-semibold mt-0.5 ${selectedPool === pool.id ? 'text-yellow-400' : 'text-white/50'}`}>{pool.apy}%</p>
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
 
       {/* Staking Card */}
@@ -348,190 +338,116 @@ const StakingTab = memo(({
             </p>
             {!actualAddress && (
               <p className="text-white/60 text-xs">
-                Connect your wallet in World App to stake LUX tokens and earn rewards
+                Please open this app in World App to connect your wallet
               </p>
             )}
           </div>
         </motion.div>
-      ) : isLoadingStakingData ? (
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-xl p-3 text-white overflow-hidden border border-yellow-600/20"
-        >
-          <div className="relative z-10 space-y-2">
-            <LoadingSkeleton className="h-12 w-full" count={3} />
-          </div>
-        </motion.div>
-      ) : stakedAmount === 0 ? (
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-xl p-6 text-white overflow-hidden border border-yellow-600/20"
-        >
-          <EmptyStakingState
-            action={
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowStakeModal(true)}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg"
-              >
-                Start Staking
-              </motion.button>
-            }
-          />
-        </motion.div>
       ) : (
-      <motion.div
-        initial={{ scale: 0.95 }}
-        animate={{ scale: 1 }}
-        className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-xl p-3 text-white overflow-hidden border border-yellow-600/20"
-      >
-        <div className="relative z-10 space-y-2">
-          {/* Power License Status */}
-          <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/10">
-            <div className="flex items-center space-x-1.5">
-                <Zap className="w-3.5 h-3.5 text-yellow-400" aria-hidden="true" />
-              <span className="text-white/80 text-[10px]">Power License:</span>
-              <span className="text-white font-bold text-xs">
-                {currentPower ? currentPower.name : 'None'}
-              </span>
-            </div>
-            <div className="text-right">
-              <div className="text-yellow-300 font-bold text-xs">{totalApy}% Total APY</div>
-              <div className="text-white/60 text-[9px] mt-0.5">
-                Base {baseApy}% {powerBoost > 0 ? `+ ${powerBoost}%` : ''}
-              </div>
-            </div>
-          </div>
-
-          {/* Staking Balance */}
-          <div className="p-2 bg-black/40 rounded-lg border border-white/10">
-            <p className="text-white/80 text-[10px] mb-1">{t('myStakingBalance')}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1.5">
-                  <Coins className="w-4 h-4 text-yellow-300" aria-hidden="true" />
-                  <span className="text-lg font-extrabold text-white">{formattedStakedAmount}</span>
-                  <span className="text-white/60 text-xs">LUX</span>
+        <>
+          {/* Active Staking Card */}
+          {stakedAmount > 0 && (
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              className={`relative bg-gradient-to-br from-yellow-900/20 via-black to-yellow-900/20 rounded-xl p-4 text-white overflow-hidden border border-yellow-600/20`}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Coins className="w-4 h-4 text-yellow-400" />
+                    <span className="text-xs text-white/60">Staked Amount</span>
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-400">{formattedStakedAmount} {TOKEN_NAME}</p>
+                  <p className="text-xs text-white/60 mt-1">
+                    Pool: {safePools.find(p => p.id === selectedPool)?.name || 'Flexible'}
+                  </p>
                 </div>
-                <TrendingUp className="w-4 h-4 text-green-300" aria-hidden="true" />
+                
+                <div className="text-right">
+                  <p className="text-xs text-white/60 mb-1">Total APY</p>
+                  <p className="text-xl font-bold text-green-400">{totalApy}%</p>
+                </div>
               </div>
-          </div>
 
-          {/* Earned Interest */}
-          <div className="p-2 bg-black/40 rounded-lg border border-white/10">
-            <p className="text-white/80 text-[10px] mb-1">{t('earnedInterest')}</p>
-              {pendingRewards === 0 ? (
-                <EmptyRewardsState className="p-0" />
-              ) : (
-            <div className="flex items-center justify-between">
-              <span className="text-xl font-extrabold text-yellow-300">{formattedPendingRewards}</span>
-              <span className="text-white/60 text-xs">LUX</span>
-            </div>
+              {/* Rewards Section */}
+              {pendingRewards > 0 && (
+                <div className="bg-black/30 rounded-lg p-3 mb-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs text-white/60">Pending Rewards</p>
+                      <p className="text-lg font-bold text-green-400">{formattedPendingRewards} {TOKEN_NAME}</p>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleClaimInterest}
+                      disabled={isClaimingInterest || pendingRewards <= 0}
+                      className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-bold text-sm shadow-lg shadow-green-500/20 disabled:opacity-50"
+                    >
+                      {isClaimingInterest ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Claim'}
+                    </motion.button>
+                  </div>
+                </div>
               )}
-          </div>
 
-          {/* Time Elapsed */}
-          {timeElapsed.days > 0 || timeElapsed.hours > 0 || timeElapsed.minutes > 0 ? (
-            <div className="flex items-center space-x-1.5 text-[10px] text-white/70 bg-white/5 rounded-lg px-2 py-1">
-                <Timer className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-              <span className="font-mono">
-                {timeElapsed.days}D {timeElapsed.hours}H {timeElapsed.minutes}m
-              </span>
-            </div>
-          ) : null}
-        </div>
-      </motion.div>
-      )}
+              {/* Time Elapsed */}
+              <div className="flex items-center gap-2 text-xs text-white/50">
+                <Timer className="w-3 h-3" />
+                <span>
+                  Staking for: {timeElapsed.days}d {timeElapsed.hours}h {timeElapsed.minutes}m
+                </span>
+              </div>
 
-      {/* Action Buttons */}
-      <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          {/* STAKING Button */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowStakeModal(true)}
-            aria-label="Open stake modal"
-            className="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 text-xs shadow-lg"
-          >
-            <BarChart3 className="w-4 h-4" aria-hidden="true" />
-            <span>{t('staking')}</span>
-          </motion.button>
-
-          {/* Withdraw Interest */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleClaimInterest}
-            disabled={isClaimingInterest || pendingRewards === 0}
-            aria-label={isClaimingInterest ? 'Claiming rewards...' : 'Claim rewards'}
-            aria-disabled={isClaimingInterest || pendingRewards === 0}
-            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
-          >
-            {isClaimingInterest ? (
-              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <>
-                <DollarIcon className="w-4 h-4" aria-hidden="true" />
-                <span>{t('withdrawInterest')}</span>
-              </>
-            )}
-          </motion.button>
-        </div>
-
-        {/* Withdraw Balance */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleWithdrawBalance}
-          disabled={isWithdrawing || stakedAmount === 0}
-          aria-label={isWithdrawing ? 'Withdrawing...' : 'Withdraw balance'}
-          aria-disabled={isWithdrawing || stakedAmount === 0}
-          className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-2 rounded-lg flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs shadow-lg"
-        >
-          {isWithdrawing ? (
-            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <>
-              <TrendingDown className="w-4 h-4" aria-hidden="true" />
-              <span>{t('withdrawBalance')}</span>
-            </>
+              {/* Action Buttons */}
+              <div className="flex gap-2 mt-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowStakeModal(true)}
+                  className="flex-1 px-3 py-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-lg font-bold text-sm"
+                >
+                  Add More
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleWithdrawBalance}
+                  disabled={isWithdrawing}
+                  className="flex-1 px-3 py-2 bg-gray-700/50 text-white rounded-lg font-bold text-sm disabled:opacity-50"
+                >
+                  {isWithdrawing ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Withdraw'}
+                </motion.button>
+              </div>
+            </motion.div>
           )}
-        </motion.button>
 
-        {/* Free Token Button */}
-        <motion.button
-          whileHover={{ scale: 1.02, boxShadow: "0 15px 35px rgba(147, 51, 234, 0.4)" }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setActiveTab('game')}
-          aria-label="Play games to earn free tokens"
-          className="w-full text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center space-x-1.5 relative overflow-hidden group text-xs"
-          style={{
-            background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
-            backgroundSize: '200% 100%',
-            boxShadow: '0 8px 25px rgba(147, 51, 234, 0.3), 0 0 15px rgba(236, 72, 153, 0.2)'
-          }}
-        >
-          <motion.div
-            className="absolute inset-0 rounded-lg"
-            animate={{
-              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-            }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            style={{
-              background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #9333ea 100%)',
-              backgroundSize: '200% 100%'
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/50 via-amber-400/50 to-yellow-400/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent rounded-lg"></div>
-          <Gift className="w-4 h-4 relative z-10" />
-          <span className="text-xs relative z-10 font-extrabold">{t('freeToken')}</span>
-          <Sparkles className="w-3.5 h-3.5 relative z-10" />
-        </motion.button>
-      </div>
+          {/* Empty State */}
+          {stakedAmount === 0 && (
+            <EmptyStakingState onStakeClick={() => setShowStakeModal(true)} />
+          )}
+
+          {/* Power Boost Card */}
+          {currentPower && (
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              className="bg-gradient-to-br from-purple-900/20 via-black to-purple-900/20 rounded-xl p-4 border border-purple-500/20"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Zap className="w-5 h-5 text-purple-400" />
+                  <div>
+                    <p className="text-sm font-bold text-purple-300">Power Active</p>
+                    <p className="text-xs text-white/60">{currentPower.name}</p>
+                  </div>
+                </div>
+                <p className="text-lg font-bold text-purple-400">+{powerBoost}%</p>
+              </div>
+            </motion.div>
+          )}
+        </>
+      )}
     </motion.div>
   );
 });
