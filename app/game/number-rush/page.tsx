@@ -11,7 +11,7 @@ import { TronCard, TronPanel } from '@/components/tron';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useMiniKit } from '@/hooks/useMiniKit';
 import { MiniKit } from '@worldcoin/minikit-js';
-import { STAKING_CONTRACT_ADDRESS, STAKING_CONTRACT_NETWORK } from '@/lib/utils/constants';
+import { STAKING_CONTRACT_ADDRESS, STAKING_CONTRACT_NETWORK, TOKEN_NAME } from '@/lib/utils/constants';
 import { ethers } from 'ethers';
 
 type GameState = 'idle' | 'waiting' | 'playing' | 'gameover';
@@ -294,7 +294,7 @@ export default function NumberRushPage() {
     }
   }
 
-  const { sendTransaction } = useMiniKit();
+  const { sendTransaction, ready: minikitReady } = useMiniKit();
 
   async function handleClaimReward() {
     console.log('handleClaimReward called with:', { address, luxReward, rewardClaimed, isClaimingReward });
@@ -306,6 +306,11 @@ export default function NumberRushPage() {
     
     if (!MiniKit.isInstalled()) {
       alert('World App is required to claim rewards. Please open this app in World App.');
+      return;
+    }
+    
+    if (!minikitReady) {
+      alert('MiniKit is not ready. Please wait a moment and try again.');
       return;
     }
     
@@ -350,19 +355,23 @@ export default function NumberRushPage() {
 
       const reference = initData.reference;
       
-      // Step 2: Show transaction popup using MiniKit pay
+      // Step 2: Show transaction authorization popup using MiniKit sendTransaction
+      // This will show "Authorize Transaction" popup for receiving rewards
+      // The backend will handle actual token distribution after authorization
       let payload: any = null;
       try {
-        // Use sendTransaction to show "Authorize Transaction" instead of "Pay"
-        const transactionData = '0x'; // Empty data - just for authorization
+        // Use sendTransaction to show authorization popup
+        // Empty transaction data (0x) - just for authorization, backend handles distribution
+        // Value is 0 because user is receiving reward, not sending
         payload = await sendTransaction(
-          STAKING_CONTRACT_ADDRESS as `0x${string}`,
-          transactionData,
-          '0', // 0 value - user is receiving reward, not paying
-          STAKING_CONTRACT_NETWORK // Include network parameter
+          STAKING_CONTRACT_ADDRESS as `0x${string}`, // Contract address
+          '0x', // Empty data - authorization only
+          '0', // 0 value - user is receiving, not paying
+          STAKING_CONTRACT_NETWORK // Network
         );
       } catch (e: any) {
-        if (e?.type === 'user_cancelled') {
+        console.error('MiniKit sendTransaction error:', e);
+        if (e?.message?.includes('cancelled') || e?.type === 'user_cancelled') {
           setIsClaimingReward(false);
           return;
         }
@@ -391,7 +400,7 @@ export default function NumberRushPage() {
       
       if (confirmData.ok) {
         setRewardClaimed(true);
-        alert(`Successfully claimed ${luxReward} LUX!`);
+        alert(`Successfully claimed ${luxReward} ${TOKEN_NAME}!`);
       } else {
         alert(confirmData.error || 'Failed to claim reward. Please try again.');
       }

@@ -11,7 +11,7 @@ import { TronCard, TronPanel } from '@/components/tron';
 import { Volume2, VolumeX, Coins } from 'lucide-react';
 import { useMiniKit } from '@/hooks/useMiniKit';
 import { MiniKit } from '@worldcoin/minikit-js';
-import { STAKING_CONTRACT_ADDRESS, STAKING_CONTRACT_NETWORK } from '@/lib/utils/constants';
+import { STAKING_CONTRACT_ADDRESS, STAKING_CONTRACT_NETWORK, TOKEN_NAME } from '@/lib/utils/constants';
 import { ethers } from 'ethers';
 
 type Color = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
@@ -284,7 +284,7 @@ export default function MemoryMatchPage() {
     }
   }
 
-  const { sendTransaction } = useMiniKit();
+  const { sendTransaction, ready: minikitReady } = useMiniKit();
 
   async function handleClaimReward() {
     console.log('🔵 handleClaimReward called with:', { 
@@ -329,6 +329,11 @@ export default function MemoryMatchPage() {
     
     if (!MiniKit.isInstalled()) {
       alert('World App is required to claim rewards. Please open this app in World App.');
+      return;
+    }
+    
+    if (!minikitReady) {
+      alert('MiniKit is not ready. Please wait a moment and try again.');
       return;
     }
     
@@ -396,25 +401,25 @@ export default function MemoryMatchPage() {
 
       const reference = initData.reference;
       
-      // Step 2: Show transaction popup using MiniKit pay
-      // Note: We're using a dummy payment to trigger the popup
-      // In production, this should call the contract's distributeGameReward function
-      // For now, we'll use a 0 WLD payment to show the transaction confirmation
+      // Step 2: Show transaction authorization popup using MiniKit sendTransaction
+      // This will show "Authorize Transaction" popup for receiving rewards
+      // The backend will handle actual token distribution after authorization
       let payload: any = null;
       try {
-        // Use pay with 0 WLD to show transaction confirmation popup
-        // The actual LUX reward will be distributed by the backend after confirmation
-        // Use sendTransaction to show "Authorize Transaction" instead of "Pay"
-        const transactionData = '0x'; // Empty data - just for authorization
+        // Use sendTransaction to show authorization popup
+        // Empty transaction data (0x) - just for authorization, backend handles distribution
+        // Value is 0 because user is receiving reward, not sending
         payload = await sendTransaction(
-          STAKING_CONTRACT_ADDRESS as `0x${string}`,
-          transactionData,
-          '0', // 0 value - user is receiving reward, not paying
-          STAKING_CONTRACT_NETWORK // Include network parameter
+          STAKING_CONTRACT_ADDRESS as `0x${string}`, // Contract address
+          '0x', // Empty data - authorization only
+          '0', // 0 value - user is receiving, not paying
+          STAKING_CONTRACT_NETWORK // Network
         );
       } catch (e: any) {
+        console.error('MiniKit sendTransaction error:', e);
         // Handle user cancellation
-        if (e?.type === 'user_cancelled') {
+        if (e?.type === 'user_cancelled' || e?.message?.includes('cancelled')) {
+          console.log('⚠️ User cancelled transaction');
           setIsClaimingReward(false);
           return;
         }
@@ -443,7 +448,7 @@ export default function MemoryMatchPage() {
       
       if (confirmData.ok) {
         setRewardClaimed(true);
-        alert(`Successfully claimed ${luxReward} LUX!`);
+        alert(`Successfully claimed ${luxReward} ${TOKEN_NAME}!`);
       } else {
         alert(confirmData.error || 'Failed to claim reward. Please try again.');
       }

@@ -101,8 +101,10 @@ export const useMiniKit = () => {
       }
       
       try {
-        // For 0 amount, we still need to send a valid decimal amount (minimum 1 wei)
         const parsedAmount = parseFloat(safeAmount);
+        
+        // For authorization-only transactions (amount 0), we use a minimal amount
+        // but the description should clearly indicate it's for authorization
         const effectiveAmount = parsedAmount === 0 ? 0.000001 : parsedAmount;
         
         const tokenSymbol = safeToken === 'WLD' ? Tokens.WLD : Tokens.USDC;
@@ -117,7 +119,7 @@ export const useMiniKit = () => {
             token_amount: tokenAmountStr
           }],
           description: description || (parsedAmount === 0 
-            ? 'Transaction confirmation (reward will be distributed separately)'
+            ? 'Transaction authorization (reward will be distributed separately)'
             : `Payment of ${safeAmount} ${safeToken}`),
         };
 
@@ -198,7 +200,20 @@ export const useMiniKit = () => {
           // New format with transaction array
           const params = toAddressOrParams;
           
-          if (!params.transaction || !Array.isArray(params.transaction) || params.transaction.length === 0) {
+          // Add defensive checks to prevent undefined.map() error
+          if (!params || typeof params !== 'object') {
+            throw new Error('Invalid transaction parameters: must be an object');
+          }
+          
+          if (!params.transaction) {
+            throw new Error('Invalid transaction: transaction field is required');
+          }
+          
+          if (!Array.isArray(params.transaction)) {
+            throw new Error('Invalid transaction: transaction must be an array');
+          }
+          
+          if (params.transaction.length === 0) {
             throw new Error('Invalid transaction: must provide at least one transaction');
           }
 
@@ -237,14 +252,61 @@ export const useMiniKit = () => {
           };
         }
 
-        console.log('📝 Sending transaction:', payload);
+        // Ensure payload structure is correct before sending
+        if (!payload.actions || !Array.isArray(payload.actions) || payload.actions.length === 0) {
+          throw new Error('Invalid payload: actions array is required and must not be empty');
+        }
+
+        if (!payload.network) {
+          payload.network = 'worldchain';
+        }
+
+        // Validate each action
+        payload.actions = payload.actions.map((action: any) => {
+          if (!action.to || !action.to.startsWith('0x')) {
+            throw new Error(`Invalid action: missing or invalid 'to' address: ${action.to}`);
+          }
+          return {
+            to: action.to,
+            value: action.value || '0x0',
+            ...(action.data && action.data !== '0x' ? { data: action.data } : {}),
+          };
+        });
+
+        console.log('📝 Sending transaction:', JSON.stringify(payload, null, 2));
 
         // Use MiniKit.commandsAsync.sendTransaction if available
         if (MiniKit.commandsAsync?.sendTransaction) {
-          const result = await MiniKit.commandsAsync.sendTransaction(payload as any);
-          console.log('✅ Transaction sent successfully:', result);
-          // Return finalPayload with transaction_id for compatibility
-          return (result?.finalPayload || result) as any;
+          try {
+            const result: any = await MiniKit.commandsAsync.sendTransaction(payload as any);
+            console.log('✅ Transaction sent successfully:', result);
+            // Return finalPayload with transaction_id for compatibility
+            // MiniKit may return different structures, so we handle multiple formats
+            const finalPayload = result?.finalPayload || result;
+            // Try to extract transaction_id from various possible locations
+            const transactionId = finalPayload?.transaction_id || 
+                                 finalPayload?.transactionId || 
+                                 finalPayload?.txHash ||
+                                 result?.transaction_id ||
+                                 result?.transactionId;
+            
+            if (transactionId) {
+              return { 
+                transaction_id: transactionId,
+                ...(typeof finalPayload === 'object' ? finalPayload : {}),
+                ...result 
+              };
+            }
+            // If no transaction_id found, return the result as is
+            return finalPayload || result;
+          } catch (mkError: any) {
+            console.error('❌ MiniKit sendTransaction error:', mkError);
+            // If error contains map issue, it might be from compat shim
+            if (mkError?.message?.includes('map') || mkError?.message?.includes('undefined')) {
+              throw new Error(`Transaction failed: ${mkError.message}. Please check transaction parameters.`);
+            }
+            throw mkError;
+          }
         } else {
           throw new Error('sendTransaction is not available in this version of MiniKit');
         }
