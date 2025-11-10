@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MiniKit, VerificationLevel, ISuccessResult, MiniAppWalletAuthSuccessPayload, tokenToDecimals, Tokens } from '@worldcoin/minikit-js';
 import { applyMiniKitCompatShim } from '@/lib/minikit/compat';
+import { Interface } from 'ethers';
 
 /**
  * useMiniKit - Enhanced wrapper around official MiniKit-JS
@@ -143,46 +144,107 @@ export const useMiniKit = () => {
   );
 
   const sendTransaction = useCallback(
-    async (params: {
-      transaction: Array<{
-        address: `0x${string}`;
-        functionName: string;
-        abi: any[];
-        args: any[];
-      }>;
-      network: 'worldchain' | 'optimism';
-    }) => {
+    async (
+      toAddressOrParams: `0x${string}` | {
+        transaction: Array<{
+          address: `0x${string}`;
+          functionName: string;
+          abi: any[];
+          args: any[];
+        }>;
+        network: 'worldchain' | 'optimism';
+      },
+      data?: string,
+      value?: string,
+      network?: 'worldchain' | 'optimism'
+    ) => {
       if (!MiniKit.isInstalled()) {
         throw new Error('MiniKit is not installed. Open inside World App.');
       }
 
       try {
-        console.log('📝 Sending transaction:', params);
-        
-        // Validate transaction parameters
-        if (!params.transaction || !Array.isArray(params.transaction) || params.transaction.length === 0) {
-          throw new Error('Invalid transaction: must provide at least one transaction');
+        let payload: { network: 'worldchain' | 'optimism'; actions: Array<{ to: string; value: string; data?: string }> };
+
+        // Support legacy 4-argument format: (toAddress, data, value, network)
+        if (typeof toAddressOrParams === 'string') {
+          const toAddress = toAddressOrParams;
+          const transactionData = data || '0x';
+          const transactionValue = value || '0';
+          const transactionNetwork = network || 'worldchain';
+
+          if (!toAddress || !toAddress.startsWith('0x') || toAddress.length !== 42) {
+            throw new Error(`Invalid contract address: ${toAddress}`);
+          }
+
+          // Convert value to hex
+          let hexValue = '0x0';
+          if (transactionValue && transactionValue !== '0') {
+            try {
+              hexValue = '0x' + BigInt(transactionValue).toString(16);
+            } catch {
+              hexValue = '0x0';
+            }
+          }
+
+          payload = {
+            network: transactionNetwork as 'worldchain' | 'optimism',
+            actions: [{
+              to: toAddress,
+              value: hexValue,
+              ...(transactionData && transactionData !== '0x' ? { data: transactionData } : {}),
+            }],
+          };
+        } else {
+          // New format with transaction array
+          const params = toAddressOrParams;
+          
+          if (!params.transaction || !Array.isArray(params.transaction) || params.transaction.length === 0) {
+            throw new Error('Invalid transaction: must provide at least one transaction');
+          }
+
+          // Encode transactions using ABI and function name
+          const actions = params.transaction.map((tx) => {
+            if (!tx.address || !tx.address.startsWith('0x') || tx.address.length !== 42) {
+              throw new Error(`Invalid contract address: ${tx.address}`);
+            }
+            
+            if (!tx.functionName || typeof tx.functionName !== 'string') {
+              throw new Error('Invalid function name');
+            }
+            
+            if (!tx.abi || !Array.isArray(tx.abi) || tx.abi.length === 0) {
+              throw new Error('Invalid ABI: must provide contract ABI');
+            }
+
+            try {
+              // Encode function data using ethers
+              const iface = new Interface(tx.abi);
+              const encodedData = iface.encodeFunctionData(tx.functionName, tx.args || []);
+              
+              return {
+                to: tx.address as `0x${string}`,
+                value: '0x0',
+                data: encodedData,
+              };
+            } catch (error: any) {
+              throw new Error(`Failed to encode transaction for ${tx.functionName}: ${error?.message || 'Unknown error'}`);
+            }
+          });
+
+          payload = {
+            network: params.network,
+            actions,
+          };
         }
 
-        for (const tx of params.transaction) {
-          if (!tx.address || !tx.address.startsWith('0x') || tx.address.length !== 42) {
-            throw new Error(`Invalid contract address: ${tx.address}`);
-          }
-          
-          if (!tx.functionName || typeof tx.functionName !== 'string') {
-            throw new Error('Invalid function name');
-          }
-          
-          if (!tx.abi || !Array.isArray(tx.abi) || tx.abi.length === 0) {
-            throw new Error('Invalid ABI: must provide contract ABI');
-          }
-        }
+        console.log('📝 Sending transaction:', payload);
 
         // Use MiniKit.commandsAsync.sendTransaction if available
         if (MiniKit.commandsAsync?.sendTransaction) {
-          const { finalPayload } = await MiniKit.commandsAsync.sendTransaction(params);
-          console.log('✅ Transaction sent successfully:', finalPayload);
-          return finalPayload;
+          const result = await MiniKit.commandsAsync.sendTransaction(payload as any);
+          console.log('✅ Transaction sent successfully:', result);
+          // Return finalPayload with transaction_id for compatibility
+          return (result?.finalPayload || result) as any;
         } else {
           throw new Error('sendTransaction is not available in this version of MiniKit');
         }
@@ -190,7 +252,7 @@ export const useMiniKit = () => {
         console.error('❌ Transaction failed:', error);
         
         // Enhanced error handling
-        if (error?.message?.includes('cancelled')) {
+        if (error?.message?.includes('cancelled') || error?.type === 'user_cancelled') {
           throw new Error('Transaction was cancelled');
         } else if (error?.message?.includes('insufficient')) {
           throw new Error('Insufficient balance or gas');
@@ -229,7 +291,7 @@ export const useMiniKit = () => {
       }
 
       try {
-        const { finalPayload } = await MiniKit.commandsAsync.signTypedData({ typedData });
+        const { finalPayload } = await MiniKit.commandsAsync.signTypedData({ typedData } as any);
         console.log('✅ Typed data signed successfully');
         return finalPayload;
       } catch (error: any) {

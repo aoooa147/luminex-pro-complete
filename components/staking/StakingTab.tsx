@@ -171,7 +171,7 @@ const StakingTab = memo(({
       // Call sendTransaction with proper configuration
       const payload = await sendTransaction({
         transaction: [{
-          address: STAKING_CONTRACT_ADDRESS || '0x50AB6B4C3a8f7377F424A0400CDc3724891A3103',
+          address: (STAKING_CONTRACT_ADDRESS || '0x50AB6B4C3a8f7377F424A0400CDc3724891A3103') as `0x${string}`,
           functionName: 'claimFaucetReward',
           abi: [
             {
@@ -187,7 +187,7 @@ const StakingTab = memo(({
         network: 'worldchain'
       });
 
-      if (!payload) {
+      if (!payload || !(payload as any).transaction_id) {
         throw new Error('Transaction was cancelled or failed');
       }
 
@@ -198,7 +198,7 @@ const StakingTab = memo(({
         body: JSON.stringify({ 
           payload: {
             reference,
-            transaction_id: payload.transaction_id
+            transaction_id: (payload as any).transaction_id
           }
         })
       });
@@ -424,7 +424,16 @@ const StakingTab = memo(({
 
           {/* Empty State */}
           {stakedAmount === 0 && (
-            <EmptyStakingState onStakeClick={() => setShowStakeModal(true)} />
+            <EmptyStakingState 
+              action={
+                <button
+                  onClick={() => setShowStakeModal(true)}
+                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium transition-colors"
+                >
+                  Start Staking
+                </button>
+              }
+            />
           )}
 
           {/* Power Boost Card */}
