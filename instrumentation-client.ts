@@ -8,6 +8,10 @@
  */
 
 import * as Sentry from "@sentry/nextjs";
+import { applyMiniKitCompatShim } from '@/lib/minikit/compat';
+
+// Apply MiniKit sendTransaction compatibility shim as early as possible
+try { applyMiniKitCompatShim(); } catch {}
 
 // Only initialize if Sentry DSN is configured
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
