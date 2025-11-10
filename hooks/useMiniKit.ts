@@ -65,8 +65,43 @@ export const useMiniKit = () => {
       const safeToken = (token || 'WLD') as PayToken;
       const safeAmount = String(amount);
 
-      if (!safeAmount || isNaN(parseFloat(safeAmount)) || parseFloat(safeAmount) <= 0) {
-        throw new Error(`Invalid amount: must be a positive number, got: ${safeAmount}`);
+      // Allow 0 amount for transaction confirmation (used in game rewards)
+      if (!safeAmount || isNaN(parseFloat(safeAmount)) || parseFloat(safeAmount) < 0) {
+        throw new Error(`Invalid amount: must be a non-negative number, got: ${safeAmount}`);
+      }
+      
+      // For 0 amount, we still need to send a valid decimal amount (minimum 1 wei)
+      // But MiniKit requires at least 0.000001 for display purposes
+      const parsedAmount = parseFloat(safeAmount);
+      if (parsedAmount === 0) {
+        // Use a very small amount (0.000001) for 0-amount transactions
+        // This is just for UI display - the actual reward is handled by the contract
+        const minAmount = '0.000001';
+        console.log('⚠️ Zero amount detected, using minimum amount for MiniKit:', minAmount);
+        const tokenSymbol = safeToken === 'WLD' ? Tokens.WLD : Tokens.USDC;
+        const amountInDecimals = tokenToDecimals(parseFloat(minAmount), tokenSymbol);
+        const tokenAmountStr = amountInDecimals.toString();
+
+        const payload = {
+          reference: referenceId,
+          to: toAddress,
+          tokens: [{
+            symbol: tokenSymbol,
+            token_amount: tokenAmountStr
+          }],
+          description: `Transaction confirmation (reward will be distributed separately)`,
+        };
+
+        console.log('🔍 MiniKit PAY payload (zero-amount override) →', JSON.stringify(payload, null, 2));
+        
+        try {
+          const { finalPayload } = await MiniKit.commandsAsync.pay(payload as any);
+          console.log('✅ MiniKit pay succeeded (zero-amount), finalPayload:', finalPayload);
+          return finalPayload;
+        } catch (err: any) {
+          console.error('❌ MiniKit pay error (zero-amount) →', err);
+          throw err;
+        }
       }
 
       // Convert amount to decimals using tokenToDecimals() as per MiniKit documentation

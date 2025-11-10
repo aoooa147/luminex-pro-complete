@@ -65,11 +65,34 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   }
 
   // Verify reward amount matches
-  if (rewardInfo.amount !== amount) {
+  const storedAmount = rewardInfo.amount;
+  if (storedAmount !== amount) {
+    logger.error('Reward amount mismatch', {
+      address: addressLower,
+      gameId,
+      requestedAmount: amount,
+      storedAmount: storedAmount,
+      rewardInfo
+    }, 'game/reward/init');
     return createErrorResponse(
-      'Reward amount mismatch',
+      `Reward amount mismatch: stored ${storedAmount}, requested ${amount}`,
       'AMOUNT_MISMATCH',
       400
+    );
+  }
+  
+  // Double check stored amount is valid
+  if (!storedAmount || storedAmount <= 0 || !Number.isFinite(storedAmount)) {
+    logger.error('Invalid stored reward amount', {
+      address: addressLower,
+      gameId,
+      storedAmount,
+      rewardInfo
+    }, 'game/reward/init');
+    return createErrorResponse(
+      `Invalid stored reward amount: ${storedAmount}`,
+      'INVALID_STORED_AMOUNT',
+      500
     );
   }
 
@@ -87,12 +110,23 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     reference
   }, 'game/reward/init');
 
-  return createSuccessResponse({
+  const responseData = {
     ok: true,
+    success: true,
     reference,
     amount,
     gameId,
     message: 'Transaction reference created successfully'
-  });
+  };
+  
+  logger.info('Returning init response', {
+    address: addressLower,
+    gameId,
+    amount,
+    reference,
+    responseData
+  }, 'game/reward/init');
+  
+  return createSuccessResponse(responseData);
 }, 'game/reward/init');
 

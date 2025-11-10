@@ -139,6 +139,22 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     // Calculate reward (use fixedAmount if provided, otherwise calculate based on score)
     const luxAmount = fixedAmount !== undefined ? fixedAmount : calculateLuxReward(score);
     
+    // Validate calculated reward
+    if (!luxAmount || luxAmount <= 0 || !Number.isFinite(luxAmount)) {
+      logger.error('Invalid reward amount calculated', {
+        address: addressLower,
+        gameId,
+        score,
+        fixedAmount,
+        calculatedAmount: luxAmount
+      }, 'game/reward/lux');
+      return createErrorResponse(
+        `Invalid reward amount calculated: ${luxAmount}`,
+        'INVALID_REWARD_CALCULATION',
+        500
+      );
+    }
+    
     // Record reward
     rewards[addressLower][gameId] = {
       amount: luxAmount,
@@ -153,11 +169,21 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     luxReward: luxAmount
   }, 'game/reward/lux');
 
-  return createSuccessResponse({
+  const responseData = {
     ok: true,
+    success: true,
     luxReward: luxAmount,
     score,
     gameId,
     message: luxAmount === 5 ? '🎉 EXTREME RARE! 5 LUX!' : `Received ${luxAmount} LUX reward`
-  });
+  };
+  
+  logger.info('Returning reward response', {
+    address: addressLower,
+    gameId,
+    luxReward: luxAmount,
+    responseData
+  }, 'game/reward/lux');
+  
+  return createSuccessResponse(responseData);
 }, 'game/reward/lux');

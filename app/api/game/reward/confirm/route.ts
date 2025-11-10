@@ -194,14 +194,26 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     contractTxHash
   }, 'game/reward/confirm');
 
-  return createSuccessResponse({
-    ok: true,
-    message: `Successfully claimed ${amount} LUX reward!`,
-    amount,
-    gameId,
-    transactionId,
-    contractTxHash: contractTxHash || null,
-    address: rewardAddress
-  });
+          const responseData = {
+            ok: true,
+            success: true,
+            message: `Successfully claimed ${amount} LUX reward!`,
+            amount,
+            gameId,
+            transactionId,
+            contractTxHash: contractTxHash || null,
+            address: rewardAddress
+          };
+          
+          logger.info('Returning confirm response', {
+            address: rewardAddress,
+            gameId,
+            amount,
+            transactionId,
+            contractTxHash,
+            responseData
+          }, 'game/reward/confirm');
+          
+          return createSuccessResponse(responseData);
 }, 'game/reward/confirm');
 
