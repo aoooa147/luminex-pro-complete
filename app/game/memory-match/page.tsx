@@ -296,6 +296,12 @@ export default function MemoryMatchPage() {
       luxRewardValue: luxReward
     });
     
+    // Prevent double-click / multiple calls
+    if (isClaimingReward) {
+      console.warn('⚠️ Already claiming reward - ignoring duplicate call');
+      return;
+    }
+    
     if (!address) {
       console.error('❌ No address');
       alert('Please connect your wallet first.');
@@ -305,11 +311,6 @@ export default function MemoryMatchPage() {
     if (rewardClaimed) {
       console.error('❌ Reward already claimed');
       alert('Reward already claimed.');
-      return;
-    }
-    
-    if (isClaimingReward) {
-      console.error('❌ Already claiming');
       return;
     }
     

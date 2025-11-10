@@ -91,11 +91,44 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   // Check if already claimed
   if (rewardInfo.claimed) {
+    logger.warn('Reward already claimed', {
+      address: addressLower,
+      gameId,
+      rewardInfo
+    }, 'game/reward/init');
     return createErrorResponse(
       'Reward already claimed',
       'ALREADY_CLAIMED',
       400
     );
+  }
+
+  // Check if reference already exists (prevent duplicate init calls)
+  if (rewardInfo.reference) {
+    logger.warn('Reference already exists for this reward', {
+      address: addressLower,
+      gameId,
+      existingReference: rewardInfo.reference,
+      rewardInfo
+    }, 'game/reward/init');
+    // Return existing reference instead of creating a new one
+    const responseData = {
+      ok: true,
+      success: true,
+      reference: rewardInfo.reference,
+      amount: storedAmount,
+      gameId,
+      message: 'Using existing transaction reference'
+    };
+    
+    logger.info('Returning existing reference', {
+      address: addressLower,
+      gameId,
+      reference: rewardInfo.reference,
+      responseData
+    }, 'game/reward/init');
+    
+    return createSuccessResponse(responseData);
   }
 
   // Verify reward amount matches
