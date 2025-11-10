@@ -11,52 +11,39 @@ export const runtime = 'nodejs';
 
 /**
  * Calculate LUX reward based on score
- * Distribution:
- * - 0 LUX: 40% chance (score < 1000)
- * - 1 LUX: 30% chance (score 1000-5000)
- * - 2 LUX: 15% chance (score 5000-15000)
- * - 3 LUX: 10% chance (score 15000-30000)
- * - 4 LUX: 4% chance (score 30000-50000)
- * - 5 LUX: 1% chance (score > 50000) - VERY RARE!
+ * If player wins (score > 0), they always get at least 1 LUX
+ * Reward increases with score:
+ * - 1 LUX: score < 1000
+ * - 1-2 LUX: score 1000-5000
+ * - 2-3 LUX: score 5000-15000
+ * - 3-4 LUX: score 15000-30000
+ * - 4-5 LUX: score 30000-50000
+ * - 5 LUX: score >= 50000 (guaranteed)
  */
 function calculateLuxReward(score: number): number {
+  // If score is 0 or negative, no reward
+  if (score <= 0) {
+    return 0;
+  }
+  
+  // Player won - always get at least 1 LUX
   if (score < 1000) {
-    // 40% chance for 0 LUX
-    return Math.random() < 0.4 ? 0 : 1;
+    return 1; // Minimum reward for winning
   } else if (score < 5000) {
-    // 30% chance for 1 LUX
-    const rand = Math.random();
-    if (rand < 0.1) return 0;
-    if (rand < 0.4) return 1;
-    return 2;
+    // 1-2 LUX based on score
+    return Math.random() < 0.5 ? 1 : 2;
   } else if (score < 15000) {
-    // 15% chance for 2 LUX
-    const rand = Math.random();
-    if (rand < 0.05) return 1;
-    if (rand < 0.2) return 2;
-    if (rand < 0.35) return 3;
-    return 4;
+    // 2-3 LUX based on score
+    return Math.random() < 0.5 ? 2 : 3;
   } else if (score < 30000) {
-    // 10% chance for 3 LUX
-    const rand = Math.random();
-    if (rand < 0.02) return 2;
-    if (rand < 0.12) return 3;
-    if (rand < 0.22) return 4;
-    return 5; // 8% chance for 5
+    // 3-4 LUX based on score
+    return Math.random() < 0.5 ? 3 : 4;
   } else if (score < 50000) {
-    // 4% chance for 4 LUX
-    const rand = Math.random();
-    if (rand < 0.01) return 3;
-    if (rand < 0.05) return 4;
-    if (rand < 0.13) return 5; // 8% chance for 5
-    return 4;
+    // 4-5 LUX based on score
+    return Math.random() < 0.5 ? 4 : 5;
   } else {
-    // 1% chance for 5 LUX (VERY RARE!)
-    const rand = Math.random();
-    if (rand < 0.01) return 5; // 1% chance
-    if (rand < 0.03) return 4; // 2% chance
-    if (rand < 0.08) return 3; // 5% chance
-    return 2; // 92% chance for 2 LUX even with high score
+    // Score >= 50000: Guaranteed 5 LUX
+    return 5;
   }
 }
 
