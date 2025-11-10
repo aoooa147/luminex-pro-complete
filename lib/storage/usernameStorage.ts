@@ -82,7 +82,7 @@ export async function getUsername(address: string): Promise<string | null> {
     if (await isDatabaseAvailable()) {
       try {
         // Check if UserProfile model exists in Prisma schema
-        const userProfile = await prisma.userProfile.findUnique({
+        const userProfile = await (prisma as any).userProfile.findUnique({
           where: { address: normalizedAddress },
           select: { username: true },
         });
@@ -138,7 +138,7 @@ export async function saveUsername(
     if (await isDatabaseAvailable()) {
       try {
         // Try to save to database if UserProfile model exists
-        await prisma.userProfile.upsert({
+        await (prisma as any).userProfile.upsert({
           where: { address: normalizedAddress },
           update: {
             username: trimmedUsername,
@@ -185,7 +185,13 @@ export async function getAllUsernames(): Promise<UsernameRecord[]> {
     // Try database first
     if (await isDatabaseAvailable()) {
       try {
-        const userProfiles = await prisma.userProfile.findMany({
+        type UserProfileRow = {
+          address: string;
+          username: string | null;
+          source?: string | null;
+          updatedAt?: Date | null;
+        };
+        const userProfiles = await (prisma as any).userProfile.findMany({
           select: {
             address: true,
             username: true,
@@ -195,7 +201,7 @@ export async function getAllUsernames(): Promise<UsernameRecord[]> {
         });
         
         if (userProfiles) {
-          return userProfiles.map((profile) => ({
+          return (userProfiles as UserProfileRow[]).map((profile: UserProfileRow) => ({
             address: profile.address,
             username: profile.username || '',
             updatedAt: profile.updatedAt?.toISOString() || new Date().toISOString(),

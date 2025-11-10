@@ -1,0 +1,13 @@
+Copy this exact value (with 0x prefix):
+
+0x0000000000000000000000006289d5b756982bbc2535f345d9d68cb50c853f35000000000000000000000000dc6c9ac4c8ced68c9d8760c501083cd94dcea4e8
+
+Instructions:
+1. Copy the value above (starts with 0x)
+2. Go back to Worldscan verification form
+3. Replace the constructor arguments (the one without 0x)
+4. Paste the new value (with 0x)
+5. Click "Verify and Publish" again
+
+Note: Some block explorers require the 0x prefix for hex strings.
+

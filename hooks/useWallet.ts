@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ethers } from 'ethers';
 import { MiniKit, tokenToDecimals, Tokens } from '@worldcoin/minikit-js';
-import { WALLET_RPC_URL, WLD_TOKEN_ADDRESS, TREASURY_ADDRESS } from '@/lib/utils/constants';
+import { WALLET_RPC_URL, WLD_TOKEN_ADDRESS, TREASURY_ADDRESS, STAKING_CONTRACT_NETWORK } from '@/lib/utils/constants';
 import { trackWalletConnect, setUserId } from '@/lib/utils/analytics';
 
 // ERC20 ABI for balance checking
@@ -574,10 +574,22 @@ export function useWallet(verifiedAddress: string | null) {
     if (typeof window !== 'undefined' && (window as any).MiniKit?.commandsAsync?.sendTransaction) {
       return {
         sendTransaction: async (tx: any) => {
+          // Ensure value is a hex string (0x...)
+          let hexValue = '0x0';
+          const rawVal = tx?.value;
+          if (typeof rawVal === 'string') {
+            hexValue = rawVal.startsWith('0x') ? rawVal : ('0x' + BigInt(rawVal).toString(16));
+          } else if (rawVal !== undefined && rawVal !== null) {
+            try { hexValue = '0x' + BigInt(rawVal).toString(16); } catch {}
+          }
+
           return await (window as any).MiniKit!.commandsAsync!.sendTransaction({
-            to: tx.to,
-            data: tx.data || '0x',
-            value: tx.value?.toString() || '0'
+            network: STAKING_CONTRACT_NETWORK,
+            actions: [{
+              to: tx.to,
+              value: hexValue,
+              data: tx.data || '0x',
+            }],
           });
         }
       };

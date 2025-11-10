@@ -1,5 +1,69 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MiniKit, VerificationLevel, ISuccessResult, MiniAppWalletAuthSuccessPayload, tokenToDecimals, Tokens } from '@worldcoin/minikit-js';
+import { STAKING_CONTRACT_NETWORK } from '@/lib/utils/constants';
+
+// --- MiniKit sendTransaction compatibility shim ---
+// Some parts of the app (or older code) may call MiniKit.commandsAsync.sendTransaction
+// with a top-level { to, data, value } payload. New SDK requires { actions: [{...}], network }.
+// This shim normalizes any old payloads to the new format, preventing
+// "Cannot read properties of undefined (reading 'map')".
+let __minikitCompatPatched = false;
+function patchMiniKitSendTxCompat() {
+  if (typeof window === 'undefined') return;
+  try {
+    const w: any = window as any;
+    const mk = w.MiniKit;
+    if (!mk?.commandsAsync?.sendTransaction) return;
+    if (__minikitCompatPatched) return;
+
+    const original = mk.commandsAsync.sendTransaction.bind(mk.commandsAsync);
+
+    function toHexValue(v: any): string {
+      if (v === undefined || v === null) return '0x0';
+      if (typeof v === 'string') return v.startsWith('0x') ? v : ('0x' + BigInt(v).toString(16));
+      try { return '0x' + BigInt(v).toString(16); } catch { return '0x0'; }
+    }
+
+    function normalizePayload(payload: any): any {
+      if (!payload || typeof payload !== 'object') return payload;
+
+      // Already new format
+      if (Array.isArray(payload.actions)) {
+        const network = payload.network || STAKING_CONTRACT_NETWORK || 'worldchain';
+        const actions = payload.actions.map((a: any) => ({
+          to: a.to,
+          value: toHexValue(a.value ?? '0x0'),
+          ...(a.data && a.data !== '0x' ? { data: a.data } : {}),
+        }));
+        return { ...payload, network, actions };
+      }
+
+      // Old format { to, data, value, network? }
+      if (payload.to || payload.data || payload.value) {
+        const action: any = {
+          to: payload.to,
+          value: toHexValue(payload.value ?? '0x0'),
+        };
+        if (payload.data && payload.data !== '0x') action.data = payload.data;
+        const network = payload.network || STAKING_CONTRACT_NETWORK || 'worldchain';
+        return { network, actions: [action] };
+      }
+
+      return payload;
+    }
+
+    mk.commandsAsync.sendTransaction = async function (payload: any) {
+      const normalized = normalizePayload(payload);
+      return await original(normalized);
+    };
+
+    __minikitCompatPatched = true;
+    // Optional debug log
+    try { console.log('MiniKit sendTransaction compatibility shim applied'); } catch {}
+  } catch {
+    // Silent
+  }
+}
 
 /**
  * useMiniKit - thin wrapper around official MiniKit-JS
@@ -11,6 +75,8 @@ export const useMiniKit = () => {
 
   useEffect(() => {
     try {
+      // Apply MiniKit compat patch once on mount (browser only)
+      patchMiniKitSendTxCompat();
       setReady(MiniKit.isInstalled());
     } catch (e: any) {
       setReady(false);

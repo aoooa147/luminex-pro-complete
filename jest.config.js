@@ -31,6 +31,7 @@ const customJestConfig = {
     '/node_modules/',
     '/.next/',
     '/e2e/',
+    '/test/', // exclude Hardhat contract tests from Jest
     '/luminex-v4-ultimate 33/',
   ],
   collectCoverageFrom: [

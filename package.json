@@ -26,7 +26,7 @@
     "deploy:local": "hardhat run scripts/deploy-worldchain-local.js --network hardhat",
     "deploy:worldchain": "hardhat run scripts/deploy-worldchain.js --network worldchain",
     "deploy:worldchain:testnet": "hardhat run scripts/deploy-worldchain.js --network worldchainTestnet",
-    "deploy:worldchain:guide": "echo 'See DEPLOYMENT_STEP_BY_STEP.md for detailed guide'",
+    "deploy:worldchain:guide": "echo 'See docs/guides/Deployment.md for detailed guide'",
     "deploy:check": "hardhat run scripts/check-deployment-config.js --network worldchain",
     "verify": "hardhat verify",
     "setup:contract": "hardhat run scripts/setup-contract.js",

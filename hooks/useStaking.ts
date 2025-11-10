@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ethers } from 'ethers';
-import { STAKING_CONTRACT_ADDRESS, LUX_TOKEN_ADDRESS, POOLS } from '@/lib/utils/constants';
+import { STAKING_CONTRACT_ADDRESS, LUX_TOKEN_ADDRESS, POOLS, STAKING_CONTRACT_NETWORK, LUX_TOKEN_NETWORK } from '@/lib/utils/constants';
 import { trackStaking } from '@/lib/utils/analytics';
 
 // Staking Contract ABI - Updated for LuxStakingV2Simple (Verified Contract)
@@ -183,9 +183,12 @@ export function useStaking(
         const approveData = tokenContractInterface.encodeFunctionData('approve', [STAKING_CONTRACT_ADDRESS, amountWei]);
         
         const approveResult = await MiniKit.commandsAsync.sendTransaction({
-          to: LUX_TOKEN_ADDRESS,
-          data: approveData,
-          value: '0'
+          network: LUX_TOKEN_NETWORK,
+          actions: [{
+            to: LUX_TOKEN_ADDRESS,
+            value: '0x0',
+            data: approveData,
+          }],
         });
         
         if (!approveResult?.finalPayload?.transaction_id) {
@@ -196,9 +199,12 @@ export function useStaking(
       const stakeData = stakingContractInterface.encodeFunctionData('stake', [selectedPool, amountWei, lockPeriod]);
       
       const stakeResult = await MiniKit.commandsAsync.sendTransaction({
-        to: STAKING_CONTRACT_ADDRESS,
-        data: stakeData,
-        value: '0'
+        network: STAKING_CONTRACT_NETWORK,
+        actions: [{
+          to: STAKING_CONTRACT_ADDRESS,
+          value: '0x0',
+          data: stakeData,
+        }],
       });
 
       if (!stakeResult?.finalPayload?.transaction_id) {
@@ -293,9 +299,12 @@ export function useStaking(
       const claimData = stakingContractInterface.encodeFunctionData('claimRewards', [selectedPool]);
 
       const claimResult = await MiniKit.commandsAsync.sendTransaction({
-        to: STAKING_CONTRACT_ADDRESS,
-        data: claimData,
-        value: '0'
+        network: STAKING_CONTRACT_NETWORK,
+        actions: [{
+          to: STAKING_CONTRACT_ADDRESS,
+          value: '0x0',
+          data: claimData,
+        }],
       });
 
       if (!claimResult?.finalPayload?.transaction_id) {
@@ -394,9 +403,12 @@ export function useStaking(
       const withdrawData = stakingContractInterface.encodeFunctionData('withdraw', [selectedPool, amountWei]);
 
       const withdrawResult = await MiniKit.commandsAsync.sendTransaction({
-        to: STAKING_CONTRACT_ADDRESS,
-        data: withdrawData,
-        value: '0'
+        network: STAKING_CONTRACT_NETWORK,
+        actions: [{
+          to: STAKING_CONTRACT_ADDRESS,
+          value: '0x0',
+          data: withdrawData,
+        }],
       });
 
       if (!withdrawResult?.finalPayload?.transaction_id) {

@@ -1,0 +1,20 @@
+ABI-Encoded Constructor Arguments for LuxStakingV2Simple
+
+Constructor: constructor(address _luxToken, address _treasury)
+
+Arguments:
+- _luxToken: 0x6289D5B756982bbc2535f345D9D68Cb50c853F35
+- _treasury: 0xdc6c9ac4c8ced68c9d8760c501083cd94dcea4e8
+
+ABI-Encoded (for verification):
+0x0000000000000000000000006289d5b756982bbc2535f345d9d68cb50c853f35000000000000000000000000dc6c9ac4c8ced68c9d8760c501083cd94dcea4e8
+
+Explanation:
+- Each address is padded to 32 bytes (64 hex characters)
+- First address: 0x6289d5b756982bbc2535f345d9d68cb50c853f35 (padded)
+- Second address: 0xdc6c9ac4c8ced68c9d8760c501083cd94dcea4e8 (padded)
+- Total length: 128 hex characters (64 bytes)
+
+Usage:
+Copy the ABI-encoded value above and paste it into the "Constructor Arguments ABI-encoded" field on Worldscan.
+

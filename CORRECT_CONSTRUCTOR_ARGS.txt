@@ -1,0 +1,16 @@
+COPY THIS EXACT VALUE INTO THE CONSTRUCTOR ARGUMENTS FIELD:
+
+0x0000000000000000000000006289d5b756982bbc2535f345d9d68cb50c853f35000000000000000000000000dc6c9ac4c8ced68c9d8760c501083cd94dcea4e8
+
+IMPORTANT:
+- This is ABI-encoded format (NOT comma-separated)
+- Copy the entire line above
+- Paste it into the "Constructor Arguments ABI-encoded" field
+- No spaces, no commas, just the hex string
+- Starts with 0x
+- Total length: 130 characters
+
+This represents:
+- LUX Token: 0x6289D5B756982bbc2535f345D9D68Cb50c853F35
+- Treasury: 0xdc6c9ac4c8ced68c9d8760c501083cd94dcea4e8
+
