@@ -12,6 +12,7 @@ import { Volume2, VolumeX, Coins } from 'lucide-react';
 import { useMiniKit } from '@/hooks/useMiniKit';
 import { MiniKit } from '@worldcoin/minikit-js';
 import { STAKING_CONTRACT_ADDRESS } from '@/lib/utils/constants';
+import { ethers } from 'ethers';
 
 type Color = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
 type GameState = 'idle' | 'showing' | 'playing' | 'victory' | 'gameover';
@@ -265,7 +266,7 @@ export default function MemoryMatchPage() {
     }
   }
 
-  const { pay } = useMiniKit();
+  const { sendTransaction } = useMiniKit();
 
   async function handleClaimReward() {
     console.log('handleClaimReward called with:', { address, luxReward, rewardClaimed, isClaimingReward });
@@ -329,11 +330,12 @@ export default function MemoryMatchPage() {
       try {
         // Use pay with 0 WLD to show transaction confirmation popup
         // The actual LUX reward will be distributed by the backend after confirmation
-        payload = await pay(
-          reference,
+        // Use sendTransaction to show "Authorize Transaction" instead of "Pay"
+        const transactionData = '0x'; // Empty data - just for authorization
+        payload = await sendTransaction(
           STAKING_CONTRACT_ADDRESS as `0x${string}`,
-          '0', // 0 WLD - just for transaction confirmation
-          'WLD'
+          transactionData,
+          '0' // 0 value - user is receiving reward, not paying
         );
       } catch (e: any) {
         // Handle user cancellation

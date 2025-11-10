@@ -12,6 +12,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { useMiniKit } from '@/hooks/useMiniKit';
 import { MiniKit } from '@worldcoin/minikit-js';
 import { STAKING_CONTRACT_ADDRESS } from '@/lib/utils/constants';
+import { ethers } from 'ethers';
 
 const WORDS = [
   ['G', 'A', 'M', 'E'], // GAME
@@ -379,7 +380,7 @@ export default function WordBuilderPage() {
     }
   }
 
-  const { pay } = useMiniKit();
+  const { sendTransaction } = useMiniKit();
 
   async function handleClaimReward() {
     console.log('handleClaimReward called with:', { address, luxReward, rewardClaimed, isClaimingReward });
@@ -432,14 +433,32 @@ export default function WordBuilderPage() {
 
       const reference = initData.reference;
       
-      // Step 2: Show transaction popup using MiniKit pay
+      // Step 2: Show transaction authorization popup using MiniKit sendTransaction
+      // This shows "Authorize Transaction" (รับ reward) instead of "Pay" (จ่ายเงิน)
       let payload: any = null;
       try {
-        payload = await pay(
+        // Create a dummy transaction data that just authorizes the transaction
+        // The actual reward distribution is handled by the backend after authorization
+        // We use a simple transfer with 0 value to the staking contract
+        // This is just for user authorization - backend will handle the actual reward distribution
+        const contractInterface = new ethers.Interface([
+          'function authorizeRewardClaim(string memory reference) external'
+        ]);
+        
+        // If the contract doesn't have authorizeRewardClaim, use a simple empty transaction
+        // The backend will handle the actual reward distribution
+        const transactionData = '0x'; // Empty data - just for authorization
+        
+        console.log('Authorizing transaction for reward claim:', {
           reference,
+          rewardAmount: rewardAmount,
+          contractAddress: STAKING_CONTRACT_ADDRESS
+        });
+        
+        payload = await sendTransaction(
           STAKING_CONTRACT_ADDRESS as `0x${string}`,
-          '0', // 0 WLD - just for transaction confirmation
-          'WLD'
+          transactionData,
+          '0' // 0 value - user is receiving reward, not paying
         );
       } catch (e: any) {
         if (e?.type === 'user_cancelled') {

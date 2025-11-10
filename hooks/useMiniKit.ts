@@ -173,5 +173,82 @@ export const useMiniKit = () => {
     []
   );
 
-  return { ready, error, verify, walletAuth, pay };
+  /**
+   * Send transaction (for contract interactions)
+   * This shows "Authorize Transaction" popup instead of "Pay" popup
+   */
+  const sendTransaction = useCallback(
+    async (
+      toAddress: `0x${string}`,
+      data: string,
+      value: string = '0'
+    ) => {
+      if (!MiniKit.isInstalled()) {
+        throw new Error('MiniKit is not installed. Open inside World App.');
+      }
+
+      if (!toAddress || !toAddress.startsWith('0x') || toAddress.length !== 42) {
+        throw new Error(`Invalid toAddress: must be a valid Ethereum address, got: ${toAddress}`);
+      }
+
+      if (!data || !data.startsWith('0x')) {
+        throw new Error(`Invalid data: must be a hex string starting with 0x, got: ${data}`);
+      }
+
+      const payload = {
+        to: toAddress,
+        data: data,
+        value: value || '0'
+      };
+
+      console.log('🔍 MiniKit sendTransaction payload →', JSON.stringify(payload, null, 2));
+      console.log('🔍 MiniKit environment check:', {
+        isInstalled: MiniKit.isInstalled(),
+        hasCommandsAsync: !!MiniKit.commandsAsync,
+        hasSendTransaction: !!MiniKit.commandsAsync?.sendTransaction,
+      });
+
+      try {
+        const { finalPayload } = await MiniKit.commandsAsync.sendTransaction(payload as any);
+        console.log('✅ MiniKit sendTransaction succeeded, finalPayload:', finalPayload);
+        return finalPayload; // { transaction_id, ... }
+      } catch (err: any) {
+        console.error('❌ MiniKit sendTransaction error →', {
+          message: err?.message,
+          description: err?.description,
+          error_code: err?.error_code,
+          code: err?.code,
+          stack: err?.stack,
+          fullError: err,
+        });
+        
+        // Detect user cancellation from SDK error
+        const msg = String(err?.message || '').toLowerCase();
+        const desc = String(err?.description || '').toLowerCase();
+        const code = String(err?.code || err?.error_code || '').toLowerCase();
+        
+        // Case: User cancelled/rejected/closed the transaction window
+        if (
+          code.includes('user_rejected') || 
+          code.includes('cancelled') || 
+          code.includes('cancel') ||
+          msg.includes('cancel') || 
+          msg.includes('rejected') ||
+          msg.includes('user') ||
+          desc.includes('cancel') ||
+          desc.includes('rejected')
+        ) {
+          const e = new Error('user_cancelled');
+          (e as any).type = 'user_cancelled';
+          (e as any).originalError = err;
+          throw e;
+        }
+        
+        throw err;
+      }
+    },
+    []
+  );
+
+  return { ready, error, verify, walletAuth, pay, sendTransaction };
 };

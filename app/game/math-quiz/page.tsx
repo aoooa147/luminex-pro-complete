@@ -12,6 +12,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { useMiniKit } from '@/hooks/useMiniKit';
 import { MiniKit } from '@worldcoin/minikit-js';
 import { STAKING_CONTRACT_ADDRESS } from '@/lib/utils/constants';
+import { ethers } from 'ethers';
 
 type PatternType = 'number' | 'shape' | 'color' | 'direction';
 type GameState = 'idle' | 'playing' | 'gameover';
@@ -317,7 +318,7 @@ export default function MathQuizPage() {
     }
   }
 
-  const { pay } = useMiniKit();
+  const { sendTransaction } = useMiniKit();
 
   async function handleClaimReward() {
     console.log('handleClaimReward called with:', { address, luxReward, rewardClaimed, isClaimingReward });
@@ -376,11 +377,12 @@ export default function MathQuizPage() {
       // Step 2: Show transaction popup using MiniKit pay
       let payload: any = null;
       try {
-        payload = await pay(
-          reference,
+        // Use sendTransaction to show "Authorize Transaction" instead of "Pay"
+        const transactionData = '0x'; // Empty data - just for authorization
+        payload = await sendTransaction(
           STAKING_CONTRACT_ADDRESS as `0x${string}`,
-          '0', // 0 WLD - just for transaction confirmation
-          'WLD'
+          transactionData,
+          '0' // 0 value - user is receiving reward, not paying
         );
       } catch (e: any) {
         if (e?.type === 'user_cancelled') {
