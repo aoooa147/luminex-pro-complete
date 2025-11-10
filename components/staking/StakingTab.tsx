@@ -295,37 +295,39 @@ const StakingTab = memo(({
 
       {/* Pool Selection */}
       <div className="grid grid-cols-5 gap-1.5">
-        {safePools && Array.isArray(safePools) && safePools.length > 0 ? safePools.map((pool) => {
-          const Icon = POOL_ICONS[pool.id] || Unlock;
-          const color = POOL_COLORS[pool.id] || "from-blue-400 to-cyan-400";
-          return (
-            <motion.button
-              key={pool.id}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setSelectedPool(pool.id)}
-              className={`relative p-1.5 rounded-lg border-2 transition-all overflow-hidden ${
-                selectedPool === pool.id
-                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-500/20 to-amber-500/20 shadow-lg shadow-yellow-500/20'
-                  : 'border-white/10 bg-black/40 backdrop-blur-lg hover:border-white/20'
-              }`}
-              style={{ willChange: 'transform' }}
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-10`}></div>
-              <div className="relative">
-                <i
-                  className={`flex justify-center mb-0.5 ${
-                    selectedPool === pool.id ? 'text-yellow-400' : 'text-white/60'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                </i>
-                <p className="text-white font-bold text-[9px] leading-tight">{pool.name}</p>
-                <p className={`text-[8px] font-semibold mt-0.5 ${selectedPool === pool.id ? 'text-yellow-400' : 'text-white/50'}`}>{pool.apy}%</p>
-              </div>
-            </motion.button>
-          );
-        }) : (
+        {safePools && Array.isArray(safePools) && safePools.length > 0 ? (
+          safePools.map((pool) => {
+            const Icon = POOL_ICONS[pool.id] || Unlock;
+            const color = POOL_COLORS[pool.id] || "from-blue-400 to-cyan-400";
+            return (
+              <motion.button
+                key={pool.id}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setSelectedPool(pool.id)}
+                className={`relative p-1.5 rounded-lg border-2 transition-all overflow-hidden ${
+                  selectedPool === pool.id
+                    ? 'border-yellow-500 bg-gradient-to-br from-yellow-500/20 to-amber-500/20 shadow-lg shadow-yellow-500/20'
+                    : 'border-white/10 bg-black/40 backdrop-blur-lg hover:border-white/20'
+                }`}
+                style={{ willChange: 'transform' }}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-10`}></div>
+                <div className="relative">
+                  <i
+                    className={`flex justify-center mb-0.5 ${
+                      selectedPool === pool.id ? 'text-yellow-400' : 'text-white/60'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </i>
+                  <p className="text-white font-bold text-[9px] leading-tight">{pool.name}</p>
+                  <p className={`text-[8px] font-semibold mt-0.5 ${selectedPool === pool.id ? 'text-yellow-400' : 'text-white/50'}`}>{pool.apy}%</p>
+                </div>
+              </motion.button>
+            );
+          })
+        ) : (
           <div className="col-span-5 text-center text-white/60 text-xs p-4">
             Loading pools...
           </div>
