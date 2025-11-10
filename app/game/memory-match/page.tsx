@@ -9,6 +9,9 @@ import { GameStatsCard } from '@/components/game/GameStatsCard';
 import { GameButton } from '@/components/game/GameButton';
 import { TronCard, TronPanel } from '@/components/tron';
 import { Volume2, VolumeX, Coins } from 'lucide-react';
+import { useMiniKit } from '@/hooks/useMiniKit';
+import { MiniKit } from '@worldcoin/minikit-js';
+import { STAKING_CONTRACT_ADDRESS } from '@/lib/utils/constants';
 
 type Color = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
 type GameState = 'idle' | 'showing' | 'playing' | 'victory' | 'gameover';
@@ -213,16 +216,13 @@ export default function MemoryMatchPage() {
     try {
       const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000);
       
-      // Apply 80% loss rate: 80% chance of losing even if game completed
-      const shouldLose = antiCheat.shouldForceLoss(address, true);
-      if (shouldLose) {
-        alert('Better luck next time!');
-        return;
-      }
-
+      // Validate score (but don't force loss for UI - let user see their result)
       const scoreCheck = antiCheat.validateScore(address, score, gameDuration, actionsCount, GAME_ID);
       if (scoreCheck.suspicious || scoreCheck.blocked) {
         alert('Score validation failed.');
+        setLuxReward(0); // No reward for suspicious score
+        setIsOnCooldown(true);
+        await checkCooldown();
         return;
       }
 
@@ -235,12 +235,19 @@ export default function MemoryMatchPage() {
       const rewardData = await rewardRes.json();
       
       if (rewardData.ok) {
-        setLuxReward(rewardData.luxReward);
+        // Apply 80% loss rate: 80% chance of getting 0 reward (but still show UI)
+        const shouldLose = antiCheat.shouldForceLoss(address, true);
+        if (shouldLose) {
+          setLuxReward(0); // No reward but still show game over UI
+        } else {
+          setLuxReward(rewardData.luxReward);
+        }
         setRewardClaimed(false); // User needs to claim manually
       } else {
         // If cooldown or error, show message
         if (rewardData.error === 'COOLDOWN_ACTIVE') {
           alert('You are still on cooldown. Please wait 24 hours.');
+          setLuxReward(0);
         }
       }
 
@@ -252,13 +259,20 @@ export default function MemoryMatchPage() {
     }
   }
 
+  const { pay } = useMiniKit();
+
   async function handleClaimReward() {
-    if (!address || !luxReward || rewardClaimed || isClaimingReward) return;
+    if (!address || !luxReward || luxReward === 0 || rewardClaimed || isClaimingReward) return;
+    
+    if (!MiniKit.isInstalled()) {
+      alert('World App is required to claim rewards. Please open this app in World App.');
+      return;
+    }
     
     setIsClaimingReward(true);
     try {
-      // Call API to distribute reward via contract
-      const claimRes = await fetch('/api/game/reward/claim', {
+      // Step 1: Initialize transaction and get reference
+      const initRes = await fetch('/api/game/reward/init', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ 
@@ -268,16 +282,68 @@ export default function MemoryMatchPage() {
         })
       });
       
-      const claimData = await claimRes.json();
+      const initData = await initRes.json();
       
-      if (claimData.ok) {
+      if (!initData.ok || !initData.reference) {
+        alert(initData.error || 'Failed to initialize reward transaction. Please try again.');
+        setIsClaimingReward(false);
+        return;
+      }
+
+      const reference = initData.reference;
+      
+      // Step 2: Show transaction popup using MiniKit pay
+      // Note: We're using a dummy payment to trigger the popup
+      // In production, this should call the contract's distributeGameReward function
+      // For now, we'll use a 0 WLD payment to show the transaction confirmation
+      let payload: any = null;
+      try {
+        // Use pay with 0 WLD to show transaction confirmation popup
+        // The actual LUX reward will be distributed by the backend after confirmation
+        payload = await pay(
+          reference,
+          STAKING_CONTRACT_ADDRESS as `0x${string}`,
+          '0', // 0 WLD - just for transaction confirmation
+          'WLD'
+        );
+      } catch (e: any) {
+        // Handle user cancellation
+        if (e?.type === 'user_cancelled') {
+          setIsClaimingReward(false);
+          return;
+        }
+        throw e;
+      }
+
+      // Step 3: Confirm transaction
+      if (!payload?.transaction_id) {
+        alert('Transaction was cancelled. Please try again.');
+        setIsClaimingReward(false);
+        return;
+      }
+
+      const confirmRes = await fetch('/api/game/reward/confirm', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          payload: {
+            reference,
+            transaction_id: payload.transaction_id
+          }
+        })
+      });
+      
+      const confirmData = await confirmRes.json();
+      
+      if (confirmData.ok) {
         setRewardClaimed(true);
         alert(`Successfully claimed ${luxReward} LUX!`);
       } else {
-        alert(claimData.error || 'Failed to claim reward. Please try again.');
+        alert(confirmData.error || 'Failed to claim reward. Please try again.');
       }
-    } catch (error) {
-      alert('Failed to claim reward. Please try again.');
+    } catch (error: any) {
+      console.error('Claim reward error:', error);
+      alert(error?.message || 'Failed to claim reward. Please try again.');
     } finally {
       setIsClaimingReward(false);
     }
@@ -415,27 +481,35 @@ export default function MemoryMatchPage() {
               <p className="text-gray-300">📊 Highest level: <b className="text-tron-purple">{level}</b></p>
               {luxReward !== null && (
                 <div className="space-y-3">
-                  <div className={`font-bold text-2xl ${luxReward === 5 ? 'text-yellow-400 animate-pulse' : 'text-tron-purple'}`}>
-                    {luxReward === 5 ? '🎉 EXTREME RARE! ' : '💰 '}Earned {luxReward} LUX!
-                  </div>
-                  {!rewardClaimed && (
-                    <GameButton
-                      onClick={handleClaimReward}
-                      variant="primary"
-                      size="lg"
-                      className="w-full bg-gradient-to-r from-yellow-500 to-amber-600"
-                      disabled={isClaimingReward}
-                    >
-                      {isClaimingReward ? (
-                        <>⏳ Claiming...</>
-                      ) : (
-                        <>🎁 Claim {luxReward} LUX Reward</>
+                  {luxReward > 0 ? (
+                    <>
+                      <div className={`font-bold text-2xl ${luxReward === 5 ? 'text-yellow-400 animate-pulse' : 'text-tron-purple'}`}>
+                        {luxReward === 5 ? '🎉 EXTREME RARE! ' : '💰 '}Earned {luxReward} LUX!
+                      </div>
+                      {!rewardClaimed && (
+                        <GameButton
+                          onClick={handleClaimReward}
+                          variant="primary"
+                          size="lg"
+                          className="w-full bg-gradient-to-r from-yellow-500 to-amber-600"
+                          disabled={isClaimingReward}
+                        >
+                          {isClaimingReward ? (
+                            <>⏳ Claiming...</>
+                          ) : (
+                            <>🎁 Claim {luxReward} LUX Reward</>
+                          )}
+                        </GameButton>
                       )}
-                    </GameButton>
-                  )}
-                  {rewardClaimed && (
-                    <div className="text-green-400 font-bold text-lg">
-                      ✅ Reward Claimed Successfully!
+                      {rewardClaimed && (
+                        <div className="text-green-400 font-bold text-lg">
+                          ✅ Reward Claimed Successfully!
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="font-bold text-xl text-gray-400">
+                      Better luck next time! No reward this round.
                     </div>
                   )}
                 </div>
