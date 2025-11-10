@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSystemSettings, isMaintenanceMode } from '@/lib/admin/systemSettings';
 import { createSuccessResponse } from '@/lib/utils/apiHandler';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * GET /api/system/status
@@ -9,6 +10,16 @@ import { createSuccessResponse } from '@/lib/utils/apiHandler';
  */
 export async function GET(req: NextRequest) {
   try {
+    logger.info('System status API called', {
+      method: req.method,
+      url: req.url,
+      headers: {
+        'user-agent': req.headers.get('user-agent'),
+        'referer': req.headers.get('referer'),
+        'origin': req.headers.get('origin'),
+      }
+    }, 'system/status');
+    
     const settings = await getSystemSettings();
     
     const response = createSuccessResponse({
@@ -23,8 +34,18 @@ export async function GET(req: NextRequest) {
     // Add caching headers - cache for 30 seconds
     response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
     
+    logger.success('System status returned', {
+      maintenanceMode: settings.maintenanceMode,
+      status: settings.maintenanceMode ? 'maintenance' : 'operational'
+    }, 'system/status');
+    
     return response;
   } catch (error: any) {
+    logger.error('System status API error', {
+      error: error.message,
+      stack: error.stack
+    }, 'system/status');
+    
     // Return default operational status on error
     const response = createSuccessResponse({
       maintenanceMode: false,

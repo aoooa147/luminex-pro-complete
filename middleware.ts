@@ -34,12 +34,18 @@ export async function middleware(request: NextRequest) {
 
   // Check system status (with fallback to operational)
   try {
+    // Use internal API call with proper headers to avoid 401 errors
     const systemStatusResponse = await fetch(
       `${request.nextUrl.origin}/api/system/status`,
       {
         headers: {
           'Cache-Control': 'no-cache',
+          'User-Agent': 'Luminex-Middleware/1.0',
+          // Add internal request header to identify middleware calls
+          'X-Internal-Request': 'true',
         },
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       }
     );
 
@@ -64,10 +70,25 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(url);
         }
       }
+    } else {
+      // Log non-200 responses but don't block access (fail open)
+      console.warn('[middleware] System status API returned non-200:', {
+        status: systemStatusResponse.status,
+        statusText: systemStatusResponse.statusText,
+        pathname
+      });
     }
-  } catch (error) {
+  } catch (error: any) {
     // On error, allow access (fail open)
-    console.warn('[middleware] Failed to check system status:', error);
+    // This prevents 401 errors from blocking user access
+    if (error.name === 'AbortError') {
+      console.warn('[middleware] System status check timed out, allowing access');
+    } else {
+      console.warn('[middleware] Failed to check system status:', {
+        error: error.message,
+        pathname
+      });
+    }
   }
 
   return NextResponse.next();
