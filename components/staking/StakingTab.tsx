@@ -1,15 +1,17 @@
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Coins, TrendingUp, TrendingDown, BarChart3, DollarSign as DollarIcon,
-  Zap, Timer, Loader2, Gift, Sparkles, Lock, Unlock
+  Zap, Timer, Loader2, Gift, Sparkles, Lock, Unlock, Droplet
 } from 'lucide-react';
-import { POOLS, TOKEN_NAME } from '@/lib/utils/constants';
+import { POOLS, TOKEN_NAME, STAKING_CONTRACT_ADDRESS } from '@/lib/utils/constants';
 import { BASE_APY, getPowerBoost } from '@/lib/utils/powerConfig';
 import { LoadingSpinner, LoadingSkeleton } from '@/components/common/LoadingStates';
 import { EmptyStakingState, EmptyRewardsState } from '@/components/common/EmptyStates';
+import { useMiniKit } from '@/hooks/useMiniKit';
+import { MiniKit } from '@worldcoin/minikit-js';
 
 // Map pool IDs to icons
 const POOL_ICONS: Record<number, typeof Unlock> = {
@@ -76,6 +78,117 @@ const StakingTab = memo(({
   isLoadingStakingData = false,
   t,
 }: StakingTabProps) => {
+  const [faucetCooldown, setFaucetCooldown] = useState({ hours: 0, minutes: 0 });
+  const [canClaimFaucet, setCanClaimFaucet] = useState(false);
+  const [isClaimingFaucet, setIsClaimingFaucet] = useState(false);
+  const { sendTransaction } = useMiniKit();
+
+  // Check faucet cooldown
+  useEffect(() => {
+    if (!actualAddress) return;
+    
+    const checkFaucet = async () => {
+      try {
+        const res = await fetch('/api/faucet/check', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ address: actualAddress })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          setCanClaimFaucet(data.canClaim);
+          setFaucetCooldown({ hours: data.remainingHours, minutes: data.remainingMinutes });
+        }
+      } catch (e) {
+        // Silent error
+      }
+    };
+    
+    checkFaucet();
+    const interval = setInterval(checkFaucet, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [actualAddress]);
+
+  // Handle faucet claim
+  const handleClaimFaucet = async () => {
+    if (!actualAddress || !canClaimFaucet || isClaimingFaucet) return;
+    
+    if (!MiniKit.isInstalled()) {
+      alert('World App is required to claim faucet. Please open this app in World App.');
+      return;
+    }
+    
+    setIsClaimingFaucet(true);
+    try {
+      // Step 1: Initialize transaction
+      const initRes = await fetch('/api/faucet/init', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ address: actualAddress })
+      });
+      
+      const initData = await initRes.json();
+      
+      if (!initRes.ok || !initData.ok || !initData.reference) {
+        alert(initData.error || initData.message || 'Failed to initialize faucet claim. Please try again.');
+        setIsClaimingFaucet(false);
+        return;
+      }
+
+      const reference = initData.reference;
+      
+      // Step 2: Show transaction authorization popup
+      let payload: any = null;
+      try {
+        const transactionData = '0x'; // Empty data - just for authorization
+        payload = await sendTransaction(
+          STAKING_CONTRACT_ADDRESS as `0x${string}`,
+          transactionData,
+          '0' // 0 value - user is receiving reward
+        );
+      } catch (e: any) {
+        if (e?.type === 'user_cancelled') {
+          setIsClaimingFaucet(false);
+          return;
+        }
+        throw e;
+      }
+
+      // Step 3: Confirm transaction
+      if (!payload?.transaction_id) {
+        alert('Transaction was cancelled. Please try again.');
+        setIsClaimingFaucet(false);
+        return;
+      }
+
+      const confirmRes = await fetch('/api/faucet/confirm', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ 
+          payload: {
+            reference,
+            transaction_id: payload.transaction_id
+          }
+        })
+      });
+      
+      const confirmData = await confirmRes.json();
+      
+      if (confirmData.ok) {
+        alert(`Successfully claimed ${initData.amount} LUX!`);
+        setCanClaimFaucet(false);
+        setFaucetCooldown({ hours: 24, minutes: 0 });
+      } else {
+        alert(confirmData.error || confirmData.message || 'Failed to claim faucet reward. Please try again.');
+      }
+    } catch (error: any) {
+      alert(error?.message || 'Failed to claim faucet reward. Please try again.');
+    } finally {
+      setIsClaimingFaucet(false);
+    }
+  };
+
   return (
     <motion.div
       key="staking"
@@ -85,6 +198,44 @@ const StakingTab = memo(({
       className="space-y-2"
       style={{ willChange: 'transform, opacity' }}
     >
+      {/* Free Faucet Card */}
+      {actualAddress && (
+        <motion.div
+          initial={{ scale: 0.95 }}
+          animate={{ scale: 1 }}
+          className="relative bg-gradient-to-br from-purple-900/30 via-black to-purple-900/30 rounded-xl p-4 text-white overflow-hidden border border-purple-500/30"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg">
+                <Droplet className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-purple-300">รับ 1 LUX ฟรี</p>
+                <p className="text-xs text-white/60">
+                  {canClaimFaucet 
+                    ? 'พร้อมรับรางวัล' 
+                    : `รออีก ${faucetCooldown.hours}ช ${faucetCooldown.minutes}น`}
+                </p>
+              </div>
+            </div>
+            <motion.button
+              whileHover={{ scale: canClaimFaucet ? 1.05 : 1 }}
+              whileTap={{ scale: canClaimFaucet ? 0.95 : 1 }}
+              onClick={handleClaimFaucet}
+              disabled={!canClaimFaucet || isClaimingFaucet}
+              className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                canClaimFaucet
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-gray-700/50 text-white/50 cursor-not-allowed'
+              }`}
+            >
+              {isClaimingFaucet ? '⏳ กำลังรับ...' : canClaimFaucet ? 'รับ 1 LUX' : 'รอ 24 ชม'}
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Pool Selection */}
       <div className="grid grid-cols-5 gap-1.5">
         {POOLS.map((pool) => {
