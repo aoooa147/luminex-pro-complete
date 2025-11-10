@@ -116,10 +116,9 @@ export default function NumberMemoryPage() {
 
       setGameState('result');
 
-    // Apply 80% loss rate: 80% chance of losing regardless of actual result
-    const shouldLose = antiCheat.shouldForceLoss(address, isCorrect);
-
-    if (isCorrect && !shouldLose) {
+    // UI shows actual result - no shouldForceLoss here!
+    if (isCorrect) {
+      // Correct sequence - show correct in UI
       if (soundEnabled) playSound('correct');
       const newRound = round + 1;
       const newScore = score + (level * 100);
@@ -136,23 +135,16 @@ export default function NumberMemoryPage() {
         }, 1500);
       }
     } else {
+      // Wrong sequence - show wrong in UI
       if (soundEnabled) playSound('wrong');
       setTimeout(() => handleGameOver(), 1000);
     }
   }
 
     async function handleVictory() {
+      // Show victory UI - player actually won!
       setGameState('victory');
       if (soundEnabled) playSound('victory');
-      
-      // Apply 80% loss rate: 80% chance of losing even if victory reached
-      const shouldLose = antiCheat.shouldForceLoss(address, true);
-      if (shouldLose) {
-        setGameState('gameover');
-        if (soundEnabled) playSound('wrong');
-        alert('Better luck next time!');
-        return;
-      }
       
       try {
         const base = { address, score, ts: Date.now() };
@@ -169,6 +161,7 @@ export default function NumberMemoryPage() {
         body: JSON.stringify({ address, payload, sig: '0x', deviceId })
       });
       
+      // Give full reward
       const key = 'luminex_tokens';
       const cur = Number(localStorage.getItem(key) || '0');
       localStorage.setItem(key, String(cur + 15));

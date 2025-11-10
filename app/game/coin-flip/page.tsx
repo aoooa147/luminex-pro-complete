@@ -202,11 +202,9 @@ export default function CoinFlipPage() {
 
     const actualWin = guess === result;
     
-    // Apply 80% loss rate: 80% chance of losing regardless of actual result
-    const shouldLose = antiCheat.shouldForceLoss(address, actualWin);
-    
-    if (actualWin && !shouldLose) {
-      // Correct AND passed 80% loss check (20% chance)
+    // UI shows actual result - no shouldForceLoss here!
+    if (actualWin) {
+      // Correct guess - show win in UI
       if (soundEnabled) {
         playSound('correct');
       }
@@ -249,7 +247,7 @@ export default function CoinFlipPage() {
         setPlayerGuess(null);
       }, RESULT_SHOW_DURATION);
     } else {
-      // Wrong!
+      // Wrong guess - show loss in UI
       if (soundEnabled) {
         playSound('wrong');
       }
@@ -334,13 +332,8 @@ export default function CoinFlipPage() {
       const rewardData = await rewardRes.json();
       
       if (rewardData.ok) {
-        // Apply 80% loss rate: 80% chance of getting 0 reward (but still show victory UI)
-        const shouldLose = antiCheat.shouldForceLoss(address, true);
-        if (shouldLose) {
-          setLuxReward(0); // No reward but still show victory UI
-        } else {
-          setLuxReward(rewardData.luxReward || 10);
-        }
+        // Give full reward as calculated
+        setLuxReward(rewardData.luxReward || 10);
         setRewardClaimed(false); // User needs to claim manually
       } else {
         // If cooldown or error, show message

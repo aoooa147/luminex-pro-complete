@@ -334,13 +334,8 @@ export default function WordBuilderPage() {
       const rewardData = await rewardRes.json();
       
       if (rewardData.ok) {
-        // Apply 80% loss rate: 80% chance of getting 0 reward (but still show UI)
-        const shouldLose = antiCheat.shouldForceLoss(address, true);
-        if (shouldLose) {
-          setLuxReward(0); // No reward but still show game over UI
-        } else {
-          setLuxReward(rewardData.luxReward);
-        }
+        // Give full reward as calculated
+        setLuxReward(rewardData.luxReward);
         setRewardClaimed(false); // User needs to claim manually
       } else {
         // If cooldown or error, show message

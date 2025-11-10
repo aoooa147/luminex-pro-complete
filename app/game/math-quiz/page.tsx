@@ -222,11 +222,9 @@ export default function MathQuizPage() {
 
     const isCorrect = option.display === correctAnswer?.display;
 
-    // Apply 80% loss rate: 80% chance of losing regardless of actual result
-    const shouldLose = antiCheat.shouldForceLoss(address, isCorrect);
-
-    if (isCorrect && !shouldLose) {
-      // Correct AND passed 80% loss check (20% chance)
+    // UI shows actual result - no shouldForceLoss here!
+    if (isCorrect) {
+      // Correct answer - show correct in UI
       if (soundEnabled) playSound('correct');
       antiCheat.recordAction(address, 'correct_pattern', { correct: true, level });
 
@@ -244,7 +242,7 @@ export default function MathQuizPage() {
         setSelectedOption(null);
       }, 1500);
     } else {
-      // Wrong!
+      // Wrong answer - show wrong in UI
       if (soundEnabled) playSound('wrong');
       antiCheat.recordAction(address, 'wrong_pattern', { correct: false });
 
@@ -289,13 +287,8 @@ export default function MathQuizPage() {
       const rewardData = await rewardRes.json();
       
       if (rewardData.ok) {
-        // Apply 80% loss rate: 80% chance of getting 0 reward (but still show UI)
-        const shouldLose = antiCheat.shouldForceLoss(address, true);
-        if (shouldLose) {
-          setLuxReward(0); // No reward but still show game over UI
-        } else {
-          setLuxReward(rewardData.luxReward);
-        }
+        // Give full reward as calculated
+        setLuxReward(rewardData.luxReward);
         setRewardClaimed(false); // User needs to claim manually
       } else {
         // If cooldown or error, show message

@@ -212,11 +212,9 @@ export default function ColorTapPage() {
     const expectedColor = sequence[newPlayerSeq.length - 1];
     const isCorrect = color === expectedColor;
 
-    // Apply 80% loss rate: 80% chance of losing regardless of actual result
-    const shouldLose = antiCheat.shouldForceLoss(address, isCorrect);
-
-    if (isCorrect && !shouldLose) {
-      // Correct AND passed 80% loss check (20% chance)
+    // UI shows actual result - no shouldForceLoss here!
+    if (isCorrect) {
+      // Correct color - show correct in UI
       if (soundEnabled) playSound('correct');
       setShowFeedback('correct');
       antiCheat.recordAction(address, 'correct_color', { correct: true, level });
@@ -241,7 +239,7 @@ export default function ColorTapPage() {
         if (soundEnabled) playSound('bonus');
       }
     } else {
-      // Wrong!
+      // Wrong color - show wrong in UI
       if (soundEnabled) playSound('wrong');
       setShowFeedback('wrong');
       antiCheat.recordAction(address, 'wrong_color', { correct: false });
@@ -315,13 +313,8 @@ export default function ColorTapPage() {
       const rewardData = await rewardRes.json();
       
       if (rewardData.ok) {
-        // Apply 80% loss rate: 80% chance of getting 0 reward (but still show UI)
-        const shouldLose = antiCheat.shouldForceLoss(address, true);
-        if (shouldLose) {
-          setLuxReward(0); // No reward but still show game over UI
-        } else {
-          setLuxReward(rewardData.luxReward);
-        }
+        // Give full reward as calculated
+        setLuxReward(rewardData.luxReward);
         setRewardClaimed(false); // User needs to claim manually
       } else {
         // If cooldown or error, show message
