@@ -7,12 +7,31 @@ import { readJSON, writeJSON } from '@/lib/game/storage';
 export const runtime = 'nodejs';
 
 export const POST = withErrorHandler(async (request: NextRequest) => {
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch (error) {
+    logger.error('Failed to parse request body', { error }, 'game/reward/init');
+    return createErrorResponse('Invalid JSON in request body', 'INVALID_JSON', 400);
+  }
+  
   const { address, gameId, amount } = body;
+
+  logger.info('Init API called', {
+    address,
+    gameId,
+    amount,
+    amountType: typeof amount,
+    bodyKeys: Object.keys(body || {})
+  }, 'game/reward/init');
 
   // Validate required fields
   const bodyValidation = validateBody(body, ['address', 'gameId', 'amount']);
   if (!bodyValidation.valid) {
+    logger.error('Missing required fields', {
+      missing: bodyValidation.missing,
+      body
+    }, 'game/reward/init');
     return createErrorResponse(
       `Missing required fields: ${bodyValidation.missing?.join(', ')}`,
       'MISSING_FIELDS',
@@ -22,19 +41,34 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   // Validate address format
   if (!isValidAddress(address)) {
+    logger.error('Invalid address format', { address }, 'game/reward/init');
     return createErrorResponse('Invalid address format', 'INVALID_ADDRESS', 400);
   }
 
-  // Validate amount
-  if (typeof amount !== 'number' || amount <= 0 || !Number.isFinite(amount)) {
+  // Validate amount - check for string "0" or number 0
+  const amountNum = typeof amount === 'string' ? Number(amount) : amount;
+  
+  logger.info('Amount validation', {
+    originalAmount: amount,
+    amountType: typeof amount,
+    convertedAmount: amountNum,
+    convertedType: typeof amountNum,
+    isFinite: Number.isFinite(amountNum),
+    isPositive: amountNum > 0
+  }, 'game/reward/init');
+  
+  if (typeof amountNum !== 'number' || !Number.isFinite(amountNum) || amountNum <= 0) {
     logger.error('Invalid amount received', { 
-      amount, 
-      type: typeof amount,
+      originalAmount: amount,
+      amountType: typeof amount,
+      convertedAmount: amountNum,
+      convertedType: typeof amountNum,
       address: body.address,
-      gameId: body.gameId
+      gameId: body.gameId,
+      body
     }, 'game/reward/init');
     return createErrorResponse(
-      `Invalid amount: must be a positive number, got: ${amount}`,
+      `Invalid amount: must be a positive number, got: ${amount} (type: ${typeof amount})`,
       'INVALID_AMOUNT',
       400
     );
@@ -66,16 +100,32 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
   // Verify reward amount matches
   const storedAmount = rewardInfo.amount;
-  if (storedAmount !== amount) {
+  const requestedAmountNum = typeof amount === 'string' ? Number(amount) : amount;
+  
+  logger.info('Amount verification', {
+    address: addressLower,
+    gameId,
+    requestedAmount: amount,
+    requestedAmountType: typeof amount,
+    requestedAmountNum,
+    storedAmount,
+    storedAmountType: typeof storedAmount,
+    match: storedAmount === requestedAmountNum
+  }, 'game/reward/init');
+  
+  if (storedAmount !== requestedAmountNum) {
     logger.error('Reward amount mismatch', {
       address: addressLower,
       gameId,
       requestedAmount: amount,
-      storedAmount: storedAmount,
+      requestedAmountType: typeof amount,
+      requestedAmountNum,
+      storedAmount,
+      storedAmountType: typeof storedAmount,
       rewardInfo
     }, 'game/reward/init');
     return createErrorResponse(
-      `Reward amount mismatch: stored ${storedAmount}, requested ${amount}`,
+      `Reward amount mismatch: stored ${storedAmount}, requested ${amount} (converted: ${requestedAmountNum})`,
       'AMOUNT_MISMATCH',
       400
     );
@@ -87,6 +137,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
       address: addressLower,
       gameId,
       storedAmount,
+      storedAmountType: typeof storedAmount,
       rewardInfo
     }, 'game/reward/init');
     return createErrorResponse(
@@ -110,11 +161,14 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     reference
   }, 'game/reward/init');
 
+  // Use the numeric amount for response
+  const responseAmount = typeof amount === 'string' ? Number(amount) : amount;
+  
   const responseData = {
     ok: true,
     success: true,
     reference,
-    amount,
+    amount: responseAmount, // Ensure it's a number
     gameId,
     message: 'Transaction reference created successfully'
   };
@@ -122,7 +176,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
   logger.info('Returning init response', {
     address: addressLower,
     gameId,
-    amount,
+    originalAmount: amount,
+    responseAmount,
     reference,
     responseData
   }, 'game/reward/init');
