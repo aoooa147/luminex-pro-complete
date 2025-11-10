@@ -8,14 +8,22 @@ import { ethers } from 'ethers';
 import { STAKING_CONTRACT_ADDRESS, LUX_TOKEN_ADDRESS, POOLS } from '@/lib/utils/constants';
 import { trackStaking } from '@/lib/utils/analytics';
 
-// Staking Contract ABI
+// Staking Contract ABI - Updated for LuxStakingV2Simple (Verified Contract)
 const STAKING_ABI = [
+  // View functions
   "function getUserStakeInfo(address user, uint8 poolId) external view returns (uint256 amount, uint256 lockPeriod, uint256 unlockTime, uint256 pendingRewards, bool isLP)",
   "function getPendingRewards(address user, uint8 poolId) external view returns (uint256)",
   "function totalStakedByUser(address user) external view returns (uint256)",
+  "function getPoolInfo(uint8 poolId) external view returns (string memory name, uint256 totalStaked, uint256 apy, uint256 minLockPeriod, bool active)",
+  "function getUserInfo(address user) external view returns (address referrer, uint256 referralCount, uint256 totalReferralRewards, uint256 powerBoost, bool hasReferred)",
+  "function getEffectiveAPY(address user, uint8 poolId) external view returns (uint256)",
+  "function poolCount() external view returns (uint8)",
+  // Write functions
   "function stake(uint8 poolId, uint256 amount, uint256 lockPeriod) external",
   "function withdraw(uint8 poolId, uint256 amount) external",
   "function claimRewards(uint8 poolId) external",
+  "function claimInterest(uint8 poolId) external",
+  "function claimReferralReward(address referrer) external",
 ];
 
 // ERC20 ABI for approvals
@@ -93,18 +101,24 @@ export function useStaking(
       let timeElapsedData = { days: 0, hours: 0, minutes: 0, seconds: 0 };
       try {
         const stakeInfo = await stakingContract.getUserStakeInfo(actualAddress, selectedPool);
-        if (stakeInfo.startTime && stakeInfo.startTime > 0n) {
-          const startTime = Number(stakeInfo.startTime);
+        // getUserStakeInfo returns: (amount, lockPeriod, unlockTime, pendingRewards, isLP)
+        // Calculate startTime from unlockTime and lockPeriod: startTime = unlockTime - lockPeriod
+        if (stakeInfo.unlockTime && stakeInfo.unlockTime > 0n && stakeInfo.lockPeriod && stakeInfo.lockPeriod > 0n) {
+          const unlockTime = Number(stakeInfo.unlockTime);
+          const lockPeriod = Number(stakeInfo.lockPeriod);
+          const startTime = unlockTime - lockPeriod;
           const currentTime = Math.floor(Date.now() / 1000);
           const elapsed = currentTime - startTime;
           
-          const days = Math.floor(elapsed / 86400);
-          const hours = Math.floor((elapsed % 86400) / 3600);
-          const minutes = Math.floor((elapsed % 3600) / 60);
-          const seconds = elapsed % 60;
-          
-          timeElapsedData = { days, hours, minutes, seconds };
-          setTimeElapsed(timeElapsedData);
+          if (elapsed > 0) {
+            const days = Math.floor(elapsed / 86400);
+            const hours = Math.floor((elapsed % 86400) / 3600);
+            const minutes = Math.floor((elapsed % 3600) / 60);
+            const seconds = elapsed % 60;
+            
+            timeElapsedData = { days, hours, minutes, seconds };
+            setTimeElapsed(timeElapsedData);
+          }
         } else {
           setTimeElapsed(timeElapsedData);
         }
