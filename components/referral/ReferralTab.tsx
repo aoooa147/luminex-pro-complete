@@ -43,10 +43,13 @@ const ReferralTab = memo(({
     try {
       const WORLD_APP_ID = process.env.NEXT_PUBLIC_WORLD_APP_ID || '';
       const inviteLink = `https://world.org/mini-app?app_id=${WORLD_APP_ID}&path=${encodeURIComponent(`/?ref=${safeReferralCode}`)}`;
+      const shareText = t('referralDesc') 
+        ? `${t('referralDesc')} - Use my referral code: ${safeReferralCode}`
+        : `Get 5 ${TOKEN_NAME} for each friend you invite - Use my referral code: ${safeReferralCode}`;
       if (navigator.share) {
         await navigator.share({
           title: 'Join Luminex Staking!',
-          text: `Use my referral code ${safeReferralCode} and get 50 LUX!`,
+          text: shareText,
           url: inviteLink,
         });
         trackReferral('code_shared', safeReferralCode);
@@ -59,7 +62,7 @@ const ReferralTab = memo(({
     } catch (error) {
       // Error sharing - silent error handling
     }
-  }, [safeReferralCode, setCopied]);
+  }, [safeReferralCode, setCopied, t, TOKEN_NAME]);
 
   const handleShowQR = useCallback(() => {
     setShowQRModal(true);
@@ -95,10 +98,10 @@ const ReferralTab = memo(({
             🎁🎊
           </motion.div>
           <h1 className="text-2xl font-extrabold text-white mb-2">
-            Invite Friends!
+            {t('inviteFriends') || 'Invite Friends!'}
           </h1>
-          <p className="text-white/90 mb-1.5 text-sm">Get 50 {TOKEN_NAME} for each friend you invite</p>
-          <p className="text-yellow-300 font-bold text-base">💰 Earn More Together! 💰</p>
+          <p className="text-white/90 mb-1.5 text-sm">{t('referralDesc') || `Get 5 ${TOKEN_NAME} for each friend you invite`}</p>
+          <p className="text-yellow-300 font-bold text-base">{t('earnTogether') || '💰 Earn More Together! 💰'}</p>
         </div>
       </div>
 
@@ -133,7 +136,7 @@ const ReferralTab = memo(({
             <div className="flex items-center space-x-2 mb-1">
               <UserPlus className="w-5 h-5" aria-hidden="true" />
               <div>
-                <p className="text-white/80 text-xs">Total Referrals</p>
+                <p className="text-white/80 text-xs">{t('totalReferrals') || 'Total Referrals'}</p>
                 <p className="text-xl font-extrabold">{safeTotalReferrals}</p>
               </div>
             </div>
@@ -151,7 +154,7 @@ const ReferralTab = memo(({
             <div className="flex items-center space-x-2 mb-1">
               <Coins className="w-5 h-5" aria-hidden="true" />
               <div>
-                <p className="text-white/80 text-xs">Total Earnings</p>
+                <p className="text-white/80 text-xs">{t('totalEarnings') || 'Total Earnings'}</p>
                 <p className="text-xl font-extrabold">{safeTotalEarnings}</p>
               </div>
             </div>
@@ -163,7 +166,7 @@ const ReferralTab = memo(({
       <div className="bg-black/40 backdrop-blur-2xl rounded-2xl p-4 border border-white/10 shadow-2xl">
         <h2 className="text-white font-bold text-base mb-2 flex items-center gap-2">
           <Share2 className="w-5 h-5" aria-hidden="true" />
-          Your Referral Code
+          {t('yourReferralCode') || 'Your Referral Code'}
         </h2>
         
         <div className="relative">
@@ -174,7 +177,7 @@ const ReferralTab = memo(({
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-400 text-xs mb-1">Share this code with friends</p>
+                <p className="text-yellow-400 text-xs mb-1">{t('shareCode') || 'Share this code with friends'}</p>
                 <p className="text-2xl font-extrabold text-white font-mono tracking-wider" aria-label={`Referral code: ${safeReferralCode}`}>{safeReferralCode}</p>
               </div>
               <motion.button
@@ -233,19 +236,19 @@ const ReferralTab = memo(({
             <Coins className="w-5 h-5 text-yellow-300" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="text-white font-bold text-base mb-1.5">How It Works</h3>
+            <h3 className="text-white font-bold text-base mb-1.5">{t('howItWorks') || 'How It Works'}</h3>
             <ul className="space-y-1.5 text-white/80 text-xs" role="list">
               <li className="flex items-center space-x-2">
                 <Check className="w-4 h-4 text-green-400 flex-shrink-0" aria-hidden="true" />
-                <span>Share your referral code with friends</span>
+                <span>{t('howItWorks1') || 'Share your referral code with friends'}</span>
               </li>
               <li className="flex items-center space-x-2">
                 <Check className="w-4 h-4 text-green-400 flex-shrink-0" aria-hidden="true" />
-                <span>Get 50 {TOKEN_NAME} when they sign up</span>
+                <span>{t('howItWorks2') || `Get 5 ${TOKEN_NAME} when they sign up`}</span>
               </li>
               <li className="flex items-center space-x-2">
                 <Check className="w-4 h-4 text-green-400 flex-shrink-0" aria-hidden="true" />
-                <span>Unlimited referrals!</span>
+                <span>{t('howItWorks3') || 'Unlimited referrals!'}</span>
               </li>
             </ul>
           </div>
